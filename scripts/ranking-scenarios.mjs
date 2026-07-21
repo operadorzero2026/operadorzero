@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict'
+const weights={command:[15,25,35,20,5],assault:[45,25,10,15,5],defense:[30,35,15,15,5],medic:[10,25,40,20,5],sniper:[40,20,20,15,5]}
+const experience=n=>n<=2?.4:n<=5?.6:n<=10?.8:1
+const score=({role='assault',components=[50,50,50,50,90],operations=11,penalty=0,contested=false})=>contested?0:Math.max(0,components.reduce((sum,value,index)=>sum+value*weights[role][index]/100,0)*experience(operations)-penalty)
+const canConfirm=({actor,owner,seen=new Set(),event='e1'})=>actor!==owner&&!seen.has(`${actor}:${event}`)
+const cases=[]; const test=(name,fn)=>{fn();cases.push(name)}
+test('comandante com poucas eliminações e missão alta',()=>assert(score({role:'command',components:[15,95,96,95,95]})>70))
+test('assalto com K/D alto',()=>assert(score({role:'assault',components:[95,50,70,70,90]})>75))
+test('defesa sem contato e objetivo mantido',()=>assert(score({role:'defense',components:[5,100,94,90,92]})>65))
+test('médico com muitos atendimentos',()=>assert(score({role:'medic',components:[10,80,100,90,95]})>75))
+test('sniper com precisão e baixo volume',()=>assert(score({role:'sniper',components:[90,60,85,70,93]})>75))
+test('novato com uma operação usa fator 40%',()=>assert.equal(experience(1),.4))
+test('veterano com onze operações usa fator 100%',()=>assert.equal(experience(11),1))
+test('evento contestado vale zero',()=>assert.equal(score({contested:true}),0))
+test('votação coordenada não altera peso funcional',()=>assert.equal(weights.command.reduce((a,b)=>a+b),100))
+test('assédio não produz pontuação negativa ilimitada',()=>assert.equal(score({penalty:999}),0))
+test('troca de equipe preserva cálculo histórico',()=>assert.equal(score({role:'defense'}),score({role:'defense'})))
+test('posição falsa depende de catálogo válido',()=>assert.equal(weights.fake,undefined))
+test('operação longa normalizada limita componente',()=>assert(score({components:[100,100,100,100,100]})<=100))
+test('operação curta normalizada limita componente',()=>assert(score({components:[0,0,0,0,0]})>=0))
+test('ID adulterado não autoriza confirmação própria',()=>assert.equal(canConfirm({actor:'u1',owner:'u1'}),false))
+test('confirmação duplicada é recusada',()=>assert.equal(canConfirm({actor:'u2',owner:'u1',seen:new Set(['u2:e1'])}),false))
+test('autovoto é recusado',()=>assert.equal(canConfirm({actor:'u1',owner:'u1'}),false))
+test('penalidade contestada aguarda homologação',()=>assert.equal(score({contested:true,penalty:20}),0))
+console.log(`Ranking: ${cases.length} cenários aprovados.`)

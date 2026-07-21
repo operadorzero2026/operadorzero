@@ -1,0 +1,61 @@
+# Minha Equipe
+
+O módulo amplia o agregado `Team` de [[03-DOMINIO-E-REGRAS-DE-NEGOCIO]] e o fluxo de [[04-MODULOS-E-FLUXOS]]. A implementação atual é frontend demonstrativo: não cria equipe, não envia convite, não altera vínculo e não concede permissão.
+
+## Interface atual
+
+- estados com equipe e sem equipe na mesma área;
+- Valkyrie Ops com identidade, cidade, modalidades, capitão, administradores, integrantes, campo, operações e estatísticas;
+- abas de visão geral, integrantes, convites recebidos/enviados, operações, estatísticas, campo, configurações e histórico;
+- criação em três etapas com logo, nome, localização padronizada, modalidades reutilizadas de [[09-OPERACOES]], campo e regras;
+- busca demonstrativa somente por callsign/usuário/nome de exibição;
+- confirmação visual do operador antes do convite;
+- aviso e confirmação quando o convidado já possui equipe;
+- decisão de troca sem saída automática e bloqueio quando há capitania/responsabilidades;
+- limite demonstrativo de 20 convites/dia, um convite ativo por equipe/usuário e validade padrão de 15 dias.
+
+## Invariantes
+
+- um usuário possui no máximo uma equipe principal ativa;
+- uma equipe possui um capitão ativo;
+- nome completo de equipe ativa é único;
+- fundador não sai sem transferência ou encerramento/arquivamento adequado;
+- função sugerida no convite não concede permissão administrativa;
+- aceitar convite nunca ocorre em nome de outro usuário;
+- histórico de vínculo, função, operações e estatísticas é preservado;
+- estatísticas antigas permanecem ligadas à equipe representada na operação;
+- declarar campo próprio cria solicitação de vínculo, não propriedade ou administração automática.
+
+Troca de equipe deve ocorrer em uma transação: validar convite e responsabilidades, encerrar vínculo atual, preservar histórico, criar vínculo novo, aceitar convite, resolver convites incompatíveis, auditar e notificar.
+
+## Modelo planejado
+
+`Team`, `TeamMember`, `TeamMembershipHistory`, `TeamInvitation`, `TeamInvitationMessage`, `TeamInvitationPreference`, `TeamUserBlock`, `TeamRole`, `TeamPermission`, `TeamFieldRelationship`, `TeamGameStyle` e `TeamAuditLog`.
+
+Estilos reutilizam `OperationModality`; não manter segunda lista independente. Logo usa object storage seguro e metadados próprios. Convite registra equipe, convidado, remetente, mensagem, função sugerida, equipe atual, envio, expiração, status, visualização, resposta e auditoria.
+
+## Migrations planejadas
+
+Não há banco neste repositório; nenhuma migration foi criada. Na API futura:
+
+1. `V007__teams_members_roles.sql` — equipe, membros, papéis, permissões e histórico;
+2. `V008__team_invitations_preferences_blocks.sql` — convites, mensagens, preferências e bloqueios;
+3. `V009__team_fields_styles_audit.sql` — vínculos com campos, modalidades e auditoria.
+
+Criar constraints/índices parciais para nome ativo único, equipe principal ativa única, capitão ativo único e convite ativo único por equipe/convidado.
+
+## Endpoints planejados
+
+- `GET/POST /api/teams` e `GET/PATCH /api/teams/{publicId}`;
+- `/api/teams/{publicId}/members`, `/roles`, `/permissions`, `/history`, `/field-relationships`;
+- `/api/teams/{publicId}/invitations` para criar, cancelar e reenviar;
+- `/api/team-invitations/received` e ações `accept`, `decline`, `defer`, `report`;
+- `/api/team-memberships/leave`, `/transfer-captaincy` e `/resolve-responsibilities`;
+- `/api/operator/team-invitation-preferences` e `/blocks`;
+- busca pública de operadores com campos mínimos, nunca CPF, telefone, e-mail ou nome completo privado.
+
+## Segurança
+
+Autorizar cada ação pela equipe, vínculo e permissão no backend. Administrador auxiliar não remove fundador, transfere capitania, promove a si próprio ou concede permissão superior. Aplicar rate limit, intervalo contra repetição, preferências/bloqueios, auditoria e suspensão por abuso.
+
+Logo aceita somente JPEG/PNG/WebP após MIME real, tamanho, quarentena, antimalware, remoção EXIF, nome aleatório e redimensionamento. SVG/HTML/executáveis/compactados/extensão dupla são bloqueados. Veja [[05-SEGURANCA-E-PRIVACIDADE]].

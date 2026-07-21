@@ -1,0 +1,147 @@
+- generic [ref=f2e3]:
+  - banner [ref=f2e4]:
+    - link "AirOps, início" [ref=f2e5] [cursor=pointer]:
+      - /url: "#inicio"
+      - text: Air
+      - generic [ref=f2e6]: O
+      - strong [ref=f2e7]: ps
+    - button "Abrir menu" [expanded] [active] [ref=f2e8] [cursor=pointer]
+    - generic [ref=f2e167]:
+      - link "Operações" [ref=f2e168] [cursor=pointer]:
+        - /url: "#operacoes"
+      - link "Campos" [ref=f2e169] [cursor=pointer]:
+        - /url: "#campos"
+      - link "Equipes" [ref=f2e170] [cursor=pointer]:
+        - /url: "#equipes"
+      - link "Rankings" [ref=f2e171] [cursor=pointer]:
+        - /url: "#rankings"
+      - link "Criar conta" [ref=f2e172] [cursor=pointer]:
+        - /url: "#convite"
+      - button "Entrar" [ref=f2e173]
+  - main [ref=f2e10]:
+    - generic [ref=f2e14]:
+      - paragraph [ref=f2e15]: A plataforma do airsoft brasileiro
+      - heading [level=1] [ref=f2e17]:
+        - text: Sua próxima
+        - emphasis [ref=f2e18]: operação
+        - text: começa aqui.
+      - paragraph [ref=f2e19]: Encontre partidas, fortaleça sua equipe e construa um histórico esportivo que representa sua evolução.
+      - generic [ref=f2e20]:
+        - link "Explorar operações" [ref=f2e21] [cursor=pointer]:
+          - /url: "#operacoes"
+        - link "Como funciona" [ref=f2e24] [cursor=pointer]:
+          - /url: "#como-funciona"
+    - generic [ref=f2e27]:
+      - generic [ref=f2e28]:
+        - generic [ref=f2e29]:
+          - paragraph [ref=f2e30]: Agenda ativa
+          - heading "Próximas operações" [level=2] [ref=f2e32]
+        - link "Ver agenda completa" [ref=f2e33] [cursor=pointer]:
+          - /url: "#operacoes"
+      - generic [ref=f2e36]:
+        - article [ref=f2e37]:
+          - generic [ref=f2e38]:
+            - strong [ref=f2e39]: "26"
+            - generic [ref=f2e40]: JUL
+          - generic [ref=f2e41]:
+            - generic [ref=f2e42]: 01 / OPERAÇÃO
+            - heading "Operação Linha de Frente" [level=3] [ref=f2e43]
+          - button "Abrir Operação Linha de Frente" [ref=f2e44] [cursor=pointer]
+        - article [ref=f2e47]:
+          - generic [ref=f2e48]:
+            - strong [ref=f2e49]: "02"
+            - generic [ref=f2e50]: AGO
+          - generic [ref=f2e51]:
+            - generic [ref=f2e52]: 02 / OPERAÇÃO
+            - heading "Cerco ao Distrito 7" [level=3] [ref=f2e53]
+          - button "Abrir Cerco ao Distrito 7" [ref=f2e54] [cursor=pointer]
+        - article [ref=f2e57]:
+          - generic [ref=f2e58]:
+            - strong [ref=f2e59]: "09"
+            - generic [ref=f2e60]: AGO
+          - generic [ref=f2e61]:
+            - generic [ref=f2e62]: 03 / OPERAÇÃO
+            - heading "Missão Vale Sombrio" [level=3] [ref=f2e63]
+          - button "Abrir Missão Vale Sombrio" [ref=f2e64] [cursor=pointer]
+    - generic [ref=f2e67]:
+      - generic [ref=f2e68]:
+        - paragraph [ref=f2e69]: Histórico confiável
+        - heading [level=2] [ref=f2e71]:
+          - text: Jogue. Registre.
+          - emphasis [ref=f2e72]: Ranqueie.
+          - text: Evolua.
+        - paragraph [ref=f2e73]: O AirOps conecta sua jornada — da confirmação na partida ao resultado validado. Sua evolução considera presença, objetivos, desempenho, consistência e reputação.
+        - link "Conheça nosso método" [ref=f2e74] [cursor=pointer]:
+          - /url: "#metodo"
+      - generic [ref=f2e77]:
+        - generic [ref=f2e78]:
+          - generic [ref=f2e79]: "01"
+          - heading "Encontre" [level=3] [ref=f2e82]
+          - paragraph [ref=f2e83]: Descubra operações por cidade, modalidade e data.
+        - generic [ref=f2e84]:
+          - generic [ref=f2e85]: "02"
+          - heading "Confirme" [level=3] [ref=f2e89]
+          - paragraph [ref=f2e90]: Participe e valide registros com equipe e organização.
+        - generic [ref=f2e91]:
+          - generic [ref=f2e92]: "03"
+          - heading "Evolua" [level=3] [ref=f2e99]
+          - paragraph [ref=f2e100]: Construa reputação, conquistas e posição no ranking.
+    - generic [ref=f2e101]:
+      - generic [ref=f2e102]:
+        - generic [ref=f2e103]:
+          - paragraph [ref=f2e104]: Temporada 2026
+          - heading "Ranking em movimento" [level=2] [ref=f2e106]
+        - generic [ref=f2e107]:
+          - button "Operadores" [ref=f2e108]
+          - button "Equipes" [ref=f2e109]
+          - button "Paraná" [ref=f2e110]
+      - generic [ref=f2e111]:
+        - generic [ref=f2e112]:
+          - strong [ref=f2e113]: "01"
+          - generic [ref=f2e114]: "N"
+          - generic [ref=f2e115]: NOMAD
+          - strong [ref=f2e116]: "2.840"
+          - generic [ref=f2e117]: "+2"
+        - generic [ref=f2e118]:
+          - strong [ref=f2e119]: "02"
+          - generic [ref=f2e120]: R
+          - generic [ref=f2e121]: RAVEN
+          - strong [ref=f2e122]: "2.675"
+          - generic [ref=f2e123]: —
+        - generic [ref=f2e124]:
+          - strong [ref=f2e125]: "03"
+          - generic [ref=f2e126]: A
+          - generic [ref=f2e127]: ATLAS
+          - strong [ref=f2e128]: "2.510"
+          - generic [ref=f2e129]: "+4"
+        - generic [ref=f2e130]:
+          - strong [ref=f2e131]: "04"
+          - generic [ref=f2e132]: G
+          - generic [ref=f2e133]: GHOST
+          - strong [ref=f2e134]: "2.420"
+          - generic [ref=f2e135]: "-1"
+      - paragraph [ref=f2e136]: Dados demonstrativos para visualização da experiência inicial.
+    - generic [ref=f2e138]:
+      - paragraph [ref=f2e144]: Um só ecossistema
+      - heading "Operadores, equipes, campos e organizadores." [level=2] [ref=f2e145]
+      - paragraph [ref=f2e146]: Perfis públicos, eventos, campeonatos e estatísticas validadas em uma comunidade criada para o esporte.
+    - generic [ref=f2e147]:
+      - paragraph [ref=f2e148]: Prepare seu callsign
+      - heading "Entre para a próxima operação." [level=2] [ref=f2e150]: Entre para apróxima operação.
+      - paragraph [ref=f2e151]: Crie seu perfil e acompanhe o início da comunidade AirOps.
+      - link "Quero participar" [ref=f2e152] [cursor=pointer]:
+        - /url: mailto:contato@airops.com.br?subject=Quero participar do AirOps
+  - contentinfo [ref=f2e155]:
+    - link "AirOps, início" [ref=f2e156] [cursor=pointer]:
+      - /url: "#inicio"
+      - text: Air
+      - generic [ref=f2e157]: O
+      - strong [ref=f2e158]: ps
+    - generic [ref=f2e159]:
+      - link "Termos" [ref=f2e160] [cursor=pointer]:
+        - /url: "#inicio"
+      - link "Privacidade" [ref=f2e161] [cursor=pointer]:
+        - /url: "#inicio"
+      - link "Segurança" [ref=f2e162] [cursor=pointer]:
+        - /url: "#inicio"
+    - generic [ref=f2e163]: © 2026 AIROPS

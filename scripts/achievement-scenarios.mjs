@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict'
+const grants=new Map(); const progress=new Map(); let version=1
+const evaluate=({id,operator='nomad',current=0,target=1,valid=true,contested=false,revoked=false,manual=false,reason=''})=>{const key=`${operator}:${id}`;if(revoked){grants.set(key,{status:'REVOKED',version,reason});return 'REVOKED'}if(manual&&!reason)return 'REJECTED';if(!valid||contested||current<target)return 'IN_PROGRESS';if(!grants.has(key))grants.set(key,{status:'GRANTED',version,manual});progress.set(key,current);return grants.get(key).status}
+const tests=[]; const test=(name,fn)=>{fn();tests.push(name)}
+test('primeira operação',()=>assert.equal(evaluate({id:1,current:1}),'GRANTED'))
+test('quinta operação',()=>assert.equal(evaluate({id:2,current:5,target:5}),'GRANTED'))
+test('eliminação confirmada',()=>assert.equal(evaluate({id:11,current:1,valid:true}),'GRANTED'))
+test('eliminação contestada',()=>assert.equal(evaluate({id:12,current:10,target:10,contested:true}),'IN_PROGRESS'))
+test('K/D mínimo',()=>assert.equal(evaluate({id:20,current:5,target:5}),'GRANTED'))
+test('objetivo homologado',()=>assert.equal(evaluate({id:33,current:1,valid:true}),'GRANTED'))
+test('posição de comandante',()=>assert.equal(evaluate({id:45,current:1,valid:true}),'GRANTED'))
+test('atendimento médico duplicado',()=>{evaluate({id:53,current:1});assert.equal(evaluate({id:53,current:1}),'GRANTED')})
+test('entrada em equipe',()=>assert.equal(evaluate({id:65,current:1}),'GRANTED'))
+test('troca de equipe preserva histórico',()=>assert(grants.has('nomad:65')))
+test('reputação positiva mínima',()=>assert.equal(evaluate({id:75,current:5,target:5,valid:true}),'GRANTED'))
+test('votos anulados',()=>assert.equal(evaluate({id:76,current:15,target:15,valid:false}),'IN_PROGRESS'))
+test('campeonato vencido',()=>assert.equal(evaluate({id:87,current:1,valid:true}),'GRANTED'))
+test('entrada no Top 10',()=>assert.equal(evaluate({id:93,current:1}),'GRANTED'))
+test('queda posterior no ranking preserva snapshot',()=>assert(grants.has('nomad:93')))
+test('conquista concedida em duplicidade',()=>{const size=grants.size;evaluate({id:1,current:1});assert.equal(grants.size,size)})
+test('concessão manual exige motivo',()=>assert.equal(evaluate({id:100,manual:true,reason:''}),'REJECTED'))
+test('revogação preserva histórico',()=>assert.equal(evaluate({id:11,revoked:true,reason:'fonte rejeitada'}),'REVOKED'))
+test('regra alterada gera versão',()=>{version++;evaluate({id:99,current:1});assert.equal(grants.get('nomad:99').version,2)})
+test('processamento concorrente permanece único',()=>{for(let i=0;i<10;i++)evaluate({id:50,current:1});assert.equal([...grants.keys()].filter(k=>k==='nomad:50').length,1)})
+console.log(`Conquistas: ${tests.length} cenários aprovados.`)

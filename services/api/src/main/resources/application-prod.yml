@@ -1,0 +1,15 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    password: ${DATABASE_PASSWORD}
+  flyway:
+    clean-disabled: true
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
+server:
+  shutdown: graceful

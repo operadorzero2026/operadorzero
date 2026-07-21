@@ -1,0 +1,681 @@
+# Histórico de alterações
+
+## 2026-07-21 - Remocao do CEP no cadastro de operacoes
+
+### Arquivos alterados
+- `src/App.tsx`
+- `docs/obsidian/09-OPERACOES.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Removido o campo CEP da etapa de localizacao ao criar uma operacao.
+- Mantidos Estado, Cidade, local e instrucoes de chegada.
+
+### Motivo
+- Adequar o cadastro de operacoes ao requisito de localizacao por Estado e Cidade.
+
+### Impacto
+- Frontend demonstrativo, sem alteracao de persistencia.
+
+### Testes
+- Build TypeScript/Vite.
+
+### Pendencias
+- Nenhuma para este ajuste visual.
+
+## 2026-07-21 - Estados e cidades brasileiras dependentes
+
+### Arquivos alterados
+- `src/BrazilLocationFields.tsx`, `src/App.tsx`, `src/styles.css`
+- `docs/obsidian/06-FRONTEND-WEB.md`, `08-CLASSIFICADOS.md`, `13-MEU-OPERADOR.md` e `99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Criado seletor reutilizavel com as 27 UFs e municipios da UF consultados no IBGE.
+- Aplicado em Classificados, propostas, Operacoes, Minha Equipe e Meu Operador.
+- Cidade permanece bloqueada ate a escolha do Estado e e limpa ao trocar a UF.
+
+### Motivo
+- Impedir localizacoes inconsistentes e cobrir todo o territorio brasileiro.
+
+### Impacto
+- Frontend responsivo; a persistencia e validacao definitiva ainda dependem da API.
+
+### Testes
+- Build TypeScript/Vite aprovado.
+- Validacao no navegador: 27 UFs; Sao Paulo retornou 645 municipios e a capital foi encontrada; layout mobile 390 x 844 aprovado.
+
+### Pendencias
+- Validar UF e codigo IBGE do municipio no backend quando os endpoints forem implementados.
+
+## 2026-07-21 - Fundacao da arquitetura real de producao
+
+### Arquivos alterados
+- `services/api/**`
+- `compose.dev.yml`, `.env.example`, `.gitignore`
+- documentacao de arquitetura, seguranca e operacao na raiz
+- notas `00`, `01`, `02`, `07`, `16` e `99` deste vault
+
+### O que foi feito
+- Criado backend Java 21/Spring Boot 3.5 com PostgreSQL/Flyway, Redis, OpenAPI, health/metricas, logs estruturados e seguranca restritiva.
+- Criadas migrations iniciais de identidade, RBAC, auditoria, perfil e privacidade.
+- Consolidado diagnostico, arquitetura alvo, fases, riscos, custos indicativos e checklist de producao.
+
+### Motivo
+- Preparar a migracao segura do prototipo sem afirmar prontidao prematura.
+
+### Impacto
+- Nova fundacao backend e documentacao; nenhum deploy ou remocao de funcionalidade.
+
+### Testes
+- `mvn test`: 2 testes, 0 falhas, `BUILD SUCCESS`.
+
+### Pendencias
+- Implementar as fases 2 a 8 e cumprir `PRODUCTION-CHECKLIST.md` antes do go-live.
+
+## 2026-07-21 - Financeiro e publicidade patrocinada
+
+### Arquivos alterados
+- `src/FinancialPage.tsx`, `src/App.tsx`, `src/styles.css`
+- `scripts/financial-scenarios.mjs`, `package.json`
+- `docs/obsidian/15-FINANCEIRO-E-PUBLICIDADE.md` e documentação relacionada
+
+### O que foi feito
+- Criados painel financeiro, simulador de comissão/split, campanhas, checkout sandbox e Destaques patrocinados na Visão Geral.
+- Documentados ledger, migrations, endpoints, Split 1:1, OAuth, webhook, publicidade, moderação, segurança, riscos jurídicos e tributários.
+
+### Motivo
+- Preparar monetização por comissão de operações e publicidade sem misturar valores de terceiros com receita da plataforma.
+
+### Impacto
+- Frontend, testes e contratos futuros; sem cobrança, API, banco, Mercado Pago ou deploy.
+
+### Testes
+- `npm run test:financial` e `npm run build`.
+
+### Pendências
+- Backend, sandbox, elegibilidade comercial, OAuth, checkout, webhook, ledger, conciliação, fiscal, jurídico e contabilidade conforme [[15-FINANCEIRO-E-PUBLICIDADE]].
+
+## 2026-07-21 - Simplificação mobile da Comunidade
+
+### Arquivos alterados
+- `src/styles.css`
+- `docs/obsidian/06-FRONTEND-WEB.md`, `docs/obsidian/14-COMUNIDADE.md`
+
+### O que foi feito
+- Reduzidos hero, barras simultâneas, metadados e ações visíveis no feed móvel.
+- Cards passaram a uma coluna e priorizam título, autor, utilidade e comentários; ações secundárias continuam disponíveis no detalhe.
+
+### Motivo
+- Melhorar leitura, foco e uso com uma mão em aparelhos móveis.
+
+### Impacto
+- Frontend responsivo, sem mudança de dados, regras ou segurança.
+
+### Testes
+- Build, cenários da Comunidade e inspeção visual mobile.
+
+### Pendências
+- Nenhuma específica deste ajuste visual.
+
+## 2026-07-21 - Comunidade Operador Zero
+
+### Arquivos alterados
+- `src/CommunityPage.tsx`, `src/App.tsx`, `src/styles.css`
+- `scripts/community-scenarios.mjs`, `package.json`
+- `docs/obsidian/14-COMUNIDADE.md` e nove políticas comunitárias conectadas
+- documentação geral relacionada
+
+### O que foi feito
+- Criado módulo responsivo com feed, categorias, filtros, busca, criação, aceite, pré-análise demonstrativa, comentários, respostas, voto positivo, salvos, denúncia confidencial, regras, atividade e painel de moderação fictício.
+- Integrada a Comunidade à navegação e à busca global.
+- Especificados modelo, migrations, endpoints, permissões, moderação progressiva/contextual, recursos, retenção, incidentes, privacidade e guia de moderador.
+
+### Motivo
+- Oferecer fórum próprio com convivência segura, transparência e separação do ranking esportivo.
+
+### Impacto
+- Frontend, testes locais e contratos futuros; sem banco, API, moderação real ou deploy.
+
+### Testes
+- `npm run test:community`, demais cenários e `npm run build`.
+
+### Pendências
+- Backend, migrations, storage, análise contextual, revisão humana operacional, MFA/RBAC, integração, segurança e revisão jurídica dos termos conforme [[14-COMUNIDADE]].
+
+## 2026-07-21 - Meu Operador e busca global
+
+### Arquivos alterados
+- `src/App.tsx`, `src/styles.css`
+- `scripts/operator-profile-scenarios.mjs`, `package.json`
+- documentação relacionada e `docs/obsidian/13-MEU-OPERADOR.md`
+
+### O que foi feito
+- Reconstruída a área Meu Operador com nove abas, identidade, equipamentos, equipe, recrutamento, ranking, conquistas, operações, reputação agregada, privacidade por campo e configurações da conta.
+- Adicionadas edição demonstrativa, predefinições, pré-visualização por papel, avisos de segurança e busca global agrupada sem campos privados.
+- Documentados entidades, migrations, endpoints, autorização, username, mídia, auditoria e testes necessários no backend.
+
+### Motivo
+- Transformar o perfil em ponto central da identidade esportiva e preparar um contrato seguro para persistência e descoberta pública.
+
+### Impacto
+- Frontend, testes locais e contratos futuros; sem banco, API, autenticação real ou deploy.
+
+### Testes
+- `npm run test:operator`, `npm run test:ranking`, `npm run test:achievements` e `npm run build`.
+
+### Pendências
+- Implementar backend, Flyway, RBAC, MFA, uploads, busca indexada, rota pública e testes de integração definidos em [[13-MEU-OPERADOR]].
+
+## 2026-07-21 - Módulo demonstrativo de Conquistas e Medalhas
+
+### Arquivos alterados
+- `src/achievement-catalog.ts`, `src/App.tsx`, `src/styles.css`
+- `scripts/achievement-scenarios.mjs`, `package.json`
+- documentação relacionada e `docs/obsidian/12-CONQUISTAS-E-MEDALHAS.md`
+
+### O que foi feito
+- Integrado catálogo de 100 conquistas, coleção responsiva, filtros, progresso, raridades, detalhes, compartilhamento, três destaques no perfil e simulador administrativo.
+- Documentados modelo, migrations, endpoints, motor configurável, processamento incremental, segurança e cadastro sem código.
+
+### Motivo
+- Reconhecer evolução equilibrada e preparar concessões reproduzíveis e auditáveis.
+
+### Impacto
+- Frontend, testes locais e contratos futuros; sem banco, API ou deploy.
+
+### Testes
+- `npm run test:achievements`, `npm run test:ranking` e `npm run build`.
+
+### Pendências
+- Implementar backend, Flyway, outbox, RBAC/MFA, uploads, notificações e testes de integração descritos em [[12-CONQUISTAS-E-MEDALHAS]].
+
+## 2026-07-21 - Identificação de adversários no desempenho
+
+### Arquivos alterados
+- `src/App.tsx`, `src/styles.css`
+- `docs/obsidian/11-RANKING.md`, `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Adicionados campos para informar o nick de cada inimigo eliminado e de cada operador que eliminou o usuário.
+- Incluídos contadores, remoção de vínculos, sugestões da operação e tratamento responsivo.
+
+### Motivo
+- Permitir confirmação individual e rastreável dos eventos de combate.
+
+### Impacto
+- Frontend e contrato futuro do Ranking; sem persistência nesta etapa.
+
+### Testes
+- Build TypeScript/Vite e teste automatizado do Ranking.
+
+### Pendências
+- Resolver nick para UUID de participante no backend e validar elegibilidade na operação.
+
+## 2026-07-21 - Reconstrução demonstrativa do Ranking
+
+### Arquivos alterados
+- `src/App.tsx`, `src/styles.css`, `scripts/ranking-scenarios.mjs`, `package.json`
+- `docs/obsidian/00-LEIA-ANTES-CODEX.md`, `03-DOMINIO-E-REGRAS-DE-NEGOCIO.md`, `04-MODULOS-E-FLUXOS.md`, `06-FRONTEND-WEB.md`, `07-ROADMAP-MVP.md`, `11-RANKING.md`
+
+### O que foi feito
+- Conectada área responsiva de ranking com filtros, escopos, desempenho, confirmação, contestação e memória de cálculo.
+- Documentados dados, migrações, contratos, fórmula versionada e controles antifraude.
+- Adicionados 18 cenários automatizados do motor demonstrativo.
+
+### Motivo
+- Transformar o ranking estático em fluxo operacional auditável e preparar a implementação backend-first.
+
+### Impacto
+- Frontend, documentação e testes locais; sem banco, API ou deploy.
+
+### Testes
+- `npm run test:ranking` e `npm run build`.
+
+### Pendências
+- Implementar backend, migrations, autorização, jobs, reputação secreta e testes de integração/carga descritos em [[11-RANKING]].
+
+## 2026-07-21 - Ampliação demonstrativa de Minha Equipe
+
+### Arquivos alterados
+- `src/App.tsx`
+- `src/styles.css`
+- `docs/obsidian/00-LEIA-ANTES-CODEX.md`
+- `docs/obsidian/03-DOMINIO-E-REGRAS-DE-NEGOCIO.md`
+- `docs/obsidian/04-MODULOS-E-FLUXOS.md`
+- `docs/obsidian/05-SEGURANCA-E-PRIVACIDADE.md`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/07-ROADMAP-MVP.md`
+- `docs/obsidian/10-MINHA-EQUIPE.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Criados estados com e sem equipe, painel Valkyrie Ops, abas, integrantes, convites e histórico.
+- Criados assistente de equipe, busca pública, confirmação de convite e decisão protegida de troca.
+- Reutilizado o catálogo de modalidades de Operações.
+- Documentados migrations, endpoints, invariantes, uploads, limites e permissões futuros.
+
+### Motivo
+- Permitir visualizar e validar o fluxo completo de equipes antes do backend.
+
+### Impacto
+- Frontend demonstrativo e documentação; sem criação, convite, troca, upload ou permissão real.
+
+### Testes
+- Build TypeScript/Vite e inspeção funcional e responsiva.
+
+### Pendências
+- Implementar API, migrations, storage, autorização, transações, jobs de expiração, notificações e auditoria.
+
+## 2026-07-21 - Modalidade independente do tipo de jogo
+
+### Arquivos alterados
+- `src/App.tsx`
+- `src/styles.css`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/09-OPERACOES.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Separados os campos obrigatórios de modalidade e tipo de jogo.
+- Incluídas modalidades predefinidas, modalidade personalizada, indicação para iniciantes e sugestões confirmáveis.
+- Adicionados modalidade aos cards, detalhes, pesquisa e filtros.
+- Documentados catálogo administrável, entidades, endpoints e migration futura.
+
+### Motivo
+- Representar corretamente estilo/regulamento e dinâmica/objetivo como dimensões diferentes.
+
+### Impacto
+- Frontend demonstrativo e documentação; sem banco, API ou administração persistida.
+
+### Testes
+- Build TypeScript/Vite e validação do assistente, cards, detalhes e filtros.
+
+### Pendências
+- Criar catálogo persistido, migration aditiva, autorização administrativa e auditoria no backend futuro.
+
+## 2026-07-21 - Ampliação demonstrativa do módulo Operações
+
+### Arquivos alterados
+- `src/App.tsx`
+- `src/styles.css`
+- `docs/obsidian/00-LEIA-ANTES-CODEX.md`
+- `docs/obsidian/04-MODULOS-E-FLUXOS.md`
+- `docs/obsidian/05-SEGURANCA-E-PRIVACIDADE.md`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/07-ROADMAP-MVP.md`
+- `docs/obsidian/09-OPERACOES.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Criadas agenda, abas, ordenação cronológica, filtros e cards de operações.
+- Criados detalhes com regras, missões, times/esquadrões, cronograma, PDF, participantes e atualizações.
+- Criado assistente de organizador em seis etapas com modalidade personalizada e salvamento demonstrativo.
+- Documentados modelo, endpoints, migrations, permissões, uploads e auditoria futuros.
+
+### Motivo
+- Evoluir a superfície de Operações sem inventar backend inexistente ou romper o protótipo atual.
+
+### Impacto
+- Frontend demonstrativo e documentação; nenhuma API, migration, entidade persistida ou deploy.
+
+### Testes
+- Build TypeScript/Vite e inspeção funcional e responsiva.
+
+### Pendências
+- Implementar integralmente API, PostgreSQL/Flyway, storage, autorização, jobs, notificações, auditoria e testes de segurança.
+
+## 2026-07-21 - Estado e confirmação na nova publicação
+
+### Arquivos alterados
+- `src/App.tsx`
+- `src/styles.css`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/08-CLASSIFICADOS.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Adicionada seleção obrigatória `Novo` ou `Usado` no fluxo `Quero vender`.
+- Criada confirmação obrigatória e contextual sobre estado verdadeiro, propriedade e procedência.
+- Acrescentadas declarações específicas para venda ocasional de item novo e descrição transparente de item usado.
+
+### Motivo
+- Padronizar a condição exibida e aumentar a clareza e responsabilidade do anunciante.
+
+### Impacto
+- Frontend demonstrativo e documentação; sem persistência ou validação server-side.
+
+### Testes
+- Build TypeScript/Vite e validação do formulário.
+
+### Pendências
+- Repetir validação, versionamento do aceite e auditoria no backend futuro.
+
+## 2026-07-21 - Modalidade Procuro equipamento
+
+### Arquivos alterados
+- `src/App.tsx`
+- `src/styles.css`
+- `docs/obsidian/05-SEGURANCA-E-PRIVACIDADE.md`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/08-CLASSIFICADOS.md`
+- `docs/obsidian/CLASSIFICADOS-PROCURO-EQUIPAMENTO.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Integradas publicações `À venda` e `Procuro` no mesmo mural.
+- Criados formulário de procura, compatibilidade, validade, urgência, detalhes, proposta rápida, chat e sugestão de correspondência.
+- Mantidas privacidade, restrições de produtos, não intermediação e ausência de transação financeira.
+
+### Motivo
+- Permitir que operadores informem equipamentos permitidos que desejam encontrar e recebam contatos estruturados.
+
+### Impacto
+- Frontend demonstrativo e documentação; nenhuma entidade, migration, API, persistência ou envio real foi criado porque o projeto atual não possui backend.
+
+### Testes
+- Build TypeScript/Vite e inspeção dos fluxos desktop/mobile.
+
+### Pendências
+- Backend, migration, autorização por objeto, moderação, auditoria, expiração, notificações e testes de segurança antes de produção.
+
+## 2026-07-21 - Filtro por estado do item nos Classificados
+
+### Arquivos alterados
+- `src/App.tsx`
+- `src/styles.css`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/08-CLASSIFICADOS.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Adicionado filtro `Todos`, `Novo` e `Usado` combinável com tipo, preço e localização.
+- Normalizadas as condições demonstrativas sem alterar os textos exibidos nos anúncios.
+- Ajustada a grade responsiva do painel para o quarto filtro.
+
+### Motivo
+- Permitir separar rapidamente itens novos e usados nos Classificados.
+
+### Impacto
+- Frontend demonstrativo e documentação, sem alteração de backend ou persistência.
+
+### Testes
+- Build TypeScript/Vite e validação funcional dos filtros.
+
+### Pendências
+- Reproduzir a mesma classificação no contrato e nas consultas do backend futuro.
+
+## 2026-07-21 - Filtros e negociação segura nos Classificados
+
+### Arquivos alterados
+- `src/App.tsx`
+- `src/styles.css`
+- `docs/obsidian/05-SEGURANCA-E-PRIVACIDADE.md`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/08-CLASSIFICADOS.md`
+- `docs/obsidian/CLASSIFICADOS-PRODUTOS-PERMITIDOS.md`
+- `docs/obsidian/CLASSIFICADOS-PRODUTOS-PROIBIDOS.md`
+- `docs/obsidian/CLASSIFICADOS-RISCOS-JURIDICOS.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Criados filtros por tipo, faixa de preço e localização, priorizando a cidade do perfil.
+- Criado fluxo especial de AEGs e marcadores somente textual, sem fotos e com declaração de nota fiscal ou prova de origem.
+- Criado chat demonstrativo com aviso de não intermediação e recomendações de segurança.
+
+### Motivo
+- Facilitar a descoberta local e reduzir riscos na publicação e negociação de equipamentos sensíveis.
+
+### Impacto
+- Frontend demonstrativo e documentação; sem backend, persistência, pagamento ou geolocalização do aparelho.
+
+### Testes
+- Build TypeScript/Vite e inspeção responsiva do fluxo conectado.
+
+### Pendências
+- Parecer jurídico, backend, moderação, denúncias e verificação documental antes de produção.
+
+## 2026-07-21 - Legibilidade das telas conectadas
+
+### Arquivos alterados
+- `src/styles.css`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Ampliada a tipografia do dashboard, navegação, Classificados, formulários, avisos e metadados.
+- Eliminada a microtipografia de 6–9 px nas informações importantes após o login.
+- Ajustados altura de linha, áreas de toque e navegação inferior no mobile.
+
+### Motivo
+- Melhorar leitura e uso em computadores e aparelhos móveis sem necessidade de zoom.
+
+### Impacto
+- Somente apresentação das superfícies conectadas.
+
+### Testes
+- Build TypeScript/Vite e inspeção visual de dashboard e Classificados.
+
+### Pendências
+- Realizar auditoria formal de acessibilidade antes da produção.
+
+## 2026-07-21 - Credencial de login demonstrativa
+
+### Arquivos alterados
+- `src/App.tsx`
+- `src/styles.css`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Criada uma credencial fictícia para teste manual do login.
+- O formulário passou a rejeitar combinações diferentes e exibir mensagem de erro.
+- A conta de teste é exibida no modal para facilitar a validação local.
+
+### Motivo
+- Permitir testar manualmente o fluxo de entrada no protótipo.
+
+### Impacto
+- Somente frontend demonstrativo; sem conta real, hash, cookie, token ou persistência.
+
+### Testes
+- Build TypeScript/Vite e testes manuais de credencial inválida e válida.
+
+### Pendências
+- Substituir a verificação local por autenticação real no backend.
+
+## 2026-07-20 - Classificados Operador Zero - revisão e primeira etapa
+
+### Arquivos alterados
+- `src/App.tsx`
+- `src/styles.css`
+- `docs/obsidian/00-LEIA-ANTES-CODEX.md`
+- `docs/obsidian/01-ESTADO-ATUAL-DO-PROJETO.md`
+- `docs/obsidian/02-ARQUITETURA-E-STACK.md`
+- `docs/obsidian/03-DOMINIO-E-REGRAS-DE-NEGOCIO.md`
+- `docs/obsidian/04-MODULOS-E-FLUXOS.md`
+- `docs/obsidian/05-SEGURANCA-E-PRIVACIDADE.md`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/07-ROADMAP-MVP.md`
+- `docs/obsidian/08-CLASSIFICADOS.md`
+- `docs/obsidian/CLASSIFICADOS-*.md`
+
+### O que foi feito
+- Substituído o conceito principal de Marketplace por mural gratuito de Classificados.
+- Removida a noção de transação financeira do modelo planejado.
+- Criada experiência responsiva demonstrativa com busca, categorias permitidas, favoritos, avisos e formulário visual.
+- Criados documentos de regras, produtos, moderação, privacidade, segurança, riscos, termos e incidentes.
+
+### Motivo
+- Reduzir ambiguidades de intermediação e implementar a primeira etapa segura solicitada.
+
+### Impacto
+- Frontend e documentação; sem backend, persistência, pagamento, frete ou deploy.
+
+### Testes
+- Build TypeScript/Vite e validação visual/funcional responsiva.
+
+### Pendências
+- Backend real, verificações, upload seguro, moderação, auditoria e revisão jurídica antes de produção.
+
+## 2026-07-20 - Planejamento e gates do Marketplace
+
+### Arquivos alterados
+- `docs/obsidian/00-LEIA-ANTES-CODEX.md`
+- `docs/obsidian/02-ARQUITETURA-E-STACK.md`
+- `docs/obsidian/03-DOMINIO-E-REGRAS-DE-NEGOCIO.md`
+- `docs/obsidian/04-MODULOS-E-FLUXOS.md`
+- `docs/obsidian/05-SEGURANCA-E-PRIVACIDADE.md`
+- `docs/obsidian/07-ROADMAP-MVP.md`
+- `docs/obsidian/08-MARKETPLACE.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Documentados escopo, riscos jurídicos, categorias, fluxos, arquitetura, entidades, permissões, wireframes, moderação, antifraude e integrações.
+- Definido gate 18+ e bloqueio inicial de categorias sensíveis.
+- Planejado MVP sem pagamento, carteira, frete ou intermediação financeira.
+
+### Motivo
+- Cumprir a etapa obrigatória de análise antes de programar o Marketplace.
+
+### Impacto
+- Arquitetura e documentação; nenhum código funcional foi implementado.
+
+### Testes
+- Revisão de consistência entre arquitetura, segurança, domínio e roadmap.
+
+### Pendências
+- Validação por advogado brasileiro e autorização do usuário para iniciar a implementação.
+
+## 2026-07-20 - Nova identidade Operador Zero
+
+### Arquivos alterados
+- `public/operador-zero-identity.jpeg`
+- `src/App.tsx`
+- `src/styles.css`
+- `index.html`
+- `package.json`
+- `package-lock.json`
+- `SECURITY.md`
+- `docs/obsidian/00-LEIA-ANTES-CODEX.md`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- A marca visível foi alterada de AirOps para Operador Zero.
+- A arte enviada pelo usuário foi aplicada ao hero, login, comunidade e destaques.
+- Título, metadados, textos institucionais e identidade interna do pacote foram atualizados.
+
+### Motivo
+- Adotar o novo nome e a nova logo oficial do produto.
+
+### Impacto
+- Identidade visual e nomenclatura do frontend e da documentação.
+
+### Testes
+- Build TypeScript/Vite e inspeção visual em navegador.
+
+### Pendências
+- Nenhuma para a troca de identidade no protótipo atual.
+
+## 2026-07-20 - Correção da grade do método na landing
+
+### Arquivos alterados
+- `src/App.tsx`
+- `src/styles.css`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Título e descrição de cada etapa foram agrupados em uma coluna de conteúdo.
+- A grade recebeu larguras estáveis para ícone e numeração, mais uma coluna textual flexível.
+- O comportamento mobile e o realce discreto ao passar o cursor foram ajustados.
+
+### Motivo
+- Corrigir as quebras de linha excessivas observadas na lista Encontre, Confirme e Evolua.
+
+### Impacto
+- Somente frontend público; sem mudança de dados, autenticação ou contratos.
+
+### Testes
+- Build TypeScript/Vite e inspeção visual responsiva.
+
+### Pendências
+- Nenhuma para este ajuste.
+
+## 2026-07-20 - Dashboard demonstrativo do operador conectado
+
+### Arquivos alterados
+- `src/App.tsx`
+- `src/styles.css`
+- `docs/obsidian/01-ESTADO-ATUAL-DO-PROJETO.md`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Criada a experiência pós-login do operador NOMAD em modo demonstração.
+- Adicionados navegação autenticada, resumo do perfil, ranking, reputação, operação, pendências, evolução e conquista.
+- Criada navegação mobile e saída explícita do modo demonstração.
+
+### Motivo
+- Permitir visualizar como a plataforma se comporta após a conexão do usuário.
+
+### Impacto
+- Frontend demonstrativo; nenhum token, cookie ou credencial é persistido.
+
+### Testes
+- Build TypeScript/Vite e validação visual/funcional em navegador desktop e mobile.
+
+### Pendências
+- Substituir dados fictícios por contratos reais após implementação da API e autenticação.
+
+## 2026-07-20 - Fluxo visual de autenticação simples
+
+### Arquivos alterados
+- `src/App.tsx`
+- `src/styles.css`
+- `docs/obsidian/01-ESTADO-ATUAL-DO-PROJETO.md`
+- `docs/obsidian/02-ARQUITETURA-E-STACK.md`
+- `docs/obsidian/04-MODULOS-E-FLUXOS.md`
+- `docs/obsidian/05-SEGURANCA-E-PRIVACIDADE.md`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Criadas experiências de login e cadastro por Google ou e-mail/senha.
+- Criado fluxo de recuperação exclusivamente por e-mail com mensagem não enumerável.
+- Conectados cabeçalho, menu mobile e CTA ao painel de acesso.
+
+### Motivo
+- Oferecer cadastro simples e recuperação por e-mail conforme requisito do produto.
+
+### Impacto
+- Frontend e contratos de identidade; sem armazenamento de credenciais ou sessão simulada.
+
+### Testes
+- Build TypeScript/Vite e validação em navegador.
+
+### Pendências
+- Implementar backend, Google OAuth/OIDC, confirmação e recuperação por serviço de e-mail.
+
+## 2026-07-20 - Fundação documental e experiência pública do AirOps
+
+### Arquivos alterados
+- `package.json`, configurações Vite/TypeScript, `src/App.tsx`, `src/styles.css`, `public/air-ops-identity.png`
+- `docs/obsidian/*`
+- documentos de segurança na raiz
+
+### O que foi feito
+- Criada a base web responsiva e a landing inicial com dados demonstrativos.
+- Definidos arquitetura modular, domínio, fluxos, ranking, roadmap e políticas de segurança.
+
+### Motivo
+- Iniciar o projeto pela compreensão do produto, identidade, regras e riscos antes de funcionalidades complexas.
+
+### Impacto
+- Frontend e documentação; sem backend, banco ou deploy.
+
+### Testes
+- Build TypeScript/Vite e inspeção responsiva previstos após a criação.
+
+### Pendências
+- Implementar os marcos do [[07-ROADMAP-MVP]] e validar juridicamente participação de menores.
