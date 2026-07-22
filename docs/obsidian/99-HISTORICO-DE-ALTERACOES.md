@@ -10,6 +10,7 @@
 
 ### O que foi feito
 - Adicionado banner permanente de ambiente de testes e bloqueio de indexacao.
+- Aplicado fail-safe: toda build otimizada permanece identificada como staging ate `VITE_APP_ENV=production` ser definido explicitamente.
 - Google e formularios remotos permanecem desabilitados no staging ate os endpoints reais existirem.
 - Removida uma URL ficticia com formato de credencial de uma fixture de teste.
 - Registrado no `.gitleaksignore` um falso positivo historico e imutavel da linha de arquitetura que apenas enumera tecnologias, mantendo a varredura ativa para todo o restante.

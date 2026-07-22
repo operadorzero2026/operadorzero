@@ -36,7 +36,7 @@ Landing pública responsiva em `src/App.tsx`, com hero, agenda demonstrativa, m�
 
 O modal atual chama os contratos `/api/auth/login`, `/api/auth/register`, `/api/auth/password-recovery` e `/oauth2/authorization/google` na URL pública `VITE_API_URL`. Credenciais não são persistidas. Enquanto esses endpoints não existirem no backend, o fluxo real apresenta indisponibilidade sem liberar o dashboard.
 
-No staging, `VITE_AUTH_ENABLED=false` desabilita Google e o envio dos formulários, evitando simular autenticação inexistente. `VITE_APP_ENV=staging` exibe um banner permanente de dados descartáveis e a página envia `noindex`, `nofollow` e `noarchive`. O modo demonstrativo continua compilado apenas em desenvolvimento local.
+No staging, `VITE_AUTH_ENABLED=false` desabilita Google e o envio dos formulários, evitando simular autenticação inexistente. Toda build otimizada é tratada como staging por segurança, exceto quando `VITE_APP_ENV=production` for definido explicitamente; assim, o banner de dados descartáveis e `noindex`, `nofollow` e `noarchive` não dependem de configuração ausente. O modo demonstrativo continua compilado apenas em desenvolvimento local.
 
 ## Experiência conectada demonstrativa
 
