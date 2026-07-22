@@ -1,5 +1,32 @@
 # Histórico de alterações
 
+## 2026-07-21 - Correção da URL PostgreSQL interna do Render
+
+### Arquivos alterados
+- `services/api/src/main/java/br/com/operadorzero/shared/config/RenderDatabaseUrlEnvironmentPostProcessor.java`
+- `services/api/src/test/java/br/com/operadorzero/RenderDatabaseUrlEnvironmentPostProcessorTest.java`
+- `docs/obsidian/05-SEGURANCA-E-PRIVACIDADE.md`
+- `docs/obsidian/16-ARQUITETURA-DE-PRODUCAO.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Separados usuário e senha da URL JDBC gerada a partir de `DATABASE_URL`.
+- Aplicada a porta PostgreSQL padrão `5432` quando o Render a omite.
+- Mantidas mensagens de erro genéricas, sem repetir a URL recebida.
+- Adicionado teste para o formato real de URL interna do Render sem porta explícita.
+
+### Motivo
+- Corrigir a falha de inicialização observada no primeiro deploy gratuito e evitar que o driver repita credenciais ao diagnosticar uma URL JDBC malformada.
+
+### Impacto
+- Backend e deploy de staging no Render; sem alteração no frontend ou em dados persistidos.
+
+### Testes
+- Testes Maven, validação de deploy e health check remoto após novo deploy.
+
+### Pendências
+- Confirmar health check e conectividade com PostgreSQL e Redis no ambiente gratuito.
+
 ## 2026-07-21 - Endurecimento visual e funcional do staging
 
 ### Arquivos alterados

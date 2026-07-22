@@ -1,5 +1,8 @@
 package br.com.operadorzero.shared.config;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.boot.SpringApplication;
@@ -16,18 +19,49 @@ public final class RenderDatabaseUrlEnvironmentPostProcessor implements Environm
             return;
         }
 
-        String jdbcUrl;
-        if (databaseUrl.startsWith("jdbc:postgresql://")) {
-            jdbcUrl = databaseUrl;
-        } else if (databaseUrl.startsWith("postgresql://")) {
-            jdbcUrl = "jdbc:" + databaseUrl;
-        } else {
-            throw new IllegalStateException("DATABASE_URL deve usar o protocolo PostgreSQL.");
-        }
-
         environment.getPropertySources().addFirst(
-            new MapPropertySource("renderDatabaseUrl", Map.of("spring.datasource.url", jdbcUrl))
+            new MapPropertySource("renderDatabaseUrl", datasourceProperties(databaseUrl))
         );
+    }
+
+    private Map<String, Object> datasourceProperties(String databaseUrl) {
+        try {
+            String normalizedUrl = databaseUrl.startsWith("jdbc:")
+                ? databaseUrl.substring("jdbc:".length())
+                : databaseUrl;
+            URI postgresUri = URI.create(normalizedUrl);
+
+            if (!"postgresql".equals(postgresUri.getScheme()) || postgresUri.getHost() == null) {
+                throw new IllegalArgumentException();
+            }
+
+            int port = postgresUri.getPort() > 0 ? postgresUri.getPort() : 5432;
+            URI jdbcUri = new URI(
+                "postgresql",
+                null,
+                postgresUri.getHost(),
+                port,
+                postgresUri.getPath(),
+                postgresUri.getQuery(),
+                null
+            );
+
+            Map<String, Object> properties = new HashMap<>();
+            properties.put("spring.datasource.url", "jdbc:" + jdbcUri.toASCIIString());
+
+            String userInfo = postgresUri.getUserInfo();
+            if (userInfo != null) {
+                String[] credentials = userInfo.split(":", 2);
+                properties.put("spring.datasource.username", credentials[0]);
+                if (credentials.length == 2) {
+                    properties.put("spring.datasource.password", credentials[1]);
+                }
+            }
+
+            return properties;
+        } catch (IllegalArgumentException | URISyntaxException ignored) {
+            throw new IllegalStateException("DATABASE_URL deve ser uma URL PostgreSQL valida.");
+        }
     }
 
     @Override

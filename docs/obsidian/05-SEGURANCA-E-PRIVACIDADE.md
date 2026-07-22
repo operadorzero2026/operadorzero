@@ -23,6 +23,7 @@ Segurança é critério de aceite, não etapa posterior. A baseline detalhada vi
 - Upload fora do webroot, nome aleatório, allowlist real de conteúdo e varredura.
 - Rate limits por conta, IP, rota e risco; respostas de login não enumeráveis.
 - Logs de auditoria append-only e sem segredos; ações críticas com reautenticação.
+- URLs de conexão recebidas dos provedores devem ser decompostas antes do uso: credenciais ficam em propriedades separadas e nunca aparecem na URL JDBC ou em logs.
 - LGPD: minimização, finalidade, retenção, exportação, correção e exclusão/anonimização.
 
 ## Fronteira frontend/backend
