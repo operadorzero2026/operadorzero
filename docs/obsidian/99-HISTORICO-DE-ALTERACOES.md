@@ -12,6 +12,8 @@
 - Adicionado banner permanente de ambiente de testes e bloqueio de indexacao.
 - Google e formularios remotos permanecem desabilitados no staging ate os endpoints reais existirem.
 - Removida uma URL ficticia com formato de credencial de uma fixture de teste.
+- Registrado no `.gitleaksignore` um falso positivo historico e imutavel da linha de arquitetura que apenas enumera tecnologias, mantendo a varredura ativa para todo o restante.
+- Atualizado `actions/checkout` para a versao com runtime atual, eliminando o aviso de Node.js 20 no GitHub Actions.
 
 ### Motivo
 - Atender aos gates de staging sem simular autenticacao ou manter strings com formato de segredo.
