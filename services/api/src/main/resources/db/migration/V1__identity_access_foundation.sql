@@ -14,10 +14,11 @@ CREATE TABLE app_user (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     version BIGINT NOT NULL DEFAULT 0,
     CONSTRAINT uq_app_user_public_id UNIQUE (public_id),
-    CONSTRAINT uq_app_user_email_ci UNIQUE (lower(email)),
-    CONSTRAINT uq_app_user_username_ci UNIQUE (lower(username)),
     CONSTRAINT ck_app_user_status CHECK (status IN ('PENDING_EMAIL','ACTIVE','LOCKED','SUSPENDED','DELETED'))
 );
+
+CREATE UNIQUE INDEX uq_app_user_email_ci ON app_user (lower(email));
+CREATE UNIQUE INDEX uq_app_user_username_ci ON app_user (lower(username));
 
 CREATE TABLE role (
     id BIGSERIAL PRIMARY KEY,

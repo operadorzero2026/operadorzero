@@ -1,5 +1,27 @@
 # Histórico de alterações
 
+## 2026-07-21 - Compatibilidade da migration V1 com PostgreSQL 17
+
+### Arquivos alterados
+- `services/api/src/main/resources/db/migration/V1__identity_access_foundation.sql`
+- `docs/obsidian/16-ARQUITETURA-DE-PRODUCAO.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Substituidas constraints unicas com expressoes por indices unicos funcionais sobre `lower(email)` e `lower(username)`.
+
+### Motivo
+- PostgreSQL nao aceita expressoes dentro de uma constraint `UNIQUE` declarada na tabela; o primeiro deploy real foi revertido sem deixar schema parcial.
+
+### Impacto
+- Banco e backend de staging; preserva a unicidade case-insensitive prevista no modelo.
+
+### Testes
+- Build Maven e aplicacao real das migrations no PostgreSQL 17 do Render.
+
+### Pendencias
+- Confirmar a conclusao das migrations V1 e V2 no health check remoto.
+
 ## 2026-07-21 - Correção da URL PostgreSQL interna do Render
 
 ### Arquivos alterados

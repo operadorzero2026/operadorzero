@@ -7,6 +7,7 @@ Em 2026-07-21 foi iniciada a transicao do prototipo para uma arquitetura real. A
 - Frontend React/Vite/TypeScript preservado, ainda dependente de dados locais em varios modulos.
 - Fundacao Java 21 + Spring Boot 3.5 criada em `services/api`.
 - PostgreSQL/Flyway definidos com migrations `V1` de identidade/RBAC/auditoria e `V2` de perfil/privacidade.
+- A `V1` usa indices unicos funcionais para e-mail e username normalizados, sintaxe compativel com PostgreSQL 17.
 - Redis, health, readiness/liveness, Prometheus, logs JSON, OpenAPI e seguranca deny-by-default preparados.
 - API adaptada ao `PORT` do Render, URL PostgreSQL, `REDIS_URL` e CORS com origens explicitas.
 - A adaptacao de `DATABASE_URL` separa usuario e senha da URL JDBC, aplica a porta PostgreSQL padrao quando omitida e nunca registra o valor recebido.
