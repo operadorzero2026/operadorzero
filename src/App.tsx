@@ -24,6 +24,8 @@ function Brand({ compact = false }: { compact?: boolean }) {
 }
 
 type AuthMode = 'login' | 'signup' | 'recovery'
+const AUTH_ENABLED = import.meta.env.VITE_AUTH_ENABLED === 'true'
+const IS_STAGING = import.meta.env.VITE_APP_ENV === 'staging'
 
 function GoogleMark() {
   return <svg aria-hidden="true" viewBox="0 0 24 24"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.91h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.33 2.98-7.4Z"/><path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.42l-3.24-2.5c-.9.6-2.05.96-3.38.96-2.6 0-4.81-1.76-5.6-4.13H3.05v2.6A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.4 13.91a6 6 0 0 1 0-3.82v-2.6H3.05a10 10 0 0 0 0 9.02l3.35-2.6Z"/><path fill="#EA4335" d="M12 5.96c1.47 0 2.79.5 3.83 1.5L18.7 4.6A9.64 9.64 0 0 0 12 2a10 10 0 0 0-8.95 5.49l3.35 2.6c.79-2.37 3-4.13 5.6-4.13Z"/></svg>
@@ -47,6 +49,10 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated }: { mode: Aut
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (!AUTH_ENABLED) {
+      setNotice('Autenticação ainda não está habilitada neste ambiente de testes.')
+      return
+    }
     const data = new FormData(event.currentTarget)
     const email = String(data.get('email') ?? '').trim().toLowerCase()
     const password = String(data.get('password') ?? '')
@@ -91,14 +97,15 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated }: { mode: Aut
         <button className="auth-close" onClick={onClose} aria-label="Fechar"><X/></button>
         {isRecovery && <button className="auth-back" onClick={() => onModeChange('login')}><ArrowLeft size={16}/> Voltar para entrar</button>}
         <div className="auth-heading"><p className="eyebrow"><span/>{isRecovery ? 'Recuperação por e-mail' : 'Bem-vindo à operação'}</p><h2 id="auth-title">{title}</h2><p>{description}</p></div>
-        {!isRecovery && <><button className="google-button" type="button" disabled={pending} onClick={continueWithGoogle}><GoogleMark/> Continuar com Google</button><div className="auth-divider"><span/> ou use seu e-mail <span/></div></>}
+        {!AUTH_ENABLED && <p className="auth-unavailable"><ShieldAlert size={17}/> Autenticação remota temporariamente indisponível neste ambiente de testes.</p>}
+        {!isRecovery && <><button className="google-button" type="button" disabled={pending || !AUTH_ENABLED} onClick={continueWithGoogle}><GoogleMark/> Continuar com Google</button><div className="auth-divider"><span/> ou use seu e-mail <span/></div></>}
         <form className="auth-form" onSubmit={submit}>
           {mode === 'signup' && <label><span>Nome de exibição</span><div><Users/><input name="displayName" autoComplete="name" maxLength={80} required placeholder="Como devemos chamar você?"/></div></label>}
           <label><span>E-mail</span><div><Mail/><input name="email" type="email" autoComplete="email" maxLength={254} required placeholder="voce@exemplo.com.br"/></div></label>
           {!isRecovery && <label><span>Senha</span><div><LockKeyhole/><input name="password" type={showPassword ? 'text' : 'password'} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength={8} maxLength={128} required placeholder={mode === 'signup' ? 'Mínimo de 8 caracteres' : 'Sua senha'}/><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? <EyeOff/> : <Eye/>}</button></div></label>}
           {mode === 'login' && <button className="forgot-link" type="button" onClick={() => onModeChange('recovery')}>Esqueci minha senha</button>}
           {mode === 'signup' && <label className="terms-check"><input type="checkbox" required/><span>Li e aceito os Termos de Uso e a Política de Privacidade.</span></label>}
-          <button className="button auth-submit" type="submit" disabled={pending}>{pending ? 'Aguarde...' : isRecovery ? 'Enviar instruções' : mode === 'login' ? 'Entrar com e-mail' : 'Criar conta com e-mail'} {!pending && <ArrowRight size={17}/>}</button>
+          <button className="button auth-submit" type="submit" disabled={pending || !AUTH_ENABLED}>{pending ? 'Aguarde...' : isRecovery ? 'Enviar instruções' : mode === 'login' ? 'Entrar com e-mail' : 'Criar conta com e-mail'} {!pending && <ArrowRight size={17}/>}</button>
         </form>
         {import.meta.env.DEV && mode === 'login' && <button className="auth-demo-button" type="button" onClick={onAuthenticated}>Entrar no modo demonstração local</button>}
         {notice && <p className="auth-notice" role="status">{notice}</p>}
@@ -519,7 +526,8 @@ export default function App() {
 
   const authenticateDemo = () => { setAuthMode(null); setDemoSession(true) }
   const nav = ['Operações', 'Campos', 'Equipes', 'Rankings']
-  return <div className="site-shell">
+  return <div className={`site-shell ${IS_STAGING ? 'site-shell--staging' : ''}`}>
+    {IS_STAGING && <div className="staging-banner" role="status"><ShieldAlert/> Ambiente de testes — dados podem ser apagados. Não utilize informações pessoais reais.</div>}
     <header className="topbar">
       <Brand compact />
       <nav className="desktop-nav" aria-label="Navegação principal">{nav.map(item => <a key={item} href={`#${item.toLowerCase().replace('ç','c').replace('õ','o')}`}>{item}</a>)}</nav>

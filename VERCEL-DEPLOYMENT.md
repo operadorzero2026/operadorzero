@@ -5,6 +5,8 @@ O projeto Vercel deve apontar para a raiz do repositorio. `vercel.json` selecion
 ## Variavel publica
 
 - `VITE_API_URL`: URL HTTPS publica da API no Render, sem barra final.
+- `VITE_APP_ENV=staging`: exibe o aviso permanente de ambiente descartavel.
+- `VITE_AUTH_ENABLED=false`: mantem Google e formularios remotos desabilitados ate os endpoints reais existirem.
 
 Nenhum segredo pode usar prefixo `VITE_`. Segredos de Google, banco, Redis, e-mail, storage e pagamentos pertencem exclusivamente ao backend/Render.
 

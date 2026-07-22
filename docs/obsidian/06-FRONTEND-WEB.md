@@ -36,6 +36,8 @@ Landing pública responsiva em `src/App.tsx`, com hero, agenda demonstrativa, m�
 
 O modal atual chama os contratos `/api/auth/login`, `/api/auth/register`, `/api/auth/password-recovery` e `/oauth2/authorization/google` na URL pública `VITE_API_URL`. Credenciais não são persistidas. Enquanto esses endpoints não existirem no backend, o fluxo real apresenta indisponibilidade sem liberar o dashboard.
 
+No staging, `VITE_AUTH_ENABLED=false` desabilita Google e o envio dos formulários, evitando simular autenticação inexistente. `VITE_APP_ENV=staging` exibe um banner permanente de dados descartáveis e a página envia `noindex`, `nofollow` e `noarchive`. O modo demonstrativo continua compilado apenas em desenvolvimento local.
+
 ## Experiência conectada demonstrativa
 
 O componente `Dashboard` em `src/App.tsx` representa a visão inicial de um operador conectado. Exibe identidade/callsign, equipe, rankings municipal e estadual, pontuação, reputação, próxima operação, pendências, evolução recente e conquista. Possui sidebar no desktop, navegação inferior no mobile, menu de perfil e saída do modo demonstração.

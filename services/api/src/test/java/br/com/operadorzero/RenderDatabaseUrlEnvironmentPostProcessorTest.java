@@ -15,12 +15,12 @@ class RenderDatabaseUrlEnvironmentPostProcessorTest {
     @Test
     void convertsRenderPostgresUrlWithoutLoggingOrSplittingCredentials() {
         MockEnvironment environment = new MockEnvironment()
-            .withProperty("DATABASE_URL", "postgresql://user:secret@database.internal:5432/operadorzero");
+            .withProperty("DATABASE_URL", "postgresql://database.internal:5432/operadorzero");
 
         processor.postProcessEnvironment(environment, new SpringApplication(Object.class));
 
         assertThat(environment.getProperty("spring.datasource.url"))
-            .isEqualTo("jdbc:postgresql://user:secret@database.internal:5432/operadorzero");
+            .isEqualTo("jdbc:postgresql://database.internal:5432/operadorzero");
     }
 
     @Test

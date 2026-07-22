@@ -11,6 +11,7 @@ Em 2026-07-21 foi iniciada a transicao do prototipo para uma arquitetura real. A
 - API adaptada ao `PORT` do Render, URL PostgreSQL, `REDIS_URL` e CORS com origens explicitas.
 - Build Docker sem usuario root, Vercel SPA, Render Blueprint gratuito de staging e GitHub Actions preparados.
 - Bundle web validado para impedir credenciais e identificadores de segredo; demonstracao restrita ao desenvolvimento local.
+- Staging web identificado visualmente, bloqueado para indexacao e com autenticacao remota desabilitada ate a implementacao dos endpoints reais.
 
 ## Limite honesto
 

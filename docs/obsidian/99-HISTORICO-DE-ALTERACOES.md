@@ -1,5 +1,30 @@
 # Histórico de alterações
 
+## 2026-07-21 - Endurecimento visual e funcional do staging
+
+### Arquivos alterados
+- `src/App.tsx`, `src/styles.css`, `src/vite-env.d.ts`, `index.html`
+- `.env.example`, `vercel.json`
+- teste de adaptacao da URL PostgreSQL do Render
+- documentacao Vercel e notas Obsidian relacionadas
+
+### O que foi feito
+- Adicionado banner permanente de ambiente de testes e bloqueio de indexacao.
+- Google e formularios remotos permanecem desabilitados no staging ate os endpoints reais existirem.
+- Removida uma URL ficticia com formato de credencial de uma fixture de teste.
+
+### Motivo
+- Atender aos gates de staging sem simular autenticacao ou manter strings com formato de segredo.
+
+### Impacto
+- Frontend de staging, configuracao Vercel, testes e documentacao; sem alteracao de producao.
+
+### Testes
+- Lint, cenarios frontend, build, bundle scan, configuracoes de deploy e testes Maven.
+
+### Pendencias
+- Implementar e testar identidade, rate limiting e autorizacao por objeto no backend.
+
 ## 2026-07-21 - Preparacao segura para GitHub, Vercel e Render
 
 ### Arquivos alterados
