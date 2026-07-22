@@ -9,3 +9,13 @@ target/
 .vscode/
 coverage/
 playwright-report/
+.vercel/
+.codex-runtime/
+uploads/
+build/
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+hs_err_pid*
