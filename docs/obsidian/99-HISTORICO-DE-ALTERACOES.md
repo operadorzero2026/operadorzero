@@ -17,6 +17,7 @@
 - Mantida `RESEND_API_KEY` somente no backend, com timeout, bloqueio de redirecionamento, resposta externa descartada e logs sem chave ou destinatario em claro.
 - Adicionada idempotencia por evento/token para reduzir envios duplicados e health de configuracao separado da readiness.
 - Removidos dependencia Spring Mail, variaveis SMTP e Mailpit que deixaram de ser usados.
+- Tornada explicita a injecao do construtor de producao e adicionado teste de contexto Spring apos diagnostico do primeiro deploy.
 
 ### Motivo
 - O Render Free bloqueia trafego SMTP nas portas 25, 465 e 587, impedindo o Gmail de enviar confirmacao e recuperacao.
@@ -25,7 +26,7 @@
 - Backend, e-mail transacional, configuracao do Render, ambiente local, seguranca do bundle e documentacao.
 
 ### Testes
-- `mvn -B clean verify`: 21 testes aprovados, incluindo contrato HTTP Resend, idempotencia, falha generica, ausencia de chave e health de configuracao.
+- `mvn -B clean verify`: testes de contrato HTTP Resend, idempotencia, falha generica, ausencia de chave, health de configuracao e criacao real do bean Spring.
 - `npm run check`: lint, cenarios funcionais, build, bundle sem identificadores sensiveis e configuracoes de deploy validadas.
 
 ### Pendências

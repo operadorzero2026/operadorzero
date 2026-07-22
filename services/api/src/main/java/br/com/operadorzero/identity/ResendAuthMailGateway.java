@@ -10,6 +10,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -22,6 +23,7 @@ final class ResendAuthMailGateway implements AuthMailGateway {
     private final URI endpoint;
     private final HttpClient httpClient;
 
+    @Autowired
     ResendAuthMailGateway(ObjectMapper objectMapper, ResendProperties properties) {
         this(objectMapper, properties, SEND_ENDPOINT, HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
