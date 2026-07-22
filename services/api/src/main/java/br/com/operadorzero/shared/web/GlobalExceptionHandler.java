@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -18,6 +19,11 @@ public class GlobalExceptionHandler {
             .map(error -> new ApiError.FieldError(error.getField(), error.getDefaultMessage() == null ? "valor inválido" : error.getDefaultMessage()))
             .toList();
         return response(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Revise os campos informados.", fields);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    ResponseEntity<ApiError> notFound(NoResourceFoundException exception) {
+        return response(HttpStatus.NOT_FOUND, "NOT_FOUND", "Recurso não encontrado.", List.of());
     }
 
     @ExceptionHandler(Exception.class)

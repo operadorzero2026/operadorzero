@@ -1,5 +1,29 @@
 # Histórico de alterações
 
+## 2026-07-21 - Resposta segura para rotas inexistentes
+
+### Arquivos alterados
+- `services/api/src/main/java/br/com/operadorzero/shared/web/GlobalExceptionHandler.java`
+- `services/api/src/test/java/br/com/operadorzero/shared/web/GlobalExceptionHandlerTest.java`
+- `docs/obsidian/05-SEGURANCA-E-PRIVACIDADE.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Adicionado tratamento específico de `NoResourceFoundException` com resposta `404`, código `NOT_FOUND` e mensagem genérica.
+- Adicionado teste unitário para impedir regressão do contrato de rota inexistente.
+
+### Motivo
+- O smoke test remoto identificou que `/v3/api-docs`, corretamente desabilitado no staging, era convertido pelo fallback global em falso `500`.
+
+### Impacto
+- Backend e observabilidade: clientes passam a distinguir recurso ausente de falha interna sem receber detalhes sensíveis.
+
+### Testes
+- Testes Maven, CI e nova verificação remota após o deploy.
+
+### Pendências
+- Nenhuma para este ajuste.
+
 ## 2026-07-21 - Compatibilidade da migration V1 com PostgreSQL 17
 
 ### Arquivos alterados

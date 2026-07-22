@@ -24,6 +24,7 @@ Segurança é critério de aceite, não etapa posterior. A baseline detalhada vi
 - Rate limits por conta, IP, rota e risco; respostas de login não enumeráveis.
 - Logs de auditoria append-only e sem segredos; ações críticas com reautenticação.
 - URLs de conexão recebidas dos provedores devem ser decompostas antes do uso: credenciais ficam em propriedades separadas e nunca aparecem na URL JDBC ou em logs.
+- Rotas inexistentes retornam erro `404` padronizado e genérico; o tratador global não deve transformar ausência de recurso em falso erro interno nem expor detalhes de implementação.
 - LGPD: minimização, finalidade, retenção, exportação, correção e exclusão/anonimização.
 
 ## Fronteira frontend/backend
