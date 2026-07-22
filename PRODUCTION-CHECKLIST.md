@@ -16,4 +16,8 @@
 - [ ] Testes unitarios, integracao, E2E, carga e seguranca aprovados.
 - [ ] Staging equivalente, CI/CD, rollback e resposta a incidentes exercitados.
 - [ ] Sem dados/testes/credenciais ficticias privilegiadas no ambiente final.
-
+- [x] Login e senha fixos removidos do bundle de producao; demonstracao restrita a `import.meta.env.DEV`.
+- [x] API preparada para `PORT`, PostgreSQL URL, Redis URL e CORS explicito por ambiente.
+- [x] CI, Dockerfile, Vercel e Render Blueprint de staging versionados.
+- [ ] Login/cadastro/recuperacao e Google OAuth implementados e testados ponta a ponta no backend.
+- [ ] Escolha e custo dos planos de producao aprovados explicitamente pelo responsavel.

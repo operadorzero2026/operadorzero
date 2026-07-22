@@ -33,6 +33,6 @@ Identity & Access, Operators, Teams, Fields & Maps, Operations, Performance Vali
 
 ## Ambientes
 
-Desenvolvimento, homologação temporária e produção usam bancos, URLs, buckets e segredos distintos. A escolha de hospedagem será comparada no momento do deploy; nenhum fornecedor foi selecionado nesta fase.
+Desenvolvimento, homologação temporária e produção usam bancos, URLs, buckets e segredos distintos. A preparação atual usa Vercel para a SPA e um Blueprint gratuito do Render somente para staging da API, PostgreSQL e estado efêmero. Produção, custos, backup e object storage ainda dependem de decisão explícita. Veja [[16-ARQUITETURA-DE-PRODUCAO]].
 
 Conecta-se a [[03-DOMINIO-E-REGRAS-DE-NEGOCIO]], [[05-SEGURANCA-E-PRIVACIDADE]] e `DEPLOYMENT-SECURITY.md`.

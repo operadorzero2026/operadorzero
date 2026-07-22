@@ -25,6 +25,10 @@ Segurança é critério de aceite, não etapa posterior. A baseline detalhada vi
 - Logs de auditoria append-only e sem segredos; ações críticas com reautenticação.
 - LGPD: minimização, finalidade, retenção, exportação, correção e exclusão/anonimização.
 
+## Fronteira frontend/backend
+
+O browser recebe somente `VITE_API_URL`, que é configuração pública. Senhas fixas, tokens, chaves OAuth, banco, Redis, storage, e-mail e pagamentos são proibidos no bundle, no Git e no armazenamento do navegador. Login, cadastro, recuperação e Google apontam para a API; o modo demonstrativo existe apenas em build local de desenvolvimento. A CI valida o bundle e executa varredura de segredos. A implantação está conectada a [[16-ARQUITETURA-DE-PRODUCAO]].
+
 ## Pendências antes de produção
 
 Threat modeling revisado, testes BOLA/IDOR, restauração de backup, dependências auditadas, MFA administrativo, política jurídica para menores, DPO/canal de privacidade e avaliação do provedor.

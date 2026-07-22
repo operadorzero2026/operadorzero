@@ -4,3 +4,6 @@ Ambientes isolados: local, test, staging e production, cada um com banco, Redis,
 
 Pipeline esperado: lint -> testes frontend/backend -> analise de dependencias/segredos -> build -> migrations verificadas -> deploy staging -> smoke/integracao -> aprovacao -> backup -> deploy gradual production -> smoke -> monitoramento/rollback. Nunca executar Flyway clean em producao.
 
+Configuracao versionada: `.github/workflows/ci.yml`, `vercel.json`, `render.yaml` e `services/api/Dockerfile`. Procedimentos: `VERCEL-DEPLOYMENT.md`, `RENDER-DEPLOYMENT.md` e `ROLLBACK.md`.
+
+O Blueprint atual e exclusivamente de staging gratuito. Ele nao representa uma arquitetura de producao aprovada e nao autoriza custos.

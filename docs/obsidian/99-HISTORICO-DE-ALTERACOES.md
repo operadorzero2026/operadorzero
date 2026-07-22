@@ -1,5 +1,32 @@
 # Histórico de alterações
 
+## 2026-07-21 - Preparacao segura para GitHub, Vercel e Render
+
+### Arquivos alterados
+- `src/App.tsx`, `src/api.ts`, `src/vite-env.d.ts`, `src/styles.css`
+- `services/api/src/main`, `services/api/src/test`, `services/api/Dockerfile`
+- `vercel.json`, `render.yaml`, `.github/workflows/ci.yml`, `.env.example`, `.gitignore`
+- documentacao de desenvolvimento, deploy, rollback, seguranca e producao na raiz
+- `docs/obsidian/02-ARQUITETURA-E-STACK.md`, `05-SEGURANCA-E-PRIVACIDADE.md`, `06-FRONTEND-WEB.md`, `16-ARQUITETURA-DE-PRODUCAO.md`
+
+### O que foi feito
+- Removidos usuario e senha fixos do frontend de producao e criado cliente de autenticacao sem persistencia de credenciais.
+- Adaptados porta, PostgreSQL, Redis e CORS da API ao Render.
+- Criados build Docker, configuracao Vercel, Blueprint gratuito de staging e CI com testes, build e secret scan.
+- Documentado desenvolvimento local, implantacao, limites dos planos gratuitos e rollback.
+
+### Motivo
+- Preparar uma publicacao verificavel sem expor dados sensiveis no frontend ou no repositorio.
+
+### Impacto
+- Frontend, backend, CI/CD e documentacao; sem criacao de recurso pago ou liberacao para producao.
+
+### Testes
+- Lint, cenarios frontend, build e validacao do bundle; testes Maven e empacotamento da API.
+
+### Pendencias
+- Implementar os endpoints reais de identidade/OAuth, validar migrations em PostgreSQL real e concluir os gates de producao.
+
 ## 2026-07-21 - Remocao do CEP no cadastro de operacoes
 
 ### Arquivos alterados

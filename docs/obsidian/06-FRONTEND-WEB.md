@@ -34,15 +34,13 @@ O produto usa o nome **Operador Zero**. A interface permanece escura, esportiva 
 
 Landing pública responsiva em `src/App.tsx`, com hero, agenda demonstrativa, método de validação, ranking demonstrativo, ecossistema e CTA. Inclui painel modal responsivo para entrar ou criar conta por Google/e-mail e senha, além de recuperação por e-mail. Menu desktop e mobile, `prefers-reduced-motion`, HTML sem renderização insegura e sem persistência local de credenciais.
 
-O modal atual é a camada de experiência; sua mensagem informa corretamente que a autenticação efetiva depende do backend. Não cria sessão local simulada.
+O modal atual chama os contratos `/api/auth/login`, `/api/auth/register`, `/api/auth/password-recovery` e `/oauth2/authorization/google` na URL pública `VITE_API_URL`. Credenciais não são persistidas. Enquanto esses endpoints não existirem no backend, o fluxo real apresenta indisponibilidade sem liberar o dashboard.
 
 ## Experiência conectada demonstrativa
 
 O componente `Dashboard` em `src/App.tsx` representa a visão inicial de um operador conectado. Exibe identidade/callsign, equipe, rankings municipal e estadual, pontuação, reputação, próxima operação, pendências, evolução recente e conquista. Possui sidebar no desktop, navegação inferior no mobile, menu de perfil e saída do modo demonstração.
 
-A entrada por Google ou formulário ativa apenas estado React em memória, sem persistência, cookie, token ou autorização. O cabeçalho e o rodapé do dashboard informam que o ambiente e seus dados são demonstrativos. A sessão real permanece dependente do backend descrito em [[02-ARQUITETURA-E-STACK]].
-
-O login manual demonstrativo aceita exclusivamente `teste@operadorzero.local` com a senha fictícia exibida no próprio modal. A verificação ocorre somente no estado do frontend e não representa conta, hash, cookie ou autenticação real. O cadastro demonstrativo não persiste dados.
+A entrada no dashboard fictício é separada do login real e só aparece quando `import.meta.env.DEV` é verdadeiro. O cabeçalho e o rodapé informam que o ambiente e seus dados são demonstrativos. A build de produção não contém usuário ou senha de teste; a sessão real permanece dependente do backend descrito em [[02-ARQUITETURA-E-STACK]].
 
 ## Convenções futuras
 
