@@ -4,6 +4,7 @@ import { Achievement, achievements, achievementCategories } from './achievement-
 import CommunityPage from './CommunityPage'
 import FinancialPage, { SponsoredHighlights } from './FinancialPage'
 import { BrazilLocationFields } from './BrazilLocationFields'
+import { getGoogleLoginUrl, login, register, requestPasswordRecovery } from './api'
 
 const operations = [
   { day: '26', month: 'JUL', title: 'Operação Linha de Frente', meta: 'Colombo, PR · 08:00', mode: 'Dominação', slots: '18 vagas' },
@@ -24,9 +25,6 @@ function Brand({ compact = false }: { compact?: boolean }) {
 
 type AuthMode = 'login' | 'signup' | 'recovery'
 
-const DEMO_LOGIN = 'teste@operadorzero.local'
-const DEMO_PASSWORD = 'OperadorZero@2026'
-
 function GoogleMark() {
   return <svg aria-hidden="true" viewBox="0 0 24 24"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.91h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.33 2.98-7.4Z"/><path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.42l-3.24-2.5c-.9.6-2.05.96-3.38.96-2.6 0-4.81-1.76-5.6-4.13H3.05v2.6A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.4 13.91a6 6 0 0 1 0-3.82v-2.6H3.05a10 10 0 0 0 0 9.02l3.35-2.6Z"/><path fill="#EA4335" d="M12 5.96c1.47 0 2.79.5 3.83 1.5L18.7 4.6A9.64 9.64 0 0 0 12 2a10 10 0 0 0-8.95 5.49l3.35 2.6c.79-2.37 3-4.13 5.6-4.13Z"/></svg>
 }
@@ -34,6 +32,7 @@ function GoogleMark() {
 function AuthModal({ mode, onClose, onModeChange, onAuthenticated }: { mode: AuthMode; onClose: () => void; onModeChange: (mode: AuthMode) => void; onAuthenticated: () => void }) {
   const [showPassword, setShowPassword] = useState(false)
   const [notice, setNotice] = useState('')
+  const [pending, setPending] = useState(false)
   const isRecovery = mode === 'recovery'
   const title = mode === 'login' ? 'Entre no Operador Zero' : mode === 'signup' ? 'Crie sua conta' : 'Recupere seu acesso'
   const description = mode === 'login' ? 'Acesse seu histórico, equipe e próximas operações.' : mode === 'signup' ? 'Comece seu perfil de operador em poucos passos.' : 'Informe seu e-mail para receber as instruções de recuperação.'
@@ -46,24 +45,43 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated }: { mode: Aut
     return () => { document.body.classList.remove('modal-open'); window.removeEventListener('keydown', onKeyDown) }
   }, [onClose])
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (isRecovery) {
-      setNotice('Se o e-mail estiver cadastrado, você receberá as instruções de recuperação.')
-      return
-    }
-    if (mode === 'signup') {
-      setNotice('Cadastro demonstrativo: nenhum dado foi armazenado. Use a conta de teste para entrar.')
-      return
-    }
     const data = new FormData(event.currentTarget)
     const email = String(data.get('email') ?? '').trim().toLowerCase()
     const password = String(data.get('password') ?? '')
-    if (email !== DEMO_LOGIN || password !== DEMO_PASSWORD) {
-      setNotice('E-mail ou senha incorretos para a demonstração.')
-      return
+    setPending(true)
+    setNotice('')
+    try {
+      if (isRecovery) {
+        await requestPasswordRecovery(email)
+        setNotice('Se o e-mail estiver cadastrado, você receberá as instruções de recuperação.')
+        return
+      }
+      if (mode === 'signup') {
+        await register(String(data.get('displayName') ?? '').trim(), email, password)
+        setNotice('Cadastro recebido. Verifique seu e-mail para continuar.')
+        return
+      }
+      await login(email, password)
+      onAuthenticated()
+    } catch (error) {
+      if (isRecovery) {
+        setNotice('Se o e-mail estiver cadastrado, você receberá as instruções de recuperação.')
+      } else {
+        setNotice(error instanceof Error ? error.message : 'Não foi possível concluir a solicitação.')
+      }
+    } finally {
+      setPending(false)
     }
-    onAuthenticated()
+  }
+
+  const continueWithGoogle = () => {
+    try {
+      window.location.assign(getGoogleLoginUrl())
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Login com Google indisponível.')
+    }
   }
 
   return <div className="auth-overlay" role="presentation" onMouseDown={event => event.target === event.currentTarget && onClose()}>
@@ -73,19 +91,19 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated }: { mode: Aut
         <button className="auth-close" onClick={onClose} aria-label="Fechar"><X/></button>
         {isRecovery && <button className="auth-back" onClick={() => onModeChange('login')}><ArrowLeft size={16}/> Voltar para entrar</button>}
         <div className="auth-heading"><p className="eyebrow"><span/>{isRecovery ? 'Recuperação por e-mail' : 'Bem-vindo à operação'}</p><h2 id="auth-title">{title}</h2><p>{description}</p></div>
-        {!isRecovery && <><button className="google-button" type="button" onClick={onAuthenticated}><GoogleMark/> Continuar com Google</button><div className="auth-divider"><span/> ou use seu e-mail <span/></div></>}
-        {mode === 'login' && <div className="demo-credentials"><span>CONTA DE TESTE</span><p><b>Usuário</b> {DEMO_LOGIN}</p><p><b>Senha</b> {DEMO_PASSWORD}</p></div>}
+        {!isRecovery && <><button className="google-button" type="button" disabled={pending} onClick={continueWithGoogle}><GoogleMark/> Continuar com Google</button><div className="auth-divider"><span/> ou use seu e-mail <span/></div></>}
         <form className="auth-form" onSubmit={submit}>
           {mode === 'signup' && <label><span>Nome de exibição</span><div><Users/><input name="displayName" autoComplete="name" maxLength={80} required placeholder="Como devemos chamar você?"/></div></label>}
           <label><span>E-mail</span><div><Mail/><input name="email" type="email" autoComplete="email" maxLength={254} required placeholder="voce@exemplo.com.br"/></div></label>
           {!isRecovery && <label><span>Senha</span><div><LockKeyhole/><input name="password" type={showPassword ? 'text' : 'password'} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength={8} maxLength={128} required placeholder={mode === 'signup' ? 'Mínimo de 8 caracteres' : 'Sua senha'}/><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? <EyeOff/> : <Eye/>}</button></div></label>}
           {mode === 'login' && <button className="forgot-link" type="button" onClick={() => onModeChange('recovery')}>Esqueci minha senha</button>}
           {mode === 'signup' && <label className="terms-check"><input type="checkbox" required/><span>Li e aceito os Termos de Uso e a Política de Privacidade.</span></label>}
-          <button className="button auth-submit" type="submit">{isRecovery ? 'Enviar instruções' : mode === 'login' ? 'Entrar com e-mail' : 'Criar conta com e-mail'} <ArrowRight size={17}/></button>
+          <button className="button auth-submit" type="submit" disabled={pending}>{pending ? 'Aguarde...' : isRecovery ? 'Enviar instruções' : mode === 'login' ? 'Entrar com e-mail' : 'Criar conta com e-mail'} {!pending && <ArrowRight size={17}/>}</button>
         </form>
+        {import.meta.env.DEV && mode === 'login' && <button className="auth-demo-button" type="button" onClick={onAuthenticated}>Entrar no modo demonstração local</button>}
         {notice && <p className="auth-notice" role="status">{notice}</p>}
         {!isRecovery && <p className="auth-switch">{mode === 'login' ? 'Ainda não tem conta?' : 'Já possui uma conta?'} <button onClick={() => onModeChange(mode === 'login' ? 'signup' : 'login')}>{mode === 'login' ? 'Criar conta' : 'Entrar'}</button></p>}
-        <p className="auth-security"><ShieldCheck size={16}/> Suas credenciais nunca são armazenadas neste navegador.</p>
+        <p className="auth-security"><ShieldCheck size={16}/> Credenciais são enviadas somente à API configurada e nunca ficam persistidas no navegador.</p>
       </div>
     </section>
   </div>

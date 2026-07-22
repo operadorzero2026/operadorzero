@@ -10,7 +10,13 @@ class FoundationRulesTest {
     @Test
     void productionConfigurationValidatesSchemaAndHidesErrorDetails() throws Exception {
         String yaml = Files.readString(Path.of("src/main/resources/application.yml"));
-        assertThat(yaml).contains("ddl-auto: validate", "include-stacktrace: never", "show-details: never");
+        assertThat(yaml).contains(
+            "ddl-auto: validate",
+            "include-stacktrace: never",
+            "show-details: never",
+            "port: ${PORT:${SERVER_PORT:8080}}",
+            "allowed-origins: ${CORS_ALLOWED_ORIGINS:"
+        );
         assertThat(yaml).doesNotContain("ddl-auto: update");
     }
 
