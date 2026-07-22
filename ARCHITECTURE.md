@@ -1,6 +1,6 @@
 # Arquitetura de producao - Operador Zero
 
-Status em 2026-07-21: **fundacao da Fase 1 implementada; produto ainda nao esta pronto para producao**.
+Status em 2026-07-22: **fundacao e identidade base implementadas; produto ainda nao esta pronto para operacao completa com usuarios reais**.
 
 ## Diagnostico executivo
 
@@ -9,13 +9,13 @@ Status em 2026-07-21: **fundacao da Fase 1 implementada; produto ainda nao esta 
 | Web React/Vite/TypeScript | Funcional como prototipo local | SPA servida por CDN | Integrar API real |
 | API principal | Esqueleto Spring Boot criado | Monolito modular Java 21 | Implementar casos de uso |
 | Dados | Cenarios locais/simulados | PostgreSQL + Flyway | Migrar modulo a modulo |
-| Autenticacao e autorizacao | Simuladas no cliente | OIDC/JWT, sessao segura e RBAC no servidor | Critico |
-| Cache e controles efemeros | Ausentes | Redis | Pendente |
+| Autenticacao e autorizacao | Cadastro/login/recuperacao/sessao e OIDC implementados; modulos sem autorizacao real | Sessao segura, MFA admin e RBAC/objeto por modulo | Homologar provedores e implementar autorizacao de negocio |
+| Cache e controles efemeros | Redis integrado ao rate limit de identidade | Redis privado para limites, locks e filas leves | Homologar indisponibilidade e monitoramento |
 | Arquivos | Sem pipeline confiavel | S3 compativel, quarentena e antivirus | Critico antes de uploads |
-| E-mail | Ausente | Adaptador transacional | Pendente |
+| E-mail | Adaptador SMTP de confirmacao/recuperacao implementado | Provedor transacional com SPF/DKIM/DMARC e bounce | Credenciais e homologacao externa |
 | Pagamentos | Simulados | Mercado Pago com webhook idempotente | Critico antes de cobrar |
 | Observabilidade | Ausente | logs JSON, metricas, traces e alertas | Parcial na API |
-| Entrega | Sem pipeline | CI/CD com gates, rollback e ambientes | Critico |
+| Entrega | CI, Docker, Render staging e Vercel versionados | CI/CD com gates, rollback e ambientes | Homologar fluxo e producao |
 
 ## Arquitetura alvo
 
@@ -40,7 +40,7 @@ O backend sera um **monolito modular**, evitando dois backends principais e micr
 7. Financeiro/publicidade/pagamentos: ledger, reconciliacao e webhooks idempotentes.
 8. Operacao: CI/CD, restauracao comprovada, SLOs, alertas, testes de carga e seguranca.
 
-Migrations existentes: `V1` identidade/RBAC/auditoria e `V2` perfil/privacidade. As proximas devem ser aditivas, revisadas, testadas em copia anonima e acompanhadas de rollback operacional; nunca usar `ddl-auto=update`.
+Migrations existentes: `V1` identidade/RBAC/auditoria, `V2` perfil/privacidade e `V3` tokens/sessoes/OIDC. As proximas devem ser aditivas, revisadas, testadas em copia anonima e acompanhadas de rollback operacional; nunca usar `ddl-auto=update`.
 
 ## Riscos e custos
 
@@ -51,4 +51,3 @@ Estimativa apenas para planejamento, sem cotacao de fornecedor: piloto pequeno R
 ## Decisoes obrigatorias antes do go-live
 
 Ver `PRODUCTION-CHECKLIST.md`. Nenhum ambiente deve ser divulgado como producao enquanto autenticacao real, autorizacao no servidor, backups restaurados, gestao de segredos, uploads seguros, monitoramento, termos/privacidade e resposta a incidentes estiverem pendentes.
-

@@ -31,9 +31,13 @@ Segurança é critério de aceite, não etapa posterior. A baseline detalhada vi
 
 O browser recebe somente `VITE_API_URL`, que é configuração pública. Senhas fixas, tokens, chaves OAuth, banco, Redis, storage, e-mail e pagamentos são proibidos no bundle, no Git e no armazenamento do navegador. Login, cadastro, recuperação e Google apontam para a API; o modo demonstrativo existe apenas em build local de desenvolvimento. A CI valida o bundle e executa varredura de segredos. A implantação está conectada a [[16-ARQUITETURA-DE-PRODUCAO]].
 
+Desde 2026-07-22, a identidade real esta implementada: Argon2id, tokens de uso unico armazenados como SHA-256, cookie de sessao `HttpOnly`, CSRF, rate limit Redis, respostas neutras de e-mail, auditoria e OIDC/PKCE. O token de recuperacao aparece apenas no link recebido e e removido da URL antes da renderizacao. A SPA mantem o token CSRF somente em memoria e o renova depois da autenticacao.
+
 ## Pendências antes de produção
 
 Threat modeling revisado, testes BOLA/IDOR, restauração de backup, dependências auditadas, MFA administrativo, política jurídica para menores, DPO/canal de privacidade e avaliação do provedor.
+
+Tambem permanecem obrigatorios: SMTP de producao com SPF/DKIM/DMARC e tratamento de bounce, credenciais Google separadas por ambiente, dominio que reduza dependencia de cookies de terceiros, termos/privacidade aprovados e teste E2E externo dos dois provedores. Nenhum segredo deve usar prefixo `VITE_`.
 
 ## Comunidade
 

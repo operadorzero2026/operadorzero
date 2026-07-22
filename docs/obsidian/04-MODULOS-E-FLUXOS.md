@@ -22,6 +22,10 @@ Visitante, operador, capitão/admin de equipe, organizador de partida, administr
 12. Comunidade: aceite versionado -> análise preventiva -> publicação/revisão -> interação -> denúncia -> decisão motivada -> recurso, conforme [[14-COMUNIDADE]].
 13. Financeiro: pedido -> checkout -> webhook validado -> ledger -> comissão/split ou receita publicitária -> conciliação -> estorno/auditoria, conforme [[15-FINANCEIRO-E-PUBLICIDADE]].
 
+## Identidade implementada em 2026-07-22
+
+Os fluxos 1 a 4 possuem contratos reais na API e na SPA. Cadastro por e-mail cria conta `PENDING_EMAIL`; o link de uso unico ativa a conta. Login cria sessao opaca, logout a revoga e recuperacao troca o hash Argon2id e revoga sessoes anteriores. Google cria conta somente apos aceite registrado; conta local com o mesmo e-mail nao e mesclada silenciosamente. A interface autenticada recebe a identidade da sessao, mas seus demais modulos continuam demonstrativos.
+
 ## Notificações
 
 Convites, decisões de inscrição, mudanças/cancelamentos, lembretes, validações, contestações, conquistas e campeonato. Preferências por canal, agrupamento e idempotência evitam duplicidade.

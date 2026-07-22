@@ -4,5 +4,6 @@ API principal: Java 21 + Spring Boot 3.5, em `services/api`. O desenho e monolit
 
 Regras transversais: identificador do usuario vem do token validado; autorizacao e checada por acao e objeto; entrada usa DTO + Bean Validation; consultas parametrizadas; migrations Flyway; erros nao expõem stack trace; toda mutacao sensivel gera auditoria; idempotency key em comandos externos; paginacao e limites em colecoes.
 
-O scaffold atual expoe somente health/OpenAPI e nega por padrao o restante. Isso e intencional ate a implementacao de identidade.
+O backend continua `deny-by-default`. Alem de health/OpenAPI, somente os endpoints de identidade explicitamente listados em `SecurityConfig` estao expostos. Cadastro, verificacao, login, sessao, logout, recuperacao e Google OIDC vivem no modulo `identity`; as demais rotas continuam negadas ate receberem autorizacao por caso de uso e objeto.
 
+A migration `V3__functional_identity.sql` adiciona tokens de uso unico, sessoes opacas e vinculos OIDC. `IdentityRepository` usa SQL parametrizado; `AuthRateLimiter` usa Redis; `AuthMailListener` envia links somente depois do commit. Consulte `AUTHENTICATION.md`, `AUTHORIZATION.md` e `docs/obsidian/05-SEGURANCA-E-PRIVACIDADE.md`.

@@ -34,15 +34,15 @@ O produto usa o nome **Operador Zero**. A interface permanece escura, esportiva 
 
 Landing pública responsiva em `src/App.tsx`, com hero, agenda demonstrativa, método de validação, ranking demonstrativo, ecossistema e CTA. Inclui painel modal responsivo para entrar ou criar conta por Google/e-mail e senha, além de recuperação por e-mail. Menu desktop e mobile, `prefers-reduced-motion`, HTML sem renderização insegura e sem persistência local de credenciais.
 
-O modal atual chama os contratos `/api/auth/login`, `/api/auth/register`, `/api/auth/password-recovery` e `/oauth2/authorization/google` na URL pública `VITE_API_URL`. Credenciais não são persistidas. Enquanto esses endpoints não existirem no backend, o fluxo real apresenta indisponibilidade sem liberar o dashboard.
+O modal chama os contratos reais `/api/auth/login`, `/api/auth/register`, `/api/auth/password-recovery`, `/api/auth/password-reset`, `/api/auth/verify-email`, `/api/auth/session`, `/api/auth/logout` e o inicio OIDC na URL publica `VITE_API_URL`. Credenciais nao sao persistidas. Depois do login, a identidade exibida no cabecalho vem da sessao validada pela API.
 
-No staging, `VITE_AUTH_ENABLED=false` desabilita Google e o envio dos formulários, evitando simular autenticação inexistente. Toda build otimizada é tratada como staging por segurança, exceto quando `VITE_APP_ENV=production` for definido explicitamente; assim, o banner de dados descartáveis e `noindex`, `nofollow` e `noarchive` não dependem de configuração ausente. O modo demonstrativo continua compilado apenas em desenvolvimento local.
+`VITE_AUTH_ENABLED=true` habilita a integracao somente quando a API do ambiente estiver configurada. Toda build otimizada e tratada como staging por seguranca, exceto quando `VITE_APP_ENV=production` for definido explicitamente; o banner de dados descartaveis e `noindex`, `nofollow` e `noarchive` continuam independentes da autenticacao. Segredos e tokens nunca pertencem a variaveis `VITE_`.
 
 ## Experiência conectada demonstrativa
 
 O componente `Dashboard` em `src/App.tsx` representa a visão inicial de um operador conectado. Exibe identidade/callsign, equipe, rankings municipal e estadual, pontuação, reputação, próxima operação, pendências, evolução recente e conquista. Possui sidebar no desktop, navegação inferior no mobile, menu de perfil e saída do modo demonstração.
 
-A entrada no dashboard fictício é separada do login real e só aparece quando `import.meta.env.DEV` é verdadeiro. O cabeçalho e o rodapé informam que o ambiente e seus dados são demonstrativos. A build de produção não contém usuário ou senha de teste; a sessão real permanece dependente do backend descrito em [[02-ARQUITETURA-E-STACK]].
+A entrada no dashboard ocorre somente depois de `/api/auth/session` ou login real. O cabecalho mostra callsign, username e e-mail da conta conectada, enquanto os cards dos modulos continuam marcados como demonstrativos. A build nao contem usuario ou senha de teste e nao persiste tokens em Web Storage. A sessao depende do backend descrito em [[02-ARQUITETURA-E-STACK]].
 
 ## Convenções futuras
 

@@ -24,8 +24,10 @@ class FoundationRulesTest {
     void migrationsUseConstraintsAndNoDestructiveStatements() throws Exception {
         String v1 = Files.readString(Path.of("src/main/resources/db/migration/V1__identity_access_foundation.sql"));
         String v2 = Files.readString(Path.of("src/main/resources/db/migration/V2__operator_profile_privacy.sql"));
+        String v3 = Files.readString(Path.of("src/main/resources/db/migration/V3__functional_identity.sql"));
         assertThat(v1).contains("UNIQUE", "REFERENCES", "CHECK", "audit_event");
         assertThat(v2).contains("operator_privacy_setting", "ONLY_ME", "PUBLIC");
-        assertThat(v1 + v2).doesNotContain("DROP TABLE", "TRUNCATE", "DELETE FROM");
+        assertThat(v3).contains("auth_token", "user_session", "user_oidc_identity", "token_hash", "RESET_PASSWORD");
+        assertThat(v1 + v2 + v3).doesNotContain("DROP TABLE", "TRUNCATE", "DELETE FROM");
     }
 }

@@ -4,7 +4,7 @@ import { Achievement, achievements, achievementCategories } from './achievement-
 import CommunityPage from './CommunityPage'
 import FinancialPage, { SponsoredHighlights } from './FinancialPage'
 import { BrazilLocationFields } from './BrazilLocationFields'
-import { getGoogleLoginUrl, login, register, requestPasswordRecovery } from './api'
+import { getCurrentSession, login, logout, prepareGoogleLogin, register, requestPasswordRecovery, resetPassword, SessionUser, verifyEmail } from './api'
 
 const operations = [
   { day: '26', month: 'JUL', title: 'Operação Linha de Frente', meta: 'Colombo, PR · 08:00', mode: 'Dominação', slots: '18 vagas' },
@@ -23,7 +23,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
   return <a className={`brand ${compact ? 'brand--compact' : ''}`} href="#inicio" aria-label="Operador Zero, início"><span>Operador</span><strong>Zero</strong></a>
 }
 
-type AuthMode = 'login' | 'signup' | 'recovery'
+type AuthMode = 'login' | 'signup' | 'recovery' | 'reset'
 const AUTH_ENABLED = import.meta.env.VITE_AUTH_ENABLED === 'true'
 const IS_STAGING = import.meta.env.PROD && import.meta.env.VITE_APP_ENV !== 'production'
 
@@ -31,15 +31,17 @@ function GoogleMark() {
   return <svg aria-hidden="true" viewBox="0 0 24 24"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.91h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.33 2.98-7.4Z"/><path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.42l-3.24-2.5c-.9.6-2.05.96-3.38.96-2.6 0-4.81-1.76-5.6-4.13H3.05v2.6A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.4 13.91a6 6 0 0 1 0-3.82v-2.6H3.05a10 10 0 0 0 0 9.02l3.35-2.6Z"/><path fill="#EA4335" d="M12 5.96c1.47 0 2.79.5 3.83 1.5L18.7 4.6A9.64 9.64 0 0 0 12 2a10 10 0 0 0-8.95 5.49l3.35 2.6c.79-2.37 3-4.13 5.6-4.13Z"/></svg>
 }
 
-function AuthModal({ mode, onClose, onModeChange, onAuthenticated }: { mode: AuthMode; onClose: () => void; onModeChange: (mode: AuthMode) => void; onAuthenticated: () => void }) {
+function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, initialNotice = '' }: { mode: AuthMode; onClose: () => void; onModeChange: (mode: AuthMode) => void; onAuthenticated: (user: SessionUser) => void; resetToken?: string; initialNotice?: string }) {
   const [showPassword, setShowPassword] = useState(false)
-  const [notice, setNotice] = useState('')
+  const [notice, setNotice] = useState(initialNotice)
   const [pending, setPending] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const isRecovery = mode === 'recovery'
-  const title = mode === 'login' ? 'Entre no Operador Zero' : mode === 'signup' ? 'Crie sua conta' : 'Recupere seu acesso'
-  const description = mode === 'login' ? 'Acesse seu histórico, equipe e próximas operações.' : mode === 'signup' ? 'Comece seu perfil de operador em poucos passos.' : 'Informe seu e-mail para receber as instruções de recuperação.'
+  const isReset = mode === 'reset'
+  const title = mode === 'login' ? 'Entre no Operador Zero' : mode === 'signup' ? 'Crie sua conta' : isReset ? 'Defina uma nova senha' : 'Recupere seu acesso'
+  const description = mode === 'login' ? 'Acesse seu histórico, equipe e próximas operações.' : mode === 'signup' ? 'Comece seu perfil de operador em poucos passos.' : isReset ? 'O link será invalidado assim que a nova senha for confirmada.' : 'Informe seu e-mail para receber as instruções de recuperação.'
 
-  useEffect(() => { setNotice(''); setShowPassword(false) }, [mode])
+  useEffect(() => { setNotice(initialNotice); setShowPassword(false); setTermsAccepted(false) }, [mode, initialNotice])
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && onClose()
     document.body.classList.add('modal-open')
@@ -64,13 +66,19 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated }: { mode: Aut
         setNotice('Se o e-mail estiver cadastrado, você receberá as instruções de recuperação.')
         return
       }
+      if (isReset) {
+        if (!resetToken) throw new Error('Link de recuperação inválido.')
+        await resetPassword(resetToken, password)
+        setNotice('Senha alterada. Volte para entrar com a nova senha.')
+        return
+      }
       if (mode === 'signup') {
-        await register(String(data.get('displayName') ?? '').trim(), email, password)
+        await register(String(data.get('displayName') ?? '').trim(), email, password, termsAccepted)
         setNotice('Cadastro recebido. Verifique seu e-mail para continuar.')
         return
       }
-      await login(email, password)
-      onAuthenticated()
+      const user = await login(email, password)
+      onAuthenticated(user)
     } catch (error) {
       if (isRecovery) {
         setNotice('Se o e-mail estiver cadastrado, você receberá as instruções de recuperação.')
@@ -82,11 +90,17 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated }: { mode: Aut
     }
   }
 
-  const continueWithGoogle = () => {
+  const continueWithGoogle = async () => {
+    if (mode === 'signup' && !termsAccepted) {
+      setNotice('Aceite os Termos de Uso e a Política de Privacidade para criar a conta.')
+      return
+    }
+    setPending(true)
     try {
-      window.location.assign(getGoogleLoginUrl())
+      window.location.assign(await prepareGoogleLogin(mode === 'signup' && termsAccepted))
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Login com Google indisponível.')
+      setPending(false)
     }
   }
 
@@ -95,21 +109,20 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated }: { mode: Aut
       <div className="auth-visual" aria-hidden="true"><Brand/><p>Jogue. Registre.<br/>Ranqueie. Evolua.</p><span>ACESSO SEGURO · OPERADOR ZERO</span></div>
       <div className="auth-content">
         <button className="auth-close" onClick={onClose} aria-label="Fechar"><X/></button>
-        {isRecovery && <button className="auth-back" onClick={() => onModeChange('login')}><ArrowLeft size={16}/> Voltar para entrar</button>}
-        <div className="auth-heading"><p className="eyebrow"><span/>{isRecovery ? 'Recuperação por e-mail' : 'Bem-vindo à operação'}</p><h2 id="auth-title">{title}</h2><p>{description}</p></div>
+        {(isRecovery || isReset) && <button className="auth-back" onClick={() => onModeChange('login')}><ArrowLeft size={16}/> Voltar para entrar</button>}
+        <div className="auth-heading"><p className="eyebrow"><span/>{isRecovery || isReset ? 'Recuperação por e-mail' : 'Bem-vindo à operação'}</p><h2 id="auth-title">{title}</h2><p>{description}</p></div>
         {!AUTH_ENABLED && <p className="auth-unavailable"><ShieldAlert size={17}/> Autenticação remota temporariamente indisponível neste ambiente de testes.</p>}
-        {!isRecovery && <><button className="google-button" type="button" disabled={pending || !AUTH_ENABLED} onClick={continueWithGoogle}><GoogleMark/> Continuar com Google</button><div className="auth-divider"><span/> ou use seu e-mail <span/></div></>}
+        {!isRecovery && !isReset && <><button className="google-button" type="button" disabled={pending || !AUTH_ENABLED} onClick={continueWithGoogle}><GoogleMark/> Continuar com Google</button><div className="auth-divider"><span/> ou use seu e-mail <span/></div></>}
         <form className="auth-form" onSubmit={submit}>
           {mode === 'signup' && <label><span>Nome de exibição</span><div><Users/><input name="displayName" autoComplete="name" maxLength={80} required placeholder="Como devemos chamar você?"/></div></label>}
-          <label><span>E-mail</span><div><Mail/><input name="email" type="email" autoComplete="email" maxLength={254} required placeholder="voce@exemplo.com.br"/></div></label>
-          {!isRecovery && <label><span>Senha</span><div><LockKeyhole/><input name="password" type={showPassword ? 'text' : 'password'} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength={8} maxLength={128} required placeholder={mode === 'signup' ? 'Mínimo de 8 caracteres' : 'Sua senha'}/><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? <EyeOff/> : <Eye/>}</button></div></label>}
+          {!isReset && <label><span>E-mail</span><div><Mail/><input name="email" type="email" autoComplete="email" maxLength={254} required placeholder="voce@exemplo.com.br"/></div></label>}
+          {!isRecovery && <label><span>{isReset ? 'Nova senha' : 'Senha'}</span><div><LockKeyhole/><input name="password" type={showPassword ? 'text' : 'password'} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength={12} maxLength={128} required placeholder={mode === 'signup' || isReset ? '12+ caracteres, maiúscula, minúscula e número' : 'Sua senha'}/><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? <EyeOff/> : <Eye/>}</button></div></label>}
           {mode === 'login' && <button className="forgot-link" type="button" onClick={() => onModeChange('recovery')}>Esqueci minha senha</button>}
-          {mode === 'signup' && <label className="terms-check"><input type="checkbox" required/><span>Li e aceito os Termos de Uso e a Política de Privacidade.</span></label>}
-          <button className="button auth-submit" type="submit" disabled={pending || !AUTH_ENABLED}>{pending ? 'Aguarde...' : isRecovery ? 'Enviar instruções' : mode === 'login' ? 'Entrar com e-mail' : 'Criar conta com e-mail'} {!pending && <ArrowRight size={17}/>}</button>
+          {mode === 'signup' && <label className="terms-check"><input type="checkbox" required checked={termsAccepted} onChange={event => setTermsAccepted(event.target.checked)}/><span>Li e aceito os Termos de Uso e a Política de Privacidade.</span></label>}
+          <button className="button auth-submit" type="submit" disabled={pending || !AUTH_ENABLED}>{pending ? 'Aguarde...' : isRecovery ? 'Enviar instruções' : isReset ? 'Salvar nova senha' : mode === 'login' ? 'Entrar com e-mail' : 'Criar conta com e-mail'} {!pending && <ArrowRight size={17}/>}</button>
         </form>
-        {import.meta.env.DEV && mode === 'login' && <button className="auth-demo-button" type="button" onClick={onAuthenticated}>Entrar no modo demonstração local</button>}
         {notice && <p className="auth-notice" role="status">{notice}</p>}
-        {!isRecovery && <p className="auth-switch">{mode === 'login' ? 'Ainda não tem conta?' : 'Já possui uma conta?'} <button onClick={() => onModeChange(mode === 'login' ? 'signup' : 'login')}>{mode === 'login' ? 'Criar conta' : 'Entrar'}</button></p>}
+        {!isRecovery && !isReset && <p className="auth-switch">{mode === 'login' ? 'Ainda não tem conta?' : 'Já possui uma conta?'} <button onClick={() => onModeChange(mode === 'login' ? 'signup' : 'login')}>{mode === 'login' ? 'Criar conta' : 'Entrar'}</button></p>}
         <p className="auth-security"><ShieldCheck size={16}/> Credenciais são enviadas somente à API configurada e nunca ficam persistidas no navegador.</p>
       </div>
     </section>
@@ -463,9 +476,11 @@ function GlobalSearch({onOpenOperator}:{onOpenOperator:()=>void}){
   return <div className="global-search"><div className="app-search"><Search/><input aria-label="Busca global" value={query} onChange={event=>setQuery(event.target.value)} placeholder="Buscar operadores, equipes, operações..." autoComplete="off"/>{query&&<button onClick={()=>setQuery('')} aria-label="Limpar busca"><X/></button>}</div>{normalized.length>=2&&<section className="global-search-results" aria-label="Resultados da busca">{groups.length?groups.map(group=><div key={group.title}><h2>{group.title}</h2>{group.items.map(item=><button key={item.name} onClick={()=>{if(group.title==='Operadores')onOpenOperator();setQuery('')}}><span><strong>{item.name}</strong><small>{item.meta}</small></span><em>{item.badge}</em><ArrowRight/></button>)}</div>):<p>Nenhum resultado público encontrado. Tente nick, cidade, equipe, posição ou modalidade.</p>}<footer><ShieldCheck/> Resultados respeitam a visibilidade do perfil. E-mail, telefone, CPF e endereço nunca são pesquisáveis.</footer></section>}</div>
 }
 
-function Dashboard({ onLogout }: { onLogout: () => void }) {
+function Dashboard({ onLogout, user }: { onLogout: () => void; user?: SessionUser }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [activeView, setActiveView] = useState('Visão geral')
+  const activeCallsign = user?.callsign || 'NOMAD'
+  const activeInitial = activeCallsign.charAt(0).toUpperCase()
   return <div className="app-shell">
     <aside className="app-sidebar">
       <Brand compact/>
@@ -475,15 +490,15 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     <div className="app-main">
       <header className="app-topbar">
         <GlobalSearch onOpenOperator={()=>setActiveView('Meu Operador')}/>
-        <div className="demo-badge"><span/> Modo demonstração</div>
+        <div className="demo-badge"><span/> {user ? 'Conta conectada' : 'Modo demonstração'}</div>
         <button className="notification-button" aria-label="Notificações"><Bell/><i>3</i></button>
-        <div className="profile-control"><button onClick={() => setProfileOpen(!profileOpen)} aria-expanded={profileOpen}><span className="profile-avatar">N</span><span><b>NOMAD</b><small>Valkyrie Ops</small></span><ChevronDown/></button>{profileOpen && <div className="profile-menu"><p>Operador demonstrativo</p><button onClick={onLogout}><LogOut/> Sair do modo demonstração</button></div>}</div>
+        <div className="profile-control"><button onClick={() => setProfileOpen(!profileOpen)} aria-expanded={profileOpen}><span className="profile-avatar">{activeInitial}</span><span><b>{activeCallsign}</b><small>{user ? `@${user.username}` : 'Valkyrie Ops'}</small></span><ChevronDown/></button>{profileOpen && <div className="profile-menu"><p>{user ? user.email : 'Operador demonstrativo'}</p><button onClick={onLogout}><LogOut/> {user ? 'Sair da conta' : 'Sair do modo demonstração'}</button></div>}</div>
       </header>
       {activeView === 'Classificados' ? <Classifieds/> : activeView === 'Comunidade' ? <CommunityPage/> : activeView === 'Financeiro' ? <FinancialPage/> : activeView === 'Operações' ? <OperationsPage/> : activeView === 'Minha equipe' ? <TeamPage/> : activeView === 'Rankings' ? <RankingPage/> : activeView === 'Conquistas' ? <AchievementsPage/> : activeView === 'Meu Operador' ? <OperatorProfilePage onViewAll={()=>setActiveView('Conquistas')}/> : <main className="dashboard">
-        <section className="dashboard-welcome"><div><p>DOMINGO, 20 DE JULHO</p><h1>Olá, <em>NOMAD.</em></h1><span>Seu próximo compromisso é em 6 dias.</span></div><button className="button">Encontrar operação <ArrowRight/></button></section>
+        <section className="dashboard-welcome"><div><p>OPERADOR ZERO</p><h1>Olá, <em>{activeCallsign}.</em></h1><span>{user ? 'Sua conta está autenticada; os demais módulos entram por etapas.' : 'Seu próximo compromisso é em 6 dias.'}</span></div><button className="button">Encontrar operação <ArrowRight/></button></section>
 
         <section className="operator-strip" aria-label="Resumo do operador">
-          <div className="operator-identity"><span className="operator-avatar">N</span><div><small>OPERADOR VERIFICADO</small><h2>NOMAD</h2><p>Valkyrie Ops · Curitiba, PR</p></div></div>
+          <div className="operator-identity"><span className="operator-avatar">{activeInitial}</span><div><small>{user ? 'CONTA VERIFICADA' : 'OPERADOR VERIFICADO'}</small><h2>{activeCallsign}</h2><p>{user ? `${user.displayName} · @${user.username}` : 'Valkyrie Ops · Curitiba, PR'}</p></div></div>
           <div><small>RANKING MUNICIPAL</small><strong>#08</strong><span className="positive">↑ 2 posições</span></div>
           <div><small>RANKING ESTADUAL</small><strong>#42</strong><span>Paraná</span></div>
           <div><small>PONTUAÇÃO</small><strong>1.840</strong><span>Temporada 2026</span></div>
@@ -515,16 +530,61 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [authMode, setAuthMode] = useState<AuthMode | null>(null)
-  const [demoSession, setDemoSession] = useState(false)
+  const [currentUser, setCurrentUser] = useState<SessionUser | null>(null)
+  const [authChecking, setAuthChecking] = useState(AUTH_ENABLED)
+  const [authNotice, setAuthNotice] = useState('')
+  const [resetTokenValue, setResetTokenValue] = useState('')
   useEffect(() => {
     const close = () => setMenuOpen(false)
     window.addEventListener('resize', close)
     return () => window.removeEventListener('resize', close)
   }, [])
+  useEffect(() => {
+    if (!AUTH_ENABLED) return
+    let active = true
+    const restore = async () => {
+      const params = new URLSearchParams(window.location.search)
+      const action = params.get('action')
+      const token = params.get('token')
+      const oauth = params.get('auth')
+      const oauthCode = params.get('code')
+      if (action || oauth) window.history.replaceState({}, document.title, window.location.pathname + window.location.hash)
+      try {
+        if (action === 'verify-email' && token) {
+          await verifyEmail(token)
+          if (active) {
+            setAuthNotice('E-mail confirmado. Entre com sua senha para continuar.')
+            setAuthMode('login')
+          }
+        } else if (action === 'reset-password' && token && active) {
+          setResetTokenValue(token)
+          setAuthMode('reset')
+        } else if (oauth === 'error' && active) {
+          const message = oauthCode === 'ACCOUNT_LINK_REQUIRED'
+            ? 'Este e-mail já existe. Entre com senha para vincular o Google com segurança.'
+            : 'Não foi possível concluir o acesso com Google.'
+          setAuthNotice(message)
+          setAuthMode('login')
+        }
+        const session = await getCurrentSession()
+        if (active) setCurrentUser(session)
+      } catch (error) {
+        if (active) {
+          setAuthNotice(error instanceof Error ? error.message : 'Não foi possível validar o acesso.')
+          setAuthMode('login')
+        }
+      } finally {
+        if (active) setAuthChecking(false)
+      }
+    }
+    void restore()
+    return () => { active = false }
+  }, [])
 
-  if (demoSession) return <Dashboard onLogout={() => setDemoSession(false)}/>
+  if (authChecking) return <div className="auth-boot"><Brand/><span>Validando sessão segura...</span></div>
+  if (currentUser) return <Dashboard user={currentUser} onLogout={() => { void logout().finally(() => setCurrentUser(null)) }}/>
 
-  const authenticateDemo = () => { setAuthMode(null); setDemoSession(true) }
+  const authenticated = (user: SessionUser) => { setAuthMode(null); setAuthNotice(''); setCurrentUser(user) }
   const nav = ['Operações', 'Campos', 'Equipes', 'Rankings']
   return <div className={`site-shell ${IS_STAGING ? 'site-shell--staging' : ''}`}>
     {IS_STAGING && <div className="staging-banner" role="status"><ShieldAlert/> Ambiente de testes — dados podem ser apagados. Não utilize informações pessoais reais.</div>}
@@ -578,6 +638,13 @@ export default function App() {
       <section className="cta" id="convite"><p className="eyebrow"><span/> Prepare seu callsign</p><h2>Entre para a<br/>próxima operação.</h2><p>Crie seu perfil com Google ou e-mail e senha.</p><button className="button" onClick={() => setAuthMode('signup')}>Criar minha conta <ArrowRight size={18}/></button></section>
     </main>
     <footer><Brand compact/><p>Airsoft é esporte. Respeito, segurança e fair play sempre.</p><div><a href="#inicio">Termos</a><a href="#inicio">Privacidade</a><a href="#inicio">Segurança</a></div><small>© 2026 OPERADOR ZERO</small></footer>
-    {authMode && <AuthModal mode={authMode} onClose={() => setAuthMode(null)} onModeChange={setAuthMode} onAuthenticated={authenticateDemo}/>} 
+    {authMode && <AuthModal
+      mode={authMode}
+      onClose={() => { setAuthMode(null); setAuthNotice('') }}
+      onModeChange={setAuthMode}
+      onAuthenticated={authenticated}
+      resetToken={resetTokenValue}
+      initialNotice={authNotice}
+    />}
   </div>
 }

@@ -4,7 +4,10 @@ Fundacao do backend principal. Requer Java 21, Maven, PostgreSQL e Redis.
 
 1. Copie as variaveis de `.env.example` para seu gerenciador local.
 2. Inicie dependencias com `docker compose --env-file .env -f compose.dev.yml up -d` na raiz.
-3. Execute `mvn spring-boot:run` nesta pasta.
-4. Verifique `/actuator/health`.
+3. Confirme o SMTP local em `localhost:1025` (o `compose.dev.yml` inclui Mailpit) ou defina `MAIL_ENABLED=false` apenas para testes tecnicos.
+4. Execute `mvn spring-boot:run` nesta pasta.
+5. Verifique `/actuator/health` e `GET /api/auth/csrf`.
 
-O scaffold ainda nao oferece login nem endpoints de negocio. Por seguranca, todas as rotas fora de health/OpenAPI sao negadas ate a Fase 2.
+Identidade funcional: cadastro, verificacao de e-mail, login, sessao, logout, recuperacao e Google OIDC. O frontend deve usar `credentials: include`, obter CSRF antes de cada mutacao e nunca armazenar credenciais/tokens em Web Storage.
+
+As rotas de negocio continuam negadas por padrao e os modulos exibidos no dashboard ainda sao demonstrativos. Para staging, configure `AUTH_ENABLED`, `FRONTEND_BASE_URL`, SMTP, CORS e cookies; Google exige suas proprias credenciais.

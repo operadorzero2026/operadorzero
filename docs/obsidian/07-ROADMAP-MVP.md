@@ -3,7 +3,7 @@
 ## Plano de migracao para producao - 2026-07-21
 
 1. Fundacao de API, banco, Redis, migrations, health e logs - iniciada.
-2. Identidade real, Google OIDC, recuperacao, sessoes, MFA admin e RBAC.
+2. Identidade real, Google OIDC, recuperacao, sessoes, MFA admin e RBAC - identidade base concluida; provedores externos, MFA admin e autorizacoes de negocio pendentes.
 3. Operador, equipes e operacoes persistentes.
 4. Ranking e conquistas auditaveis.
 5. Classificados, comunidade, chat, moderacao, denuncia e recurso.
@@ -41,6 +41,8 @@ Documentação, políticas, identidade, landing e decisões arquiteturais.
 ## Marco 1 — identidade
 
 Schema, migrations, cadastro adulto, e-mail, login protegido, sessão, recuperação, perfil e privacidade. Testes de autorização e rate limit entram junto.
+
+Estado em 2026-07-22: cadastro/login/verificacao/recuperacao/sessao/logout e Google OIDC foram implementados. Faltam homologacao SMTP/Google externa, MFA administrativo, central de sessoes, politicas juridicas e testes E2E no staging antes de concluir o marco.
 
 ## Marco 2 — comunidade
 

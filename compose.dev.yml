@@ -22,6 +22,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  mailpit:
+    image: axllent/mailpit:v1.27.8
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
 volumes:
   operador_zero_postgres:
   operador_zero_redis:

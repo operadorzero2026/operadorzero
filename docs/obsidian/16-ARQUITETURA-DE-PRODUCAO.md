@@ -6,18 +6,20 @@ Em 2026-07-21 foi iniciada a transicao do prototipo para uma arquitetura real. A
 
 - Frontend React/Vite/TypeScript preservado, ainda dependente de dados locais em varios modulos.
 - Fundacao Java 21 + Spring Boot 3.5 criada em `services/api`.
-- PostgreSQL/Flyway definidos com migrations `V1` de identidade/RBAC/auditoria e `V2` de perfil/privacidade.
+- PostgreSQL/Flyway definidos com migrations `V1` de identidade/RBAC/auditoria, `V2` de perfil/privacidade e `V3` de tokens/sessoes/OIDC.
 - A `V1` usa indices unicos funcionais para e-mail e username normalizados, sintaxe compativel com PostgreSQL 17.
 - Redis, health, readiness/liveness, Prometheus, logs JSON, OpenAPI e seguranca deny-by-default preparados.
 - API adaptada ao `PORT` do Render, URL PostgreSQL, `REDIS_URL` e CORS com origens explicitas.
 - A adaptacao de `DATABASE_URL` separa usuario e senha da URL JDBC, aplica a porta PostgreSQL padrao quando omitida e nunca registra o valor recebido.
 - Build Docker sem usuario root, Vercel SPA, Render Blueprint gratuito de staging e GitHub Actions preparados.
 - Bundle web validado para impedir credenciais e identificadores de segredo; demonstracao restrita ao desenvolvimento local.
-- Staging web identificado visualmente, bloqueado para indexacao e com autenticacao remota desabilitada ate a implementacao dos endpoints reais.
+- Identidade por e-mail/senha e Google OIDC implementada com sessao opaca `HttpOnly`, CSRF, rate limit Redis e recuperacao por e-mail.
+- Readiness do Render valida estado da aplicacao, PostgreSQL e Redis sem acoplar reinicio da API a indisponibilidade temporaria do SMTP.
+- Staging web identificado visualmente e bloqueado para indexacao; autenticacao so deve ser habilitada apos configurar SMTP, URL do frontend e, opcionalmente, credenciais Google.
 
 ## Limite honesto
 
-O Operador Zero ainda nao esta pronto para producao. Login real, autorizacao de casos de uso, S3 seguro, e-mail, moderacao, Mercado Pago, migracao dos dados simulados, backup restaurado e observabilidade externa continuam pendentes. Recursos gratuitos do Render sao apenas staging e a escolha de plano comercial da Vercel/Render exige autorizacao explicita.
+O Operador Zero ainda nao esta pronto para operacao completa com usuarios reais. A identidade base existe, mas SMTP/Google ainda precisam de credenciais e homologacao externa; autorizacao de casos de uso, S3 seguro, moderacao, Mercado Pago, migracao dos dados simulados, backup restaurado, termos/privacidade e observabilidade externa continuam pendentes. Recursos gratuitos do Render sao apenas staging e a escolha de plano comercial da Vercel/Render exige autorizacao explicita.
 
 ## Sequencia
 

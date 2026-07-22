@@ -1,8 +1,21 @@
 # Autenticacao
 
-Destino: cadastro por e-mail/senha ou Google OIDC, verificacao de e-mail e recuperacao por link de uso unico. Senhas usam Argon2id; tokens de verificacao/recuperacao ficam armazenados como hash, com validade curta e invalidacao apos uso. Login, recuperacao e cadastro recebem rate limit e respostas que nao enumeram contas.
+Status em 2026-07-22: cadastro por e-mail/senha, confirmacao de e-mail, login, logout, recuperacao, troca de senha e Google OIDC estao implementados na API e conectados a SPA.
 
-Access tokens devem ser curtos; refresh tokens rotacionados, revogaveis e associados a dispositivo/sessao. Para SPA, preferir cookie `HttpOnly`, `Secure`, `SameSite` e protecao CSRF quando a arquitetura for fechada. Administradores exigem MFA e reautenticacao para acoes criticas.
+## Contrato
 
-Status: modelo de usuarios existe; endpoints e provedor OIDC ainda nao foram implementados.
+- `GET /api/auth/csrf`: entrega token CSRF para o header indicado.
+- `POST /api/auth/register`: cria conta pendente e envia confirmacao sem enumerar contas.
+- `POST /api/auth/verify-email`: consome token opaco uma unica vez e ativa a conta.
+- `POST /api/auth/login`: valida Argon2id e cria sessao opaca.
+- `GET /api/auth/session`: restaura a identidade autenticada.
+- `POST /api/auth/logout`: revoga a sessao atual e limpa o cookie.
+- `POST /api/auth/password-recovery`: resposta uniforme e envio do link por e-mail.
+- `POST /api/auth/password-reset`: altera a senha e revoga sessoes anteriores.
+- `POST /api/auth/google/intent` e `/oauth2/authorization/google`: OIDC Authorization Code com PKCE, `state` e `nonce` gerenciados pelo Spring Security.
 
+Senhas usam Argon2id. Tokens de verificacao, recuperacao, sessao e aceite OIDC sao aleatorios; somente SHA-256 e persistido. A sessao fica em cookie `HttpOnly`; em producao usa `Secure` e `SameSite=None` para a SPA hospedada em outro dominio. CSRF usa cookie/header separado e a SPA renova o token depois do login.
+
+Cadastro, login, recuperacao e OIDC recebem rate limit por IP e sujeito no Redis. Falha do Redis fecha o fluxo de autenticacao, em vez de remover o limite. E-mail e Google dependem de configuracao externa; nenhuma credencial pertence ao frontend.
+
+Pendencias antes de usuarios reais: SMTP homologado com SPF/DKIM/DMARC e bounce, credenciais Google por ambiente, MFA administrativo, reautenticacao critica, central de sessoes, teste E2E no staging e termos/privacidade aprovados.

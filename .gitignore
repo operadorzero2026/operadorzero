@@ -9,6 +9,8 @@ target/
 .vscode/
 coverage/
 playwright-report/
+.playwright-cli/
+output/playwright/
 .vercel/
 .codex-runtime/
 uploads/

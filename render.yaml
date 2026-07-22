@@ -12,7 +12,7 @@ services:
     dockerfilePath: ./services/api/Dockerfile
     dockerContext: ./services/api
     autoDeployTrigger: checksPass
-    healthCheckPath: /actuator/health
+    healthCheckPath: /actuator/health/readiness
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -41,6 +41,36 @@ services:
         value: "1"
       - key: OPENAPI_UI_ENABLED
         value: "false"
+      - key: AUTH_ENABLED
+        sync: false
+      - key: FRONTEND_BASE_URL
+        sync: false
+      - key: AUTH_COOKIE_SECURE
+        value: "true"
+      - key: AUTH_COOKIE_SAME_SITE
+        value: None
+      - key: MAIL_ENABLED
+        sync: false
+      - key: MAIL_HOST
+        sync: false
+      - key: MAIL_PORT
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_SMTP_AUTH
+        sync: false
+      - key: MAIL_STARTTLS
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: GOOGLE_AUTH_ENABLED
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
 
   - type: keyvalue
     name: operadorzero-redis-staging

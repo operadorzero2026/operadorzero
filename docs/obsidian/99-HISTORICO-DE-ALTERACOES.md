@@ -1,5 +1,44 @@
 # Histórico de alterações
 
+## 2026-07-22 - Identidade funcional e endurecimento da cadeia de entrega
+
+### Arquivos alterados
+- `src/App.tsx`, `src/api.ts`, `src/styles.css`
+- `services/api/src/main/java/br/com/operadorzero/identity/*`
+- `services/api/src/main/java/br/com/operadorzero/shared/config/SecurityConfig.java`
+- `services/api/src/main/java/br/com/operadorzero/shared/web/GlobalExceptionHandler.java`
+- `services/api/src/main/resources/db/migration/V3__functional_identity.sql`
+- `services/api/src/main/resources/application.yml`, `application-prod.yml`, `pom.xml` e `Dockerfile`
+- `services/api/src/test/java/br/com/operadorzero/identity/*`
+- `.github/workflows/ci.yml`, `render.yaml`, `.env.example`, `compose.dev.yml` e scripts de validacao
+- `AUTHENTICATION.md`, `ARCHITECTURE.md`, `BACKEND-ARCHITECTURE.md`, `DEPLOYMENT.md`, `PRODUCTION-CHECKLIST.md` e documentos Obsidian conectados
+
+### O que foi feito
+- Implementados cadastro por e-mail/senha, confirmacao por e-mail, login, restauracao de sessao, logout, recuperacao e troca de senha.
+- Implementado Google OIDC com Authorization Code, PKCE e validacoes do Spring Security; credenciais permanecem exclusivas do backend.
+- Adicionados Argon2id, tokens opacos armazenados somente como hash, cookie de sessao `HttpOnly`, CSRF com rotacao apos login, rate limit Redis e auditoria.
+- Adicionadas tabelas de token, sessao, identidade OIDC e aceite de cadastro, mais papeis/permissoes iniciais.
+- Conectada a identidade real ao dashboard, sem credencial de teste ou persistencia em Web Storage.
+- Fixadas por SHA/digest as Actions, imagens Docker de build/runtime e Gitleaks; validacao impede regressao para referencias mutaveis.
+- Adicionadas configuracoes de SMTP, Google, cookies e staging sem registrar valores sensiveis.
+
+### Motivo
+- Permitir homologar o recebimento de contas reais sem manter autenticacao simulada no navegador e corrigir o achado confirmado de cadeia de fornecimento antes de ampliar o acesso remoto.
+
+### Impacto
+- Frontend, backend, PostgreSQL, Redis, e-mail, Google OIDC, CI e configuracao de staging.
+- Os modulos de negocio apos o login continuam demonstrativos e nao persistem dados.
+
+### Testes
+- `mvn -B test`: testes unitarios de identidade, seguranca e infraestrutura.
+- Fluxo HTTP local com PostgreSQL/Redis reais: cadastro pendente, recusa antes da confirmacao, login, cookie `HttpOnly`, restauracao de sessao, senha incorreta, CSRF e logout.
+- `npm run check`, validacao do bundle e configuracao de deploy.
+
+### Pendencias
+- Homologar SMTP e Google no staging, configurar DNS de e-mail, executar E2E externo e restauracao de backup.
+- Aprovar termos/privacidade e implementar MFA administrativo antes de usuarios reais.
+- Migrar cada modulo demonstrativo para APIs persistentes e autorizacao por objeto antes de anunciar funcionalidade de negocio.
+
 ## 2026-07-21 - Resposta segura para rotas inexistentes
 
 ### Arquivos alterados

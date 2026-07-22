@@ -14,7 +14,17 @@ springdoc:
     enabled: false
 server:
   shutdown: graceful
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: true
+        same-site: lax
 app:
+  auth:
+    cookie:
+      secure: true
+      same-site: None
   security:
     cors:
       allowed-origins: ${CORS_ALLOWED_ORIGINS}
