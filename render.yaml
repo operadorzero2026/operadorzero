@@ -51,19 +51,9 @@ services:
         value: None
       - key: MAIL_ENABLED
         sync: false
-      - key: MAIL_HOST
-        sync: false
-      - key: MAIL_PORT
-        sync: false
-      - key: MAIL_USERNAME
-        sync: false
-      - key: MAIL_PASSWORD
-        sync: false
-      - key: MAIL_SMTP_AUTH
-        sync: false
-      - key: MAIL_STARTTLS
-        sync: false
       - key: MAIL_FROM
+        sync: false
+      - key: RESEND_API_KEY
         sync: false
       - key: GOOGLE_AUTH_ENABLED
         sync: false

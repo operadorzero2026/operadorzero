@@ -2,11 +2,9 @@ package br.com.operadorzero.identity;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -16,12 +14,12 @@ public class AuthMailListener {
     private static final Logger log = LoggerFactory.getLogger(AuthMailListener.class);
 
     private final AuthProperties properties;
-    private final JavaMailSender mailSender;
+    private final AuthMailGateway mailGateway;
     private final TokenSupport tokens;
 
-    public AuthMailListener(AuthProperties properties, JavaMailSender mailSender, TokenSupport tokens) {
+    public AuthMailListener(AuthProperties properties, AuthMailGateway mailGateway, TokenSupport tokens) {
         this.properties = properties;
-        this.mailSender = mailSender;
+        this.mailGateway = mailGateway;
         this.tokens = tokens;
     }
 
@@ -36,16 +34,15 @@ public class AuthMailListener {
         String link = properties.frontendBaseUrl().resolve("/?action=" + action + "&token="
             + URLEncoder.encode(event.token(), StandardCharsets.UTF_8)).toString();
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(properties.mail().from());
-        message.setTo(event.recipient());
-        message.setSubject(subject);
-        message.setText("Ola, " + event.displayName() + ".\n\nUse o link abaixo. Ele expira em "
+        String text = "Ola, " + event.displayName() + ".\n\nUse o link abaixo. Ele expira em "
             + properties.tokenDuration().toMinutes() + " minutos e funciona uma unica vez:\n\n" + link
-            + "\n\nSe voce nao solicitou esta acao, ignore esta mensagem.");
+            + "\n\nSe voce nao solicitou esta acao, ignore esta mensagem.";
+        String idempotencyKey = "auth-" + event.kind().toLowerCase(Locale.ROOT).replace('_', '-') + "-"
+            + tokens.hash(event.token());
         try {
-            mailSender.send(message);
-        } catch (MailException exception) {
+            mailGateway.send(new AuthMailGateway.Message(properties.mail().from(), event.recipient(), subject, text,
+                event.kind(), idempotencyKey));
+        } catch (AuthMailDeliveryException exception) {
             log.error("Falha no envio de e-mail de autenticacao; recipientHash={}", tokens.hash(event.recipient()));
         }
     }

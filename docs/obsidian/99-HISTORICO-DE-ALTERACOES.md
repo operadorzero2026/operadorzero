@@ -1,5 +1,36 @@
 # Histórico de alterações
 
+## 2026-07-22 - Migração do e-mail de autenticação para Resend
+
+### Arquivos alterados
+- `services/api/src/main/java/br/com/operadorzero/identity/AuthMailGateway.java`
+- `services/api/src/main/java/br/com/operadorzero/identity/ResendAuthMailGateway.java`
+- `services/api/src/main/java/br/com/operadorzero/identity/ResendProperties.java`
+- `services/api/src/main/java/br/com/operadorzero/identity/ResendMailHealthIndicator.java`
+- `services/api/src/main/java/br/com/operadorzero/identity/AuthMailListener.java`
+- `services/api/src/main/resources/application.yml`, `services/api/pom.xml` e testes
+- `.env.example`, `render.yaml`, `compose.dev.yml` e `scripts/validate-production-bundle.mjs`
+- documentacao de autenticacao, arquitetura, deploy e producao
+
+### O que foi feito
+- Substituido o SMTP pela API HTTPS da Resend para funcionar no Render Free sem portas SMTP.
+- Mantida `RESEND_API_KEY` somente no backend, com timeout, bloqueio de redirecionamento, resposta externa descartada e logs sem chave ou destinatario em claro.
+- Adicionada idempotencia por evento/token para reduzir envios duplicados e health de configuracao separado da readiness.
+- Removidos dependencia Spring Mail, variaveis SMTP e Mailpit que deixaram de ser usados.
+
+### Motivo
+- O Render Free bloqueia trafego SMTP nas portas 25, 465 e 587, impedindo o Gmail de enviar confirmacao e recuperacao.
+
+### Impacto
+- Backend, e-mail transacional, configuracao do Render, ambiente local, seguranca do bundle e documentacao.
+
+### Testes
+- `mvn -B clean verify`: 21 testes aprovados, incluindo contrato HTTP Resend, idempotencia, falha generica, ausencia de chave e health de configuracao.
+- `npm run check`: lint, cenarios funcionais, build, bundle sem identificadores sensiveis e configuracoes de deploy validadas.
+
+### Pendências
+- Criar a conta Resend, salvar a chave no Render, verificar o subdominio de envio por DNS e executar cadastro, confirmacao, login e recuperacao ponta a ponta.
+
 ## 2026-07-22 - Identidade funcional e endurecimento da cadeia de entrega
 
 ### Arquivos alterados

@@ -12,7 +12,7 @@ Status em 2026-07-22: **fundacao e identidade base implementadas; produto ainda 
 | Autenticacao e autorizacao | Cadastro/login/recuperacao/sessao e OIDC implementados; modulos sem autorizacao real | Sessao segura, MFA admin e RBAC/objeto por modulo | Homologar provedores e implementar autorizacao de negocio |
 | Cache e controles efemeros | Redis integrado ao rate limit de identidade | Redis privado para limites, locks e filas leves | Homologar indisponibilidade e monitoramento |
 | Arquivos | Sem pipeline confiavel | S3 compativel, quarentena e antivirus | Critico antes de uploads |
-| E-mail | Adaptador SMTP de confirmacao/recuperacao implementado | Provedor transacional com SPF/DKIM/DMARC e bounce | Credenciais e homologacao externa |
+| E-mail | Adaptador Resend por API HTTPS com idempotencia implementado | Dominio transacional com SPF/DKIM/DMARC, bounce e webhooks | Chave, DNS e homologacao externa |
 | Pagamentos | Simulados | Mercado Pago com webhook idempotente | Critico antes de cobrar |
 | Observabilidade | Ausente | logs JSON, metricas, traces e alertas | Parcial na API |
 | Entrega | CI, Docker, Render staging e Vercel versionados | CI/CD com gates, rollback e ambientes | Homologar fluxo e producao |

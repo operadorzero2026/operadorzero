@@ -42,7 +42,7 @@ Documentação, políticas, identidade, landing e decisões arquiteturais.
 
 Schema, migrations, cadastro adulto, e-mail, login protegido, sessão, recuperação, perfil e privacidade. Testes de autorização e rate limit entram junto.
 
-Estado em 2026-07-22: cadastro/login/verificacao/recuperacao/sessao/logout e Google OIDC foram implementados. Faltam homologacao SMTP/Google externa, MFA administrativo, central de sessoes, politicas juridicas e testes E2E no staging antes de concluir o marco.
+Estado em 2026-07-22: cadastro/login/verificacao/recuperacao/sessao/logout e Google OIDC foram implementados. O e-mail usa Resend por API HTTPS; faltam chave, DNS e homologacao Resend/Google externa, MFA administrativo, central de sessoes, politicas juridicas e testes E2E no staging antes de concluir o marco.
 
 ## Marco 2 — comunidade
 

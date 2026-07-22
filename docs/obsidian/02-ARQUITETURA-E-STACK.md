@@ -27,7 +27,7 @@ Browser/PWA futura -> CDN frontend -> API REST -> módulos de aplicação -> Pos
 
 O cadastro e o login suportam Google via OAuth 2.0/OIDC com Authorization Code + PKCE e credenciais próprias por e-mail e senha. Contas do mesmo e-mail exigem vinculação autenticada, nunca fusão silenciosa. Recuperação de senha ocorre por e-mail com token opaco, de uso único, armazenado somente como hash, com expiração curta e resposta não enumerável. O frontend não armazena senha nem token de recuperação.
 
-Implementacao de 2026-07-22: a API usa sessao opaca persistida no PostgreSQL e enviada em cookie `HttpOnly`, em vez de JWT no navegador. CSRF usa cookie/header dedicado; Redis aplica limites por IP e sujeito. Google OIDC usa o cliente do Spring Security com PKCE e validacao de issuer/audience/nonce. O provedor SMTP e as credenciais Google continuam configuracoes externas obrigatorias por ambiente. Consulte [[05-SEGURANCA-E-PRIVACIDADE]] e `AUTHENTICATION.md`.
+Implementacao de 2026-07-22: a API usa sessao opaca persistida no PostgreSQL e enviada em cookie `HttpOnly`, em vez de JWT no navegador. CSRF usa cookie/header dedicado; Redis aplica limites por IP e sujeito. Google OIDC usa o cliente do Spring Security com PKCE e validacao de issuer/audience/nonce. Confirmacao e recuperacao usam a API HTTPS da Resend com idempotencia; a chave fica somente no backend. Resend e Google continuam configuracoes externas obrigatorias por ambiente. Consulte [[05-SEGURANCA-E-PRIVACIDADE]] e `AUTHENTICATION.md`.
 
 ## Limites de módulo
 

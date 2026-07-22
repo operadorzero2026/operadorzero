@@ -14,12 +14,13 @@ Em 2026-07-21 foi iniciada a transicao do prototipo para uma arquitetura real. A
 - Build Docker sem usuario root, Vercel SPA, Render Blueprint gratuito de staging e GitHub Actions preparados.
 - Bundle web validado para impedir credenciais e identificadores de segredo; demonstracao restrita ao desenvolvimento local.
 - Identidade por e-mail/senha e Google OIDC implementada com sessao opaca `HttpOnly`, CSRF, rate limit Redis e recuperacao por e-mail.
-- Readiness do Render valida estado da aplicacao, PostgreSQL e Redis sem acoplar reinicio da API a indisponibilidade temporaria do SMTP.
-- Staging web identificado visualmente e bloqueado para indexacao; autenticacao so deve ser habilitada apos configurar SMTP, URL do frontend e, opcionalmente, credenciais Google.
+- Readiness do Render valida estado da aplicacao, PostgreSQL e Redis sem acoplar reinicio da API a indisponibilidade temporaria da Resend.
+- Confirmacao e recuperacao usam a API HTTPS da Resend, evitando as portas SMTP bloqueadas no Render Free; a chave nunca entra no frontend e cada envio usa chave de idempotencia.
+- Staging web identificado visualmente e bloqueado para indexacao; autenticacao so deve ser habilitada apos configurar Resend, remetente verificado, URL do frontend e, opcionalmente, credenciais Google.
 
 ## Limite honesto
 
-O Operador Zero ainda nao esta pronto para operacao completa com usuarios reais. A identidade base existe, mas SMTP/Google ainda precisam de credenciais e homologacao externa; autorizacao de casos de uso, S3 seguro, moderacao, Mercado Pago, migracao dos dados simulados, backup restaurado, termos/privacidade e observabilidade externa continuam pendentes. Recursos gratuitos do Render sao apenas staging e a escolha de plano comercial da Vercel/Render exige autorizacao explicita.
+O Operador Zero ainda nao esta pronto para operacao completa com usuarios reais. A identidade base e o adaptador Resend existem, mas Resend/Google ainda precisam de credenciais, DNS e homologacao externa; autorizacao de casos de uso, S3 seguro, moderacao, Mercado Pago, migracao dos dados simulados, backup restaurado, termos/privacidade e observabilidade externa continuam pendentes. Recursos gratuitos do Render sao apenas staging e a escolha de plano comercial da Vercel/Render exige autorizacao explicita.
 
 ## Sequencia
 

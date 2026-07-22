@@ -10,6 +10,7 @@ const forbidden = [
   /MERCADO_PAGO_WEBHOOK_SECRET/,
   /S3_SECRET_KEY/,
   /DATABASE_PASSWORD/,
+  /RESEND_API_KEY/,
 ]
 
 async function filesIn(directory) {

@@ -17,6 +17,18 @@ if (!renderConfig.services?.some(service => service.type === 'web' && service.he
 if (!renderConfig.databases?.length) {
   throw new Error('render.yaml deve declarar o PostgreSQL de staging.')
 }
+const apiService = renderConfig.services.find(service => service.type === 'web')
+const apiEnvironmentKeys = new Set(apiService?.envVars?.map(variable => variable.key) ?? [])
+for (const required of ['MAIL_ENABLED', 'MAIL_FROM', 'RESEND_API_KEY']) {
+  if (!apiEnvironmentKeys.has(required)) {
+    throw new Error(`render.yaml deve declarar ${required} somente no backend.`)
+  }
+}
+for (const obsolete of ['MAIL_HOST', 'MAIL_PORT', 'MAIL_USERNAME', 'MAIL_PASSWORD', 'MAIL_SMTP_AUTH', 'MAIL_STARTTLS']) {
+  if (apiEnvironmentKeys.has(obsolete)) {
+    throw new Error(`render.yaml ainda declara a variavel SMTP obsoleta ${obsolete}.`)
+  }
+}
 
 const vercelConfig = JSON.parse(await readFile('vercel.json', 'utf8'))
 if (vercelConfig.framework !== 'vite' || vercelConfig.outputDirectory !== 'dist') {

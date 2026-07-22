@@ -37,7 +37,7 @@ Desde 2026-07-22, a identidade real esta implementada: Argon2id, tokens de uso u
 
 Threat modeling revisado, testes BOLA/IDOR, restauração de backup, dependências auditadas, MFA administrativo, política jurídica para menores, DPO/canal de privacidade e avaliação do provedor.
 
-Tambem permanecem obrigatorios: SMTP de producao com SPF/DKIM/DMARC e tratamento de bounce, credenciais Google separadas por ambiente, dominio que reduza dependencia de cookies de terceiros, termos/privacidade aprovados e teste E2E externo dos dois provedores. Nenhum segredo deve usar prefixo `VITE_`.
+Tambem permanecem obrigatorios: dominio Resend com SPF/DKIM/DMARC, tratamento de bounce e webhook validado, credenciais Google separadas por ambiente, dominio que reduza dependencia de cookies de terceiros, termos/privacidade aprovados e teste E2E externo dos dois provedores. `RESEND_API_KEY` fica somente no Render e nenhum segredo deve usar prefixo `VITE_`.
 
 ## Comunidade
 

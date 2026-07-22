@@ -2,9 +2,9 @@
 
 ## Blueprint de staging
 
-`render.yaml` declara somente recursos gratuitos de teste: API Docker, PostgreSQL e Key Value. O Blueprint usa a branch `deploy/render-vercel`, deploy apos checks aprovados e health check em `/actuator/health`.
+`render.yaml` declara somente recursos gratuitos de teste: API Docker, PostgreSQL e Key Value. O Blueprint usa a branch `deploy/render-vercel`, deploy apos checks aprovados e health check em `/actuator/health/readiness`.
 
-Na criacao do Blueprint, informe `CORS_ALLOWED_ORIGINS` com as origens HTTPS exatas da Vercel, separadas por virgula. Banco e Redis sao injetados por referencias internas; nao copie suas credenciais para o frontend, logs ou GitHub.
+Na criacao do Blueprint, informe `CORS_ALLOWED_ORIGINS` com as origens HTTPS exatas da Vercel, separadas por virgula. Para e-mail, mantenha `RESEND_API_KEY` somente como secret do Render e use em `MAIL_FROM` um remetente de dominio verificado. Banco e Redis sao injetados por referencias internas; nao copie credenciais para o frontend, logs ou GitHub.
 
 ## Limitacoes do ambiente gratuito
 

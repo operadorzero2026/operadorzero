@@ -8,8 +8,9 @@
 - Google OIDC com Authorization Code, PKCE, `state`, `nonce` e validacao do provedor esta implementado, mas depende das credenciais externas do ambiente.
 - A migration `V3__functional_identity.sql` adiciona tokens, sessoes, identidades OIDC e papeis iniciais.
 - O frontend restaura a sessao da API e nao usa `localStorage` ou `sessionStorage` para credenciais.
+- O envio de confirmacao e recuperacao foi migrado do SMTP para a API HTTPS da Resend, com chave exclusiva do backend e idempotencia. A chave, o dominio e o E2E externo ainda precisam ser configurados.
 - Modulos de negocio exibidos apos o login continuam demonstrativos e nao persistem dados. O marco atual permite homologar identidade, nao receber usuarios reais em todos os modulos.
-- Antes de usuarios reais ainda faltam SMTP/DNS de e-mail, termos e privacidade aprovados, backup restaurado, monitoramento e os gates de [[16-ARQUITETURA-DE-PRODUCAO]].
+- Antes de usuarios reais ainda faltam DNS/homologacao da Resend, termos e privacidade aprovados, backup restaurado, monitoramento e os gates de [[16-ARQUITETURA-DE-PRODUCAO]].
 
 ## 2026-07-21
 

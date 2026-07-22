@@ -23,18 +23,6 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       timeout: 2s
-  mail:
-    host: ${MAIL_HOST:localhost}
-    port: ${MAIL_PORT:1025}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
-    properties:
-      mail.smtp.auth: ${MAIL_SMTP_AUTH:false}
-      mail.smtp.starttls.enable: ${MAIL_STARTTLS:false}
-      mail.smtp.starttls.required: ${MAIL_STARTTLS:false}
-      mail.smtp.connectiontimeout: ${MAIL_CONNECTION_TIMEOUT_MS:5000}
-      mail.smtp.timeout: ${MAIL_READ_TIMEOUT_MS:5000}
-      mail.smtp.writetimeout: ${MAIL_WRITE_TIMEOUT_MS:5000}
 server:
   port: ${PORT:${SERVER_PORT:8080}}
   forward-headers-strategy: framework
@@ -42,9 +30,6 @@ server:
     include-message: never
     include-stacktrace: never
 management:
-  health:
-    mail:
-      enabled: ${MAIL_ENABLED:true}
   endpoints:
     web:
       exposure:
@@ -79,6 +64,8 @@ app:
     mail:
       enabled: ${MAIL_ENABLED:true}
       from: ${MAIL_FROM:no-reply@operadorzero.local}
+      resend:
+        api-key: ${RESEND_API_KEY:}
     google:
       enabled: ${GOOGLE_AUTH_ENABLED:false}
       client-id: ${GOOGLE_CLIENT_ID:}

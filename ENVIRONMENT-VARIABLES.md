@@ -1,7 +1,7 @@
 # Variaveis de ambiente
 
-Modelo local em `.env.example`. Na API de staging sao obrigatorias: `DATABASE_URL`, `DATABASE_USER`, `DATABASE_PASSWORD`, `REDIS_URL`, `CORS_ALLOWED_ORIGINS` e `SPRING_PROFILES_ACTIVE`. `PORT` e fornecida pelo Render. No frontend, somente `VITE_API_URL` e permitida e seu valor e publico.
+Modelo local em `.env.example`. Na API de staging sao obrigatorias: `DATABASE_URL`, `DATABASE_USER`, `DATABASE_PASSWORD`, `REDIS_URL`, `CORS_ALLOWED_ORIGINS` e `SPRING_PROFILES_ACTIVE`. Para identidade real tambem sao obrigatorias `RESEND_API_KEY`, `MAIL_FROM`, `MAIL_ENABLED=true`, `AUTH_ENABLED=true` e `FRONTEND_BASE_URL`. `PORT` e fornecida pelo Render. No frontend, somente variaveis publicas `VITE_*` podem existir.
 
 Producao usa cofre de segredos, rotacao, identidade por workload quando disponivel e acesso minimo. Valores reais nao entram em `.env`, compose, logs, imagens ou repositorio. Variaveis publicas do Vite jamais guardam segredo.
 
-Chaves OIDC/JWT, S3, e-mail, Mercado Pago e telemetria somente serao documentadas quando os adaptadores correspondentes existirem no backend. Nao criar variaveis ficticias no frontend.
+`RESEND_API_KEY` e qualquer chave OIDC, S3, Mercado Pago ou telemetria pertencem somente ao backend e ao cofre do provedor. Nunca usar prefixo `VITE_`, registrar o valor, copiar para documentacao ou persistir no Git.

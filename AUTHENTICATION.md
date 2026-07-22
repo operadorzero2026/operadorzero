@@ -18,4 +18,6 @@ Senhas usam Argon2id. Tokens de verificacao, recuperacao, sessao e aceite OIDC s
 
 Cadastro, login, recuperacao e OIDC recebem rate limit por IP e sujeito no Redis. Falha do Redis fecha o fluxo de autenticacao, em vez de remover o limite. E-mail e Google dependem de configuracao externa; nenhuma credencial pertence ao frontend.
 
-Pendencias antes de usuarios reais: SMTP homologado com SPF/DKIM/DMARC e bounce, credenciais Google por ambiente, MFA administrativo, reautenticacao critica, central de sessoes, teste E2E no staging e termos/privacidade aprovados.
+O envio transacional usa a API HTTPS da Resend com `Idempotency-Key`; `RESEND_API_KEY` existe somente no backend. Falhas do provedor sao registradas sem destinatario em claro, corpo da resposta ou chave. O remetente depende de dominio verificado.
+
+Pendencias antes de usuarios reais: dominio Resend homologado com SPF/DKIM/DMARC e tratamento de bounce, credenciais Google por ambiente, MFA administrativo, reautenticacao critica, central de sessoes, teste E2E no staging e termos/privacidade aprovados.

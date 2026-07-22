@@ -19,5 +19,5 @@
 - [x] Login e senha fixos removidos do bundle de producao; demonstracao restrita a `import.meta.env.DEV`.
 - [x] API preparada para `PORT`, PostgreSQL URL, Redis URL e CORS explicito por ambiente.
 - [x] CI, Dockerfile, Vercel e Render Blueprint de staging versionados.
-- [ ] Login/cadastro/recuperacao e Google OAuth implementados e testados ponta a ponta no backend. Implementacao e testes locais concluidos para e-mail/senha; SMTP e Google externos ainda precisam de homologacao no staging.
+- [ ] Login/cadastro/recuperacao e Google OAuth implementados e testados ponta a ponta no backend. Implementacao e testes locais concluidos para e-mail/senha; Resend, dominio de envio e Google externos ainda precisam de homologacao no staging.
 - [ ] Escolha e custo dos planos de producao aprovados explicitamente pelo responsavel.
