@@ -1,5 +1,32 @@
 # Histórico de alterações
 
+## 2026-07-23 - Google OAuth publicado para publico externo
+
+### Arquivos alterados
+- Publico-alvo do cliente no Google Auth Platform
+- `docs/obsidian/01-ESTADO-ATUAL-DO-PROJETO.md`
+- `docs/obsidian/05-SEGURANCA-E-PRIVACIDADE.md`
+- `docs/obsidian/16-ARQUITETURA-DE-PRODUCAO.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Identificado que o cliente OAuth estava em `Testando` e nao possuia usuarios de teste, bloqueando contas Google comuns.
+- Publicado o cliente como `Em producao`, mantendo o tipo de usuario `Externo`, origens HTTPS explicitas e callback na API Render.
+
+### Motivo
+- Permitir que usuarios reais criem conta com Google sem depender de inclusao manual em uma lista de teste.
+
+### Impacto
+- Google OAuth e documentacao; nenhum segredo, codigo, migration ou dado pessoal foi alterado.
+
+### Testes
+- Executado E2E no dominio oficial: sair da conta de homologacao, abrir Criar conta, aceitar Termos, continuar com Google, retornar pelo callback e restaurar a sessao autenticada.
+- Readiness da API permaneceu `UP` apos o teste.
+
+### Pendencias
+- Remover o segredo antigo do cliente Google depois de confirmar que nao ha consumidores remanescentes.
+- Reavaliar verificacao do Google antes de solicitar qualquer escopo adicional, confidencial ou restrito.
+
 ## 2026-07-23 - Dominio oficial no staging
 
 ### Arquivos alterados

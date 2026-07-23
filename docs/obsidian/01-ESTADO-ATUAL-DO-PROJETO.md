@@ -5,6 +5,7 @@
 - O dominio oficial `https://operadorzero.com.br` foi conectado ao frontend de staging na Vercel com DNS e HTTPS validos; `https://www.operadorzero.com.br` redireciona permanentemente para o dominio raiz.
 - O Render passou a aceitar somente as origens HTTPS explicitas do dominio oficial e do endereco legado da Vercel durante a transicao; `FRONTEND_BASE_URL` aponta para o dominio raiz.
 - O cliente Google OAuth manteve o callback exato no backend Render e recebeu as origens JavaScript do dominio oficial, sem mover o client secret para o frontend.
+- O publico Google OAuth passou de `Testando`, sem usuarios de teste, para `Em producao` e `Externo`; o fluxo Criar conta -> aceite -> Google -> callback -> sessao foi validado no dominio oficial com a conta de homologacao existente.
 - As credenciais Google OIDC de staging foram configuradas somente no backend do Render e `GOOGLE_AUTH_ENABLED` foi ativado.
 - O fluxo remoto foi validado de forma nao destrutiva: readiness `200`, emissao de intent com CSRF, redirecionamento `302` para `accounts.google.com` e CORS com credenciais limitado a origens HTTPS explicitas.
 - Um teste de regressao garante que `/oauth2/authorization/google` mantenha OIDC, PKCE e `nonce` quando o provedor estiver habilitado.
