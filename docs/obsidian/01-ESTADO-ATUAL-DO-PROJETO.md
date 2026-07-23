@@ -6,6 +6,8 @@
 - O fluxo remoto foi validado de forma nao destrutiva: readiness `200`, emissao de intent com CSRF, redirecionamento `302` para `accounts.google.com` e CORS com credenciais limitado a `https://operadorzero.vercel.app`.
 - Um teste de regressao garante que `/oauth2/authorization/google` mantenha OIDC, PKCE e `nonce` quando o provedor estiver habilitado.
 - Ainda falta concluir o callback com uma conta Google de teste, validar a sessao resultante e, depois disso, desativar o segredo Google anterior.
+- O primeiro callback real revelou que o Render Free pode reiniciar a API entre a autorizacao e o retorno. O estado temporario do OAuth foi movido da memoria da instancia para Redis, com expiracao de 10 minutos e namespace isolado; o E2E remoto precisa ser repetido apos o deploy.
+- Falhas Google agora registram apenas classificacao tecnica sanitizada, permitindo distinguir estado perdido de falha na troca do token sem expor dados do provedor.
 - A chave Resend foi salva no Render, mas DNS do remetente, entrega real, confirmacao e recuperacao E2E continuam pendentes.
 - Os modulos de negocio apos o login continuam demonstrativos; o sistema ainda nao esta liberado para usuarios reais. Ver [[16-ARQUITETURA-DE-PRODUCAO]].
 

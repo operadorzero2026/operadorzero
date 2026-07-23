@@ -16,8 +16,10 @@ Status em 2026-07-23: cadastro por e-mail/senha, confirmacao de e-mail, login, l
 
 Senhas usam Argon2id. Tokens de verificacao, recuperacao, sessao e aceite OIDC sao aleatorios; somente SHA-256 e persistido. A sessao fica em cookie `HttpOnly`; em producao usa `Secure` e `SameSite=None` para a SPA hospedada em outro dominio. CSRF usa cookie/header separado e a SPA renova o token depois do login.
 
+O handshake Google usa uma sessao temporaria separada (`OZ_OAUTH_SESSION`), `HttpOnly`, `Secure`, `SameSite=Lax` e com expiracao de 10 minutos. Em producao, essa sessao e persistida em Redis no namespace `operador-zero:oauth-session`, preservando `state`, `nonce` e o verificador PKCE durante reinicios ou troca de instancia. Falhas registram somente o codigo tecnico sanitizado e a classe da excecao, sem codigo de autorizacao, token, segredo ou descricao do provedor.
+
 Cadastro, login, recuperacao e OIDC recebem rate limit por IP e sujeito no Redis. Falha do Redis fecha o fluxo de autenticacao, em vez de remover o limite. E-mail e Google dependem de configuracao externa; nenhuma credencial pertence ao frontend.
 
 O envio transacional usa a API HTTPS da Resend com `Idempotency-Key`; `RESEND_API_KEY` existe somente no backend. Falhas do provedor sao registradas sem destinatario em claro, corpo da resposta ou chave. O remetente depende de dominio verificado.
 
-Pendencias antes de usuarios reais: dominio Resend homologado com SPF/DKIM/DMARC e tratamento de bounce, conclusao do E2E de e-mail e do callback Google no staging, remocao do segredo Google anterior depois da homologacao, MFA administrativo, reautenticacao critica, central de sessoes e termos/privacidade aprovados.
+Pendencias antes de usuarios reais: dominio Resend homologado com SPF/DKIM/DMARC e tratamento de bounce, revalidacao do callback Google no staging com a sessao temporaria Redis, remocao do segredo Google anterior depois da homologacao, MFA administrativo, reautenticacao critica, central de sessoes e termos/privacidade aprovados.

@@ -35,6 +35,8 @@ Desde 2026-07-22, a identidade real esta implementada: Argon2id, tokens de uso u
 
 Em 2026-07-23, o inicio do Google OIDC foi validado no staging ate o redirecionamento oficial, incluindo intent protegido por CSRF, CORS explicito, PKCE e `nonce`. Segredos Google permanecem apenas no Render. O callback e a sessao autenticada ainda precisam de E2E com conta de teste; somente depois deve ser removido o segredo anterior do cliente OAuth.
 
+O callback real revelou perda do pedido de autorizacao quando o Render Free reiniciava a instancia durante o consentimento. A sessao temporaria do Spring Security passou a usar Redis, cookie `HttpOnly`/`Secure`/`SameSite=Lax`, namespace exclusivo e TTL de 10 minutos. A sessao de usuario continua opaca e persistida separadamente no PostgreSQL. Logs de falha OAuth aceitam somente codigo tecnico sanitizado e tipo da excecao; codigo de autorizacao, token, segredo e descricao do provedor continuam proibidos.
+
 ## Pendências antes de produção
 
 Threat modeling revisado, testes BOLA/IDOR, restauração de backup, dependências auditadas, MFA administrativo, política jurídica para menores, DPO/canal de privacidade e avaliação do provedor.

@@ -1,5 +1,37 @@
 # Histórico de alterações
 
+## 2026-07-23 - Persistencia do handshake Google OAuth no Redis
+
+### Arquivos alterados
+- `services/api/pom.xml`
+- `services/api/src/main/resources/application-prod.yml`
+- `services/api/src/main/java/br/com/operadorzero/identity/GoogleAuthSuccessHandler.java`
+- `services/api/src/test/java/br/com/operadorzero/FoundationRulesTest.java`
+- `services/api/src/test/java/br/com/operadorzero/identity/GoogleAuthSuccessHandlerTest.java`
+- `services/api/src/test/java/br/com/operadorzero/shared/config/RedisOAuthSessionConfigurationTest.java`
+- `AUTHENTICATION.md` e notas relacionadas de arquitetura, seguranca, roadmap e producao
+
+### O que foi feito
+- Persistida no Redis a `HttpSession` temporaria usada pelo Spring Security durante Google OIDC, com namespace isolado, cookie dedicado e expiracao de 10 minutos.
+- Preservados `state`, `nonce` e verificador PKCE entre reinicios ou troca de instancia do Render, sem alterar a sessao opaca de usuario persistida no PostgreSQL.
+- Adicionado log sanitizado de falha Google contendo somente codigo tecnico validado e classe da excecao.
+- Adicionados testes da configuracao Redis, serializacao completa do pedido OAuth e ausencia de detalhes sensiveis no log.
+
+### Motivo
+- O primeiro callback real falhou porque o Render Free reiniciou a API durante o consentimento e a nova instancia nao possuia o pedido de autorizacao mantido apenas em memoria.
+
+### Impacto
+- Backend, Redis, Google OIDC, observabilidade segura, testes e documentacao; sem migration e sem alteracao do frontend.
+
+### Testes
+- Testes de regressao falharam antes do patch por ausencia da sessao Redis e do diagnostico sanitizado.
+- `mvn -B clean verify`: 27 testes aprovados.
+- `npm run check`: lint, cenarios, build, bundle e configuracao de deploy aprovados.
+
+### Pendencias
+- Publicar no Render e repetir callback/sessao Google E2E.
+- Se o log retornar `invalid_token_response`, validar novamente o segredo do cliente no Render sem copiar o valor para codigo ou conversa.
+
 ## 2026-07-23 - Homologacao inicial do Google OAuth no staging
 
 ### Arquivos alterados

@@ -21,6 +21,20 @@ class FoundationRulesTest {
     }
 
     @Test
+    void productionPersistsTemporaryOauthSessionInRedis() throws Exception {
+        String pom = Files.readString(Path.of("pom.xml"));
+        String productionYaml = Files.readString(Path.of("src/main/resources/application-prod.yml"));
+
+        assertThat(pom).contains("spring-session-data-redis");
+        assertThat(productionYaml).contains(
+            "timeout: 10m",
+            "namespace: operador-zero:oauth-session",
+            "repository-type: default",
+            "name: OZ_OAUTH_SESSION"
+        );
+    }
+
+    @Test
     void migrationsUseConstraintsAndNoDestructiveStatements() throws Exception {
         String v1 = Files.readString(Path.of("src/main/resources/db/migration/V1__identity_access_foundation.sql"));
         String v2 = Files.readString(Path.of("src/main/resources/db/migration/V2__operator_profile_privacy.sql"));

@@ -4,7 +4,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -13,6 +17,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @Component
 public class GoogleAuthSuccessHandler implements AuthenticationSuccessHandler, AuthenticationFailureHandler {
+    private static final Logger log = LoggerFactory.getLogger(GoogleAuthSuccessHandler.class);
+    private static final Pattern SAFE_ERROR_CODE = Pattern.compile("[A-Za-z0-9._-]{1,64}");
+
     private final AuthService service;
     private final AuthCookieService cookies;
     private final AuthProperties properties;
@@ -45,9 +52,21 @@ public class GoogleAuthSuccessHandler implements AuthenticationSuccessHandler, A
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         org.springframework.security.core.AuthenticationException exception)
             throws IOException, ServletException {
+        log.warn("Google OIDC authentication failed; errorCode={}; exceptionType={}",
+            safeErrorCode(exception), exception.getClass().getSimpleName());
         cookies.clearGoogleIntent(response);
         invalidateTemporarySession(request);
         response.sendRedirect(frontendRedirect("error", "GOOGLE_AUTH_FAILED"));
+    }
+
+    private String safeErrorCode(org.springframework.security.core.AuthenticationException exception) {
+        if (exception instanceof OAuth2AuthenticationException oauthException) {
+            String errorCode = oauthException.getError().getErrorCode();
+            if (errorCode != null && SAFE_ERROR_CODE.matcher(errorCode).matches()) {
+                return errorCode;
+            }
+        }
+        return "unclassified";
     }
 
     private String frontendRedirect(String status, String code) {
