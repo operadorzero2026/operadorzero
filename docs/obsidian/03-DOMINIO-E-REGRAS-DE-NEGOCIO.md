@@ -13,7 +13,7 @@
 - Achievement: definição versionada e concessão idempotente.
 - Report/AuditEvent: moderação e rastreabilidade imutável.
 - Classifieds: mural de anúncios, catálogo, conversa, proposta informativa, reputação e moderação, sem transação financeira, conforme [[08-CLASSIFICADOS]].
-- Finance & Advertising: ledger, pagamentos, comissão, recebível de organizador, campanha, plano, veiculação, conciliação e auditoria, conforme [[15-FINANCEIRO-E-PUBLICIDADE]].
+- Community Highlights: curadoria gratuita, vigência, região, posição, motivo, responsável e auditoria, conforme [[15-DESTAQUES-DA-COMUNIDADE]].
 
 ## Relacionamentos
 

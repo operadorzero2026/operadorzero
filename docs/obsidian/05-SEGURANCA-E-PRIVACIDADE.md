@@ -47,9 +47,9 @@ O dominio Resend possui SPF/DKIM verificados e os fluxos de confirmacao e recupe
 
 [[14-COMUNIDADE]] amplia riscos de assédio, discriminação, exposição de dados, fraude, conteúdo ilegal, denúncias abusivas e moderação indevida. Publicação exige análise no backend; automação não é prova; denunciante é protegido; decisões são motivadas e recorríveis; auditoria é imutável; ranking esportivo permanece separado. A abertura para menores e os termos dependem de revisão jurídica.
 
-## Financeiro e publicidade
+## Plataforma sem movimentação financeira
 
-[[15-FINANCEIRO-E-PUBLICIDADE]] exige validação de webhook e montantes, idempotência ponta a ponta, ledger append-only, OAuth sem coleta de senha, segredos no servidor, MFA/reautenticação administrativa, conciliação e separação contábil. Pagamento nunca autoriza publicação sem moderação.
+O Operador Zero não processa cobranças, não recebe valores, não calcula comissões e não vende prioridade. Informações adicionais de operações bloqueiam valores, meios de pagamento, dados bancários, QR Codes e links. Classificados preservam somente valor informativo e conversa entre usuários, conforme [[08-CLASSIFICADOS]]. Destaques seguem [[15-DESTAQUES-DA-COMUNIDADE]].
 
 ## Classificados
 

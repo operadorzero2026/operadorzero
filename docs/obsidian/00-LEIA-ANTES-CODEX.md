@@ -18,8 +18,9 @@ Este vault é a memória oficial do Operador Zero. Antes de alterar código, lei
 - [[12-CONQUISTAS-E-MEDALHAS]]
 - [[13-MEU-OPERADOR]]
 - [[14-COMUNIDADE]]
-- [[15-FINANCEIRO-E-PUBLICIDADE]]
+- [[15-DESTAQUES-DA-COMUNIDADE]]
 - [[16-ARQUITETURA-DE-PRODUCAO]]
+- [[TERMOS-PLATAFORMA-GRATUITA]]
 - [[99-HISTORICO-DE-ALTERACOES]]
 
 ## Princípios invariáveis

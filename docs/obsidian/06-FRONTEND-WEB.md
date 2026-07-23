@@ -4,9 +4,9 @@
 
 Os formularios de Classificados, propostas, Operacoes, Minha Equipe e Meu Operador reutilizam `BrazilLocationFields`. O usuario escolhe primeiro um dos 27 estados; somente depois a cidade e habilitada com os municipios da UF retornados pela API oficial de localidades do IBGE. A troca de estado limpa a cidade anterior, ha cache por sessao, estado de carregamento e tentativa novamente em caso de falha. Em producao, a API do Operador Zero tambem deve validar a combinacao UF/municipio, sem confiar apenas no frontend.
 
-## Financeiro e destaques patrocinados
+## Destaques da comunidade
 
-[[15-FINANCEIRO-E-PUBLICIDADE]] adiciona painel financeiro responsivo, simulador de split, campanhas, checkout sandbox e blocos `Patrocinado` na Visão Geral. O conteúdo pago é visualmente separado do orgânico. Nenhum pagamento ou dado financeiro é transmitido pelo protótipo.
+[[15-DESTAQUES-DA-COMUNIDADE]] apresenta curadoria gratuita na Visão Geral e uma administração demonstrativa com tipo, região, período, posição, motivo, responsável, ativação, pausa e encerramento. Nenhum usuário pode comprar prioridade e as alterações não são persistidas.
 
 ## Comunidade demonstrativa
 
@@ -68,7 +68,7 @@ A modalidade [[CLASSIFICADOS-PROCURO-EQUIPAMENTO]] compartilha o mesmo mural e a
 
 ## Operações demonstrativas
 
-A navegação conectada abre [[09-OPERACOES]] com agenda cronológica, abas de situação, filtros, cards completos, detalhes por abas e assistente de criação em seis etapas. Modalidade personalizada, regras, PDF, missões, times, esquadrões, custos e inscrições são somente representações visuais; nada é persistido e nenhuma permissão é aplicada fora do frontend.
+A navegação conectada abre [[09-OPERACOES]] com agenda cronológica, abas de situação, filtros, cards completos, detalhes por abas e assistente de criação em seis etapas. Todas as inscrições são gratuitas; o campo adicional aceita somente orientações não financeiras. Modalidade personalizada, regras, PDF, missões, times, esquadrões e inscrições são representações visuais; nada é persistido e nenhuma permissão é aplicada fora do frontend.
 
 O assistente e os filtros distinguem `Modalidade da operação` de `Tipo de jogo`. Cards e detalhes exibem os dois valores e a indicação para iniciantes. A modalidade pode sugerir um modelo editável, aplicado integralmente, parcialmente ou ignorado; nunca substitui conteúdo de forma silenciosa.
 

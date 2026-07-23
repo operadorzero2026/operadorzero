@@ -19,4 +19,4 @@ Nenhum segredo pode usar prefixo `VITE_`. Segredos de Google, banco, Redis, e-ma
 5. Adicionar o dominio Vercel exato a `CORS_ALLOWED_ORIGINS` no Render.
 6. Somente promover para Production apos os gates do checklist.
 
-O plano Hobby e destinado a uso pessoal e nao comercial. Como o produto inclui classificados e um modulo financeiro planejado, a escolha de plano e a publicacao comercial exigem decisao explicita do responsavel; esta preparacao nao autoriza contratacao.
+O plano Hobby e destinado a uso pessoal e nao comercial. A plataforma permanece gratuita e sem modulo financeiro; ainda assim, a escolha de plano e qualquer publicacao comercial exigem decisao explicita do responsavel. Esta preparacao nao autoriza contratacao.

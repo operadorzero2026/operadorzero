@@ -8,7 +8,7 @@
 4. Ranking e conquistas auditaveis.
 5. Classificados, comunidade, chat, moderacao, denuncia e recurso.
 6. Uploads privados com quarentena e antivirus.
-7. Financeiro, publicidade e Mercado Pago idempotente.
+7. Destaques gratuitos da comunidade com curadoria administrativa auditável.
 8. CI/CD, carga, seguranca, restore, alertas e go-live controlado.
 
 Os gates estao em [[16-ARQUITETURA-DE-PRODUCAO]].
@@ -17,8 +17,8 @@ Os gates estao em [[16-ARQUITETURA-DE-PRODUCAO]].
 - [ ] Backend, migrations, política de visibilidade, autenticação forte, mídia segura e busca indexada de [[13-MEU-OPERADOR]].
 - [x] Protótipo responsivo e documentação operacional de [[14-COMUNIDADE]].
 - [ ] Backend, migrations, moderação contextual, storage seguro, recursos, retenção e revisão jurídica da Comunidade.
-- [x] Protótipo financeiro/publicitário e contratos de [[15-FINANCEIRO-E-PUBLICIDADE]].
-- [ ] Elegibilidade Mercado Pago, sandbox, ledger, split, webhook, conciliação, fiscal e revisão jurídica/contábil.
+- [x] Protótipo de [[15-DESTAQUES-DA-COMUNIDADE]] sem monetização.
+- [ ] Persistir curadoria gratuita com RBAC administrativo e auditoria.
 
 ## Ranking
 

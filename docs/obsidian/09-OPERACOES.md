@@ -14,7 +14,7 @@ O módulo pertence ao agregado `Operation` descrito em [[03-DOMINIO-E-REGRAS-DE-
 - filtros de tipo, cidade, participação e documento;
 - cards com capa, data, modalidade, campo, preço, vagas, inscritos, status, organizador, PDF, times e missões;
 - detalhe com abas de visão geral, regras, missões, times/esquadrões, cronograma, documento, participantes e atualizações;
-- assistente de criação em seis etapas: informações, local, data, custos, regras/documento e estrutura;
+- assistente de criação em seis etapas: informações, local, data, informações adicionais, regras/documento e estrutura;
 - modalidade personalizada, múltiplos times/esquadrões e missões demonstrativas;
 - nenhum dado, PDF, inscrição, aceite ou rascunho é persistido.
 
@@ -68,6 +68,6 @@ Consultas de próximas operações usam `start_at >= now()` e `ORDER BY start_at
 
 ## Segurança e auditoria
 
-PDF somente após validação de MIME real, limite configurável, quarentena, antimalware, nome aleatório, storage compatível com S3 e URL assinada. Textos são dados, sem HTML arbitrário. Mudanças de data, local, preço, regras, documento, missão, time, participante, pagamento manual, cancelamento e finalização geram auditoria com ator, valores anterior/novo, motivo e correlação.
+PDF somente após validação de MIME real, limite configurável, quarentena, antimalware, nome aleatório, storage compatível com S3 e URL assinada. Textos são dados, sem HTML arbitrário. Informações adicionais bloqueiam valores, dados bancários, meios de pagamento, QR Codes e links. Mudanças de data, local, regras, documento, missão, time, participante, cancelamento e finalização geram auditoria com ator, valores anterior/novo, motivo e correlação.
 
 Local preciso reservado, missões secretas, briefing privado e composição interna nunca podem ser recuperados por troca de ID. Veja [[05-SEGURANCA-E-PRIVACIDADE]].

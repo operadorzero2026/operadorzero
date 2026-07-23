@@ -4,4 +4,4 @@ Modelo local em `.env.example`. Na API de staging sao obrigatorias: `DATABASE_UR
 
 Producao usa cofre de segredos, rotacao, identidade por workload quando disponivel e acesso minimo. Valores reais nao entram em `.env`, compose, logs, imagens ou repositorio. Variaveis publicas do Vite jamais guardam segredo.
 
-`RESEND_API_KEY` e qualquer chave OIDC, S3, Mercado Pago ou telemetria pertencem somente ao backend e ao cofre do provedor. Nunca usar prefixo `VITE_`, registrar o valor, copiar para documentacao ou persistir no Git.
+`RESEND_API_KEY` e qualquer chave OIDC, S3 ou telemetria pertencem somente ao backend e ao cofre do provedor. Variaveis de gateway financeiro nao fazem parte da plataforma e devem ser rejeitadas em qualquer ambiente. Nunca usar prefixo `VITE_`, registrar o valor, copiar para documentacao ou persistir no Git.

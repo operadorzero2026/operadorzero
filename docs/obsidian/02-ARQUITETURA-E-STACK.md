@@ -2,7 +2,7 @@
 
 ## Decisao de producao - 2026-07-21
 
-O backend principal sera um monolito modular Java 21/Spring Boot, sem um segundo backend principal em NestJS. PostgreSQL/Flyway sao a fonte de verdade; Redis atende estado efemero. Arquivos, e-mail e pagamentos entram por adaptadores. A SPA atual sera migrada modulo a modulo. Ver [[16-ARQUITETURA-DE-PRODUCAO]].
+O backend principal sera um monolito modular Java 21/Spring Boot, sem um segundo backend principal em NestJS. PostgreSQL/Flyway sao a fonte de verdade; Redis atende estado efemero. Arquivos e e-mail entram por adaptadores. A SPA atual sera migrada modulo a modulo. Ver [[16-ARQUITETURA-DE-PRODUCAO]].
 
 ## Decisão inicial
 
@@ -31,7 +31,7 @@ Implementacao de 2026-07-23: a API usa sessao opaca de usuario persistida no Pos
 
 ## Limites de módulo
 
-Identity & Access, Operators, Teams, Fields & Maps, Operations, Performance Validation, Rankings, Championships, Achievements, Classifieds, Community, Finance & Advertising, Moderation, Notifications e Administration. Integrações ocorrem por serviços de aplicação/eventos; módulos não acessam tabelas alheias diretamente. O financeiro segue [[15-FINANCEIRO-E-PUBLICIDADE]].
+Identity & Access, Operators, Teams, Fields & Maps, Operations, Performance Validation, Rankings, Championships, Achievements, Classifieds, Community, Community Highlights, Moderation, Notifications e Administration. Integrações ocorrem por serviços de aplicação/eventos; módulos não acessam tabelas alheias diretamente. A curadoria gratuita segue [[15-DESTAQUES-DA-COMUNIDADE]].
 
 ## Ambientes
 

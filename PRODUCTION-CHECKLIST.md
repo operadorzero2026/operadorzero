@@ -8,7 +8,7 @@
 - [ ] Redis com autenticacao/rede privada e politica de indisponibilidade.
 - [ ] Upload privado, quarentena, antivirus, quota e remocao.
 - [ ] E-mail com SPF, DKIM, DMARC, bounce e templates.
-- [ ] Mercado Pago homologado, webhook idempotente e reconciliacao.
+- [x] Nenhum gateway, checkout, webhook financeiro, comissao ou publicidade paga configurado.
 - [ ] Moderacao, denuncia, recurso, bloqueio e retencao operacionais.
 - [ ] Politica de privacidade, termos, consentimentos e canal LGPD aprovados.
 - [ ] Logs/metricas/traces, alertas, on-call e runbooks ativos.

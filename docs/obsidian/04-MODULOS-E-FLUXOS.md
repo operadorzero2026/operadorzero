@@ -20,7 +20,7 @@ Visitante, operador, capitão/admin de equipe, organizador de partida, administr
 10. Classificados: item usado permitido -> anúncio em análise -> publicação -> conversa/proposta informativa -> reservado/vendido -> avaliação, sob os gates de [[08-CLASSIFICADOS]].
 11. Conquistas: evento válido -> atualização incremental -> avaliação de regra versionada -> concessão idempotente -> notificação agrupada -> destaque opcional, conforme [[12-CONQUISTAS-E-MEDALHAS]].
 12. Comunidade: aceite versionado -> análise preventiva -> publicação/revisão -> interação -> denúncia -> decisão motivada -> recurso, conforme [[14-COMUNIDADE]].
-13. Financeiro: pedido -> checkout -> webhook validado -> ledger -> comissão/split ou receita publicitária -> conciliação -> estorno/auditoria, conforme [[15-FINANCEIRO-E-PUBLICIDADE]].
+13. Destaques da comunidade: seleção administrativa -> motivo e vigência -> publicação gratuita -> pausa/encerramento -> auditoria, conforme [[15-DESTAQUES-DA-COMUNIDADE]].
 
 ## Identidade implementada em 2026-07-22
 
@@ -32,4 +32,4 @@ Convites, decisões de inscrição, mudanças/cancelamentos, lembretes, validaç
 
 ## Fora do primeiro MVP
 
-Chat privado geral, mapa interativo, pagamentos integrados, automação completa de chaves e cadastro de menores com consentimento. O chat estritamente vinculado a anúncio pertence aos Classificados e exige os controles de abuso de [[08-CLASSIFICADOS]].
+Chat privado geral, mapa interativo, automação completa de chaves e cadastro de menores com consentimento. O chat estritamente vinculado a anúncio pertence aos Classificados e exige os controles de abuso de [[08-CLASSIFICADOS]].

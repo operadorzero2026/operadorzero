@@ -1,5 +1,34 @@
 # Histórico de alterações
 
+## 2026-07-23 - Remocao da monetizacao e destaques gratuitos
+
+### Arquivos alterados
+- `src/App.tsx`, `src/CommunityHighlights.tsx` e `src/styles.css`
+- `services/api/src/main/resources/db/migration/V4__remove_financial_role.sql`
+- `services/api/src/test/java/br/com/operadorzero/FoundationRulesTest.java`
+- `scripts/free-platform-scenarios.mjs` e `package.json`
+- documentacao raiz e notas Obsidian relacionadas
+
+### O que foi feito
+- Removidos painel financeiro, checkout demonstrativo, Pix, cartao, comissao, split, publicidade paga e residuos de gateway.
+- Operacoes passaram a exibir somente inscricao gratuita, sem preco ou status financeiro.
+- Informacoes adicionais do organizador passaram a bloquear valores, meios de pagamento, dados bancarios, QR Codes e links.
+- Destaques patrocinados foram substituidos por Destaques da comunidade, com curadoria gratuita e gestao demonstrativa auditavel em memoria.
+- A migration `V4` audita atribuicoes e remove o papel legado `FINANCE_MANAGER` sem apagar usuarios ou outros papeis.
+
+### Motivo
+- Manter o Operador Zero como plataforma gratuita, sem movimentacao financeira ou prioridade comprada.
+
+### Impacto
+- Frontend, banco, RBAC, testes, seguranca e documentacao; sem deploy, push, merge ou alteracao de producao.
+
+### Testes
+- Cenarios da plataforma gratuita, lint, build, testes backend, busca de residuos e varredura de seguranca.
+
+### Pendencias
+- Persistir operacoes, inscricoes, Classificados e destaques somente apos APIs com autorizacao por objeto, auditoria e testes de seguranca.
+- Aplicar `V4` apenas em ambiente aprovado e com backup; nenhuma migration remota foi executada nesta alteracao.
+
 ## 2026-07-23 - Homologacao externa de e-mail e bloqueio de producao
 
 ### Arquivos alterados

@@ -25,8 +25,8 @@ Em 2026-07-21 foi iniciada a transicao do prototipo para uma arquitetura real. A
 
 ## Limite honesto
 
-O Operador Zero ainda nao esta pronto para operacao completa com usuarios reais. Google OIDC e e-mails transacionais passaram no E2E de staging, mas o segredo Google anterior, DMARC e bounces ainda exigem conclusao. O PostgreSQL gratuito sera excluido em 20 de agosto de 2026 se nao houver upgrade; a API gratuita hiberna e o Redis gratuito nao possui persistencia. Autorizacao de casos de uso, S3 seguro, moderacao, Mercado Pago, migracao dos dados simulados, backup restaurado, termos/privacidade e observabilidade externa continuam pendentes. Recursos gratuitos do Render sao apenas staging e a escolha de plano comercial da Vercel/Render exige autorizacao explicita.
+O Operador Zero ainda nao esta pronto para operacao completa com usuarios reais. Google OIDC e e-mails transacionais passaram no E2E de staging, mas o segredo Google anterior, DMARC e bounces ainda exigem conclusao. O PostgreSQL gratuito sera excluido em 20 de agosto de 2026 se nao houver upgrade; a API gratuita hiberna e o Redis gratuito nao possui persistencia. Autorizacao de casos de uso, S3 seguro, moderacao, migracao dos dados simulados, backup restaurado, termos/privacidade e observabilidade externa continuam pendentes. A plataforma nao processa movimentacao financeira. Recursos gratuitos do Render sao apenas staging e a escolha de plano comercial da Vercel/Render exige autorizacao explicita.
 
 ## Sequencia
 
-Fundacao -> identidade/RBAC -> operador/equipe/operacoes -> ranking -> classificados/comunidade/chat -> arquivos -> financeiro/pagamentos -> endurecimento operacional. Ver [[07-ROADMAP-MVP]], [[05-SEGURANCA-E-PRIVACIDADE]] e [[99-HISTORICO-DE-ALTERACOES]].
+Fundacao -> identidade/RBAC -> operador/equipe/operacoes -> ranking -> classificados/comunidade/chat -> arquivos -> destaques gratuitos -> endurecimento operacional. Ver [[07-ROADMAP-MVP]], [[05-SEGURANCA-E-PRIVACIDADE]] e [[99-HISTORICO-DE-ALTERACOES]].

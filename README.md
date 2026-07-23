@@ -8,7 +8,8 @@ Plataforma brasileira para operadores, equipes, operacoes, ranking, classificado
 - API: Java 21, Spring Boot, Spring Security, JPA, Flyway, PostgreSQL e Redis em `services/api`.
 - Seguranca: API deny-by-default, CORS explicito, health check publico, erros sem stack trace e nenhum segredo permitido no bundle web.
 - Deploy preparado: Vercel para a SPA e Render Blueprint para API, PostgreSQL e Key Value de staging.
-- Bloqueio de producao: modulos persistentes, autorizacao por objeto, uploads, homologacao externa de e-mail/Google, pagamentos, moderacao e backup restaurado ainda precisam ser concluidos.
+- Plataforma gratuita: nao processa cobrancas, nao recebe valores, nao calcula comissao e nao possui publicidade paga.
+- Bloqueio de producao: modulos persistentes, autorizacao por objeto, uploads, moderacao e backup restaurado ainda precisam ser concluidos.
 
 ## Desenvolvimento
 
