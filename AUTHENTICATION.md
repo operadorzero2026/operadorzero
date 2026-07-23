@@ -20,6 +20,6 @@ O handshake Google usa uma sessao temporaria separada (`OZ_OAUTH_SESSION`), `Htt
 
 Cadastro, login, recuperacao e OIDC recebem rate limit por IP e sujeito no Redis. Falha do Redis fecha o fluxo de autenticacao, em vez de remover o limite. E-mail e Google dependem de configuracao externa; nenhuma credencial pertence ao frontend.
 
-O envio transacional usa a API HTTPS da Resend com `Idempotency-Key`; `RESEND_API_KEY` existe somente no backend. Falhas do provedor sao registradas sem destinatario em claro, corpo da resposta ou chave. O remetente depende de dominio verificado.
+O envio transacional usa a API HTTPS da Resend com `Idempotency-Key`; `RESEND_API_KEY` existe somente no backend. Falhas do provedor sao registradas sem destinatario em claro, corpo da resposta ou chave. O dominio `mail.operadorzero.com.br` esta verificado e os e-mails de confirmacao e recuperacao foram entregues no E2E externo.
 
-Pendencias antes de usuarios reais: dominio Resend homologado com SPF/DKIM/DMARC e tratamento de bounce, remocao do segredo Google anterior depois da homologacao concluida, MFA administrativo, reautenticacao critica, central de sessoes e termos/privacidade aprovados.
+Pendencias antes de usuarios reais: DMARC e tratamento de bounce, remocao do segredo Google anterior depois da homologacao concluida, MFA administrativo, reautenticacao critica, central de sessoes, termos/privacidade aprovados e infraestrutura sem expiracao.

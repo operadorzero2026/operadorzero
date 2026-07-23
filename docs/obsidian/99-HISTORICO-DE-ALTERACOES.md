@@ -1,5 +1,35 @@
 # Histórico de alterações
 
+## 2026-07-23 - Homologacao externa de e-mail e bloqueio de producao
+
+### Arquivos alterados
+- Configuracao externa do Resend e DNS do remetente
+- `AUTHENTICATION.md`
+- `docs/obsidian/01-ESTADO-ATUAL-DO-PROJETO.md`
+- `docs/obsidian/05-SEGURANCA-E-PRIVACIDADE.md`
+- `docs/obsidian/07-ROADMAP-MVP.md`
+- `docs/obsidian/16-ARQUITETURA-DE-PRODUCAO.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Confirmado que `mail.operadorzero.com.br` esta verificado e pronto para envio no Resend.
+- Confirmadas entregas externas dos e-mails de confirmacao e recuperacao sem registrar destinatarios ou tokens na documentacao.
+- Identificado no Render que o PostgreSQL gratuito expira em 20 de agosto de 2026, a API gratuita hiberna e o Redis gratuito nao possui persistencia.
+
+### Motivo
+- Separar identidade tecnicamente homologada de infraestrutura realmente apta a armazenar cadastros permanentes.
+
+### Impacto
+- E-mail, arquitetura, seguranca e documentacao; sem alteracao de segredo, migration ou plano pago.
+
+### Testes
+- `POST /api/auth/password-recovery` retornou `202` com CORS do dominio oficial.
+- O Resend classificou o envio como `delivered` e a readiness da API permaneceu `UP`.
+
+### Pendencias
+- Autorizar e configurar recursos persistentes antes de mudar `VITE_APP_ENV` para `production` ou remover os avisos de staging.
+- Configurar DMARC, webhook de bounce, backup/restore, termos e privacidade aprovados.
+
 ## 2026-07-23 - Google OAuth publicado para publico externo
 
 ### Arquivos alterados

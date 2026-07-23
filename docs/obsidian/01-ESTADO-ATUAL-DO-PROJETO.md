@@ -12,7 +12,8 @@
 - Cadastro Google, callback e sessao autenticada foram validados E2E com uma conta de teste; resta desativar o segredo Google anterior.
 - O primeiro callback real revelou que o Render Free pode reiniciar a API entre a autorizacao e o retorno. O estado temporario do OAuth foi movido da memoria da instancia para Redis, com expiracao de 10 minutos e namespace isolado; o E2E remoto passou depois do deploy.
 - Falhas Google agora registram apenas classificacao tecnica sanitizada, permitindo distinguir estado perdido de falha na troca do token sem expor dados do provedor.
-- A chave Resend foi salva no Render, mas DNS do remetente, entrega real, confirmacao e recuperacao E2E continuam pendentes.
+- O dominio `mail.operadorzero.com.br` esta verificado no Resend; confirmacao e recuperacao foram entregues em enderecos de homologacao, sem expor tokens. DMARC, webhook de bounce e rotina operacional de falhas continuam pendentes.
+- O PostgreSQL gratuito do Render expira em 20 de agosto de 2026 e sera excluido se nao houver upgrade. A API gratuita hiberna e o Redis gratuito nao possui persistencia; esse conjunto continua sendo staging e nao deve receber cadastros reais permanentes.
 - Os modulos de negocio apos o login continuam demonstrativos; o sistema ainda nao esta liberado para usuarios reais. Ver [[16-ARQUITETURA-DE-PRODUCAO]].
 
 ## 2026-07-22

@@ -18,13 +18,14 @@ Em 2026-07-21 foi iniciada a transicao do prototipo para uma arquitetura real. A
 - Identidade por e-mail/senha e Google OIDC implementada com sessao opaca `HttpOnly`, CSRF, rate limit Redis e recuperacao por e-mail.
 - Readiness do Render valida estado da aplicacao, PostgreSQL e Redis sem acoplar reinicio da API a indisponibilidade temporaria da Resend.
 - Confirmacao e recuperacao usam a API HTTPS da Resend, evitando as portas SMTP bloqueadas no Render Free; a chave nunca entra no frontend e cada envio usa chave de idempotencia.
+- O dominio `mail.operadorzero.com.br` esta verificado no Resend e os e-mails de confirmacao e recuperacao foram entregues no E2E externo.
 - Credenciais Google e chave Resend de staging foram salvas somente no Render. Google OIDC foi validado remotamente com CSRF, CORS, PKCE, `nonce`, callback, criacao de conta e sessao autenticada; o cliente externo esta `Em producao`, autoriza as origens do dominio oficial e mantem o callback exato na API Render.
 - A sessao temporaria do Google OIDC usa Redis com namespace isolado e TTL de 10 minutos, evitando perda de `state`, `nonce` e PKCE quando o Render Free reinicia a API. A sessao opaca do usuario permanece separada no PostgreSQL.
 - Staging web identificado visualmente e bloqueado para indexacao; autenticacao para usuarios reais so deve ser liberada depois de homologar remetente Resend, callback Google, termos, privacidade e os demais gates desta pagina.
 
 ## Limite honesto
 
-O Operador Zero ainda nao esta pronto para operacao completa com usuarios reais. Google OIDC passou no E2E de staging, mas o segredo anterior ainda deve ser removido; Resend ainda precisa de DNS e entrega E2E. Autorizacao de casos de uso, S3 seguro, moderacao, Mercado Pago, migracao dos dados simulados, backup restaurado, termos/privacidade e observabilidade externa continuam pendentes. Recursos gratuitos do Render sao apenas staging e a escolha de plano comercial da Vercel/Render exige autorizacao explicita.
+O Operador Zero ainda nao esta pronto para operacao completa com usuarios reais. Google OIDC e e-mails transacionais passaram no E2E de staging, mas o segredo Google anterior, DMARC e bounces ainda exigem conclusao. O PostgreSQL gratuito sera excluido em 20 de agosto de 2026 se nao houver upgrade; a API gratuita hiberna e o Redis gratuito nao possui persistencia. Autorizacao de casos de uso, S3 seguro, moderacao, Mercado Pago, migracao dos dados simulados, backup restaurado, termos/privacidade e observabilidade externa continuam pendentes. Recursos gratuitos do Render sao apenas staging e a escolha de plano comercial da Vercel/Render exige autorizacao explicita.
 
 ## Sequencia
 

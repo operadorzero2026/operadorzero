@@ -41,7 +41,7 @@ O callback real revelou perda do pedido de autorizacao quando o Render Free rein
 
 Threat modeling revisado, testes BOLA/IDOR, restauração de backup, dependências auditadas, MFA administrativo, política jurídica para menores, DPO/canal de privacidade e avaliação do provedor.
 
-Tambem permanecem obrigatorios: dominio Resend com SPF/DKIM/DMARC, tratamento de bounce e webhook validado, credenciais Google separadas por ambiente, rotacao do segredo Google anterior apos o E2E, dominio que reduza dependencia de cookies de terceiros, termos/privacidade aprovados e teste E2E externo dos dois provedores. `RESEND_API_KEY` fica somente no Render e nenhum segredo deve usar prefixo `VITE_`.
+O dominio Resend possui SPF/DKIM verificados e os fluxos de confirmacao e recuperacao tiveram entrega externa validada. Permanecem obrigatorios: DMARC, tratamento de bounce e webhook validado, credenciais Google separadas por ambiente, rotacao do segredo Google anterior apos o E2E, termos/privacidade aprovados e infraestrutura sem expiracao. `RESEND_API_KEY` fica somente no Render e nenhum segredo deve usar prefixo `VITE_`.
 
 ## Comunidade
 
