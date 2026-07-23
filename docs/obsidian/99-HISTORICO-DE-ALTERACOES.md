@@ -1,5 +1,37 @@
 # Histórico de alterações
 
+## 2026-07-23 - Dominio oficial no staging
+
+### Arquivos alterados
+- Configuracao DNS de `operadorzero.com.br` no Registro.br
+- Dominios do projeto Operador Zero na Vercel
+- Variaveis `CORS_ALLOWED_ORIGINS` e `FRONTEND_BASE_URL` no Render
+- Origens JavaScript do cliente Google OAuth
+- `docs/obsidian/01-ESTADO-ATUAL-DO-PROJETO.md`
+- `docs/obsidian/16-ARQUITETURA-DE-PRODUCAO.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Publicado `https://operadorzero.com.br` como endereco principal do frontend de staging, com DNS e HTTPS validos.
+- Configurado redirecionamento permanente de `https://www.operadorzero.com.br` para o dominio raiz.
+- Mantidas somente origens HTTPS explicitas no CORS da API, preservando temporariamente o endereco legado da Vercel.
+- Atualizado o retorno da autenticacao para o dominio oficial e autorizadas as novas origens no cliente Google OAuth, sem expor secrets.
+
+### Motivo
+- Tornar o dominio registrado o ponto oficial de acesso e manter cadastro, sessao e Google OIDC funcionais entre Vercel e Render.
+
+### Impacto
+- DNS, frontend Vercel, backend Render, Google OAuth e documentacao; sem migration ou alteracao de segredo no frontend.
+
+### Testes
+- Resolucao conferida nos servidores autoritativos e em resolvedores publicos.
+- Vercel confirmou configuracao valida para dominio raiz e `www`; HTTPS e redirecionamento foram validados no navegador.
+- Readiness da API retornou `200`; CORS, sessao e inicio do Google OIDC foram verificados a partir do dominio oficial apos o deploy.
+
+### Pendencias
+- Manter o endereco legado da Vercel na allowlist apenas durante a transicao.
+- O ambiente continua identificado como staging e os modulos de negocio demonstrativos nao estao liberados para dados reais.
+
 ## 2026-07-23 - Persistencia do handshake Google OAuth no Redis
 
 ### Arquivos alterados

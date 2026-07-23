@@ -12,11 +12,13 @@ Em 2026-07-21 foi iniciada a transicao do prototipo para uma arquitetura real. A
 - API adaptada ao `PORT` do Render, URL PostgreSQL, `REDIS_URL` e CORS com origens explicitas.
 - A adaptacao de `DATABASE_URL` separa usuario e senha da URL JDBC, aplica a porta PostgreSQL padrao quando omitida e nunca registra o valor recebido.
 - Build Docker sem usuario root, Vercel SPA, Render Blueprint gratuito de staging e GitHub Actions preparados.
+- Frontend de staging publicado no dominio oficial `https://operadorzero.com.br`, com certificado HTTPS gerenciado pela Vercel e redirecionamento permanente de `www` para o dominio raiz.
+- A API Render usa `FRONTEND_BASE_URL=https://operadorzero.com.br` e CORS com allowlist explicita do dominio oficial, `www` e endereco legado da Vercel durante a transicao.
 - Bundle web validado para impedir credenciais e identificadores de segredo; demonstracao restrita ao desenvolvimento local.
 - Identidade por e-mail/senha e Google OIDC implementada com sessao opaca `HttpOnly`, CSRF, rate limit Redis e recuperacao por e-mail.
 - Readiness do Render valida estado da aplicacao, PostgreSQL e Redis sem acoplar reinicio da API a indisponibilidade temporaria da Resend.
 - Confirmacao e recuperacao usam a API HTTPS da Resend, evitando as portas SMTP bloqueadas no Render Free; a chave nunca entra no frontend e cada envio usa chave de idempotencia.
-- Credenciais Google e chave Resend de staging foram salvas somente no Render. Google OIDC foi validado remotamente com CSRF, CORS, PKCE, `nonce`, callback, criacao de conta e sessao autenticada.
+- Credenciais Google e chave Resend de staging foram salvas somente no Render. Google OIDC foi validado remotamente com CSRF, CORS, PKCE, `nonce`, callback, criacao de conta e sessao autenticada; o cliente Google autoriza as origens do dominio oficial e mantem o callback exato na API Render.
 - A sessao temporaria do Google OIDC usa Redis com namespace isolado e TTL de 10 minutos, evitando perda de `state`, `nonce` e PKCE quando o Render Free reinicia a API. A sessao opaca do usuario permanece separada no PostgreSQL.
 - Staging web identificado visualmente e bloqueado para indexacao; autenticacao para usuarios reais so deve ser liberada depois de homologar remetente Resend, callback Google, termos, privacidade e os demais gates desta pagina.
 
