@@ -44,4 +44,19 @@ class FoundationRulesTest {
         assertThat(v3).contains("auth_token", "user_session", "user_oidc_identity", "token_hash", "RESET_PASSWORD");
         assertThat(v1 + v2 + v3).doesNotContain("DROP TABLE", "TRUNCATE", "DELETE FROM");
     }
+
+    @Test
+    void financialRoleRemovalIsAuditedAndPreservesUsers() throws Exception {
+        String v4 = Files.readString(Path.of("src/main/resources/db/migration/V4__remove_financial_role.sql"));
+
+        assertThat(v4).contains(
+            "ROLE_ASSIGNMENT_REMOVED_BY_MIGRATION",
+            "migration-v4-remove-financial-role",
+            "V4 abortada: tabelas financeiras nao versionadas exigem inventario e exportacao",
+            "DELETE FROM user_role",
+            "DELETE FROM role_permission",
+            "DELETE FROM role WHERE code = 'FINANCE_MANAGER'"
+        );
+        assertThat(v4).doesNotContain("DELETE FROM app_user", "DROP TABLE", "TRUNCATE");
+    }
 }
