@@ -1,5 +1,14 @@
 # Estado atual do projeto
 
+## 2026-07-23
+
+- As credenciais Google OIDC de staging foram configuradas somente no backend do Render e `GOOGLE_AUTH_ENABLED` foi ativado.
+- O fluxo remoto foi validado de forma nao destrutiva: readiness `200`, emissao de intent com CSRF, redirecionamento `302` para `accounts.google.com` e CORS com credenciais limitado a `https://operadorzero.vercel.app`.
+- Um teste de regressao garante que `/oauth2/authorization/google` mantenha OIDC, PKCE e `nonce` quando o provedor estiver habilitado.
+- Ainda falta concluir o callback com uma conta Google de teste, validar a sessao resultante e, depois disso, desativar o segredo Google anterior.
+- A chave Resend foi salva no Render, mas DNS do remetente, entrega real, confirmacao e recuperacao E2E continuam pendentes.
+- Os modulos de negocio apos o login continuam demonstrativos; o sistema ainda nao esta liberado para usuarios reais. Ver [[16-ARQUITETURA-DE-PRODUCAO]].
+
 ## 2026-07-22
 
 - Cadastro por e-mail e senha, confirmacao de e-mail, login, recuperacao de senha, sessao e logout foram conectados entre SPA e API.

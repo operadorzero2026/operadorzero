@@ -1,6 +1,6 @@
 # Autenticacao
 
-Status em 2026-07-22: cadastro por e-mail/senha, confirmacao de e-mail, login, logout, recuperacao, troca de senha e Google OIDC estao implementados na API e conectados a SPA.
+Status em 2026-07-23: cadastro por e-mail/senha, confirmacao de e-mail, login, logout, recuperacao, troca de senha e Google OIDC estao implementados na API e conectados a SPA. No staging, o inicio do Google OIDC foi homologado ate o redirecionamento para `accounts.google.com`; o retorno autenticado e a criacao da sessao ainda exigem teste E2E com uma conta Google de teste.
 
 ## Contrato
 
@@ -20,4 +20,4 @@ Cadastro, login, recuperacao e OIDC recebem rate limit por IP e sujeito no Redis
 
 O envio transacional usa a API HTTPS da Resend com `Idempotency-Key`; `RESEND_API_KEY` existe somente no backend. Falhas do provedor sao registradas sem destinatario em claro, corpo da resposta ou chave. O remetente depende de dominio verificado.
 
-Pendencias antes de usuarios reais: dominio Resend homologado com SPF/DKIM/DMARC e tratamento de bounce, credenciais Google por ambiente, MFA administrativo, reautenticacao critica, central de sessoes, teste E2E no staging e termos/privacidade aprovados.
+Pendencias antes de usuarios reais: dominio Resend homologado com SPF/DKIM/DMARC e tratamento de bounce, conclusao do E2E de e-mail e do callback Google no staging, remocao do segredo Google anterior depois da homologacao, MFA administrativo, reautenticacao critica, central de sessoes e termos/privacidade aprovados.

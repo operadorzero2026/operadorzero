@@ -33,11 +33,13 @@ O browser recebe somente `VITE_API_URL`, que é configuração pública. Senhas 
 
 Desde 2026-07-22, a identidade real esta implementada: Argon2id, tokens de uso unico armazenados como SHA-256, cookie de sessao `HttpOnly`, CSRF, rate limit Redis, respostas neutras de e-mail, auditoria e OIDC/PKCE. O token de recuperacao aparece apenas no link recebido e e removido da URL antes da renderizacao. A SPA mantem o token CSRF somente em memoria e o renova depois da autenticacao.
 
+Em 2026-07-23, o inicio do Google OIDC foi validado no staging ate o redirecionamento oficial, incluindo intent protegido por CSRF, CORS explicito, PKCE e `nonce`. Segredos Google permanecem apenas no Render. O callback e a sessao autenticada ainda precisam de E2E com conta de teste; somente depois deve ser removido o segredo anterior do cliente OAuth.
+
 ## Pendências antes de produção
 
 Threat modeling revisado, testes BOLA/IDOR, restauração de backup, dependências auditadas, MFA administrativo, política jurídica para menores, DPO/canal de privacidade e avaliação do provedor.
 
-Tambem permanecem obrigatorios: dominio Resend com SPF/DKIM/DMARC, tratamento de bounce e webhook validado, credenciais Google separadas por ambiente, dominio que reduza dependencia de cookies de terceiros, termos/privacidade aprovados e teste E2E externo dos dois provedores. `RESEND_API_KEY` fica somente no Render e nenhum segredo deve usar prefixo `VITE_`.
+Tambem permanecem obrigatorios: dominio Resend com SPF/DKIM/DMARC, tratamento de bounce e webhook validado, credenciais Google separadas por ambiente, rotacao do segredo Google anterior apos o E2E, dominio que reduza dependencia de cookies de terceiros, termos/privacidade aprovados e teste E2E externo dos dois provedores. `RESEND_API_KEY` fica somente no Render e nenhum segredo deve usar prefixo `VITE_`.
 
 ## Comunidade
 

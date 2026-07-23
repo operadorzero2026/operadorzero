@@ -1,5 +1,36 @@
 # Histórico de alterações
 
+## 2026-07-23 - Homologacao inicial do Google OAuth no staging
+
+### Arquivos alterados
+- `services/api/src/test/java/br/com/operadorzero/shared/config/GoogleOAuthSecurityRouteTest.java`
+- `AUTHENTICATION.md`
+- `docs/obsidian/01-ESTADO-ATUAL-DO-PROJETO.md`
+- `docs/obsidian/05-SEGURANCA-E-PRIVACIDADE.md`
+- `docs/obsidian/07-ROADMAP-MVP.md`
+- `docs/obsidian/16-ARQUITETURA-DE-PRODUCAO.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Configurado e habilitado o Google OIDC de staging apenas por variaveis protegidas no backend Render, sem copiar segredos para codigo, frontend ou documentacao.
+- Validado remotamente o fluxo de intent com CSRF, o CORS explicito da Vercel e o redirecionamento `302` para o host oficial do Google.
+- Adicionado teste de regressao da rota `/oauth2/authorization/google`, exigindo OIDC, PKCE e `nonce` quando o provedor estiver habilitado.
+
+### Motivo
+- Tornar o login Google executavel no staging e impedir regressao da rota de autorizacao quando a configuracao externa estiver ativa.
+
+### Impacto
+- Backend, autenticacao Google, configuracao de staging no Render, testes e documentacao; sem alteracao de dados persistidos.
+
+### Testes
+- `mvn -B clean verify`.
+- `npm run check`.
+- Readiness remoto `200`, intent Google autenticado por CSRF, redirect oficial `302` e preflight CORS da origem Vercel.
+
+### Pendencias
+- Concluir callback e criacao da sessao com conta Google de teste, entao desativar o segredo anterior do cliente OAuth.
+- Homologar DNS, entrega, confirmacao e recuperacao via Resend antes de liberar usuarios reais.
+
 ## 2026-07-22 - Migração do e-mail de autenticação para Resend
 
 ### Arquivos alterados
