@@ -9,7 +9,7 @@
 - `services/api/src/test/java/br/com/operadorzero/FoundationRulesTest.java`
 - `services/api/src/test/java/br/com/operadorzero/identity/GoogleAuthSuccessHandlerTest.java`
 - `services/api/src/test/java/br/com/operadorzero/shared/config/RedisOAuthSessionConfigurationTest.java`
-- `src/App.tsx` e `scripts/auth-flow-scenarios.mjs`
+- `src/App.tsx`, `src/styles.css` e `scripts/auth-flow-scenarios.mjs`
 - `AUTHENTICATION.md` e notas relacionadas de arquitetura, seguranca, roadmap e producao
 
 ### O que foi feito
@@ -18,6 +18,7 @@
 - Adicionado log sanitizado de falha Google contendo somente codigo tecnico validado e classe da excecao.
 - Adicionados testes da configuracao Redis, serializacao completa do pedido OAuth e ausencia de detalhes sensiveis no log.
 - Adicionada orientacao especifica quando uma conta Google nova tenta usar o fluxo Entrar sem aceite dos Termos.
+- Eliminada a referencia visual remanescente da marca AirOps nos destaques patrocinados, reutilizando a identidade Operador Zero.
 
 ### Motivo
 - O primeiro callback real falhou porque o Render Free reiniciou a API durante o consentimento e a nova instancia nao possuia o pedido de autorizacao mantido apenas em memoria.
