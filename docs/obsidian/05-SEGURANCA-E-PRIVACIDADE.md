@@ -33,9 +33,9 @@ O browser recebe somente `VITE_API_URL`, que é configuração pública. Senhas 
 
 Desde 2026-07-22, a identidade real esta implementada: Argon2id, tokens de uso unico armazenados como SHA-256, cookie de sessao `HttpOnly`, CSRF, rate limit Redis, respostas neutras de e-mail, auditoria e OIDC/PKCE. O token de recuperacao aparece apenas no link recebido e e removido da URL antes da renderizacao. A SPA mantem o token CSRF somente em memoria e o renova depois da autenticacao.
 
-Em 2026-07-23, o inicio do Google OIDC foi validado no staging ate o redirecionamento oficial, incluindo intent protegido por CSRF, CORS explicito, PKCE e `nonce`. Segredos Google permanecem apenas no Render. O callback e a sessao autenticada ainda precisam de E2E com conta de teste; somente depois deve ser removido o segredo anterior do cliente OAuth.
+Em 2026-07-23, o Google OIDC foi validado E2E no staging, incluindo intent protegido por CSRF, CORS explicito, PKCE, `nonce`, callback, criacao de conta e sessao autenticada. Segredos Google permanecem apenas no Render. O segredo anterior do cliente OAuth deve ser removido apos esta homologacao.
 
-O callback real revelou perda do pedido de autorizacao quando o Render Free reiniciava a instancia durante o consentimento. A sessao temporaria do Spring Security passou a usar Redis, cookie `HttpOnly`/`Secure`/`SameSite=Lax`, namespace exclusivo e TTL de 10 minutos. A sessao de usuario continua opaca e persistida separadamente no PostgreSQL. Logs de falha OAuth aceitam somente codigo tecnico sanitizado e tipo da excecao; codigo de autorizacao, token, segredo e descricao do provedor continuam proibidos.
+O callback real revelou perda do pedido de autorizacao quando o Render Free reiniciava a instancia durante o consentimento. A sessao temporaria do Spring Security passou a usar Redis, cookie `HttpOnly`/`Secure`/`SameSite=Lax`, namespace exclusivo e TTL de 10 minutos; o E2E passou com essa configuracao. A sessao de usuario continua opaca e persistida separadamente no PostgreSQL. Logs de falha OAuth aceitam somente codigo tecnico sanitizado e tipo da excecao; codigo de autorizacao, token, segredo e descricao do provedor continuam proibidos.
 
 ## Pendências antes de produção
 

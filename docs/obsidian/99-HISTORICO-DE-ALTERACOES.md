@@ -9,6 +9,7 @@
 - `services/api/src/test/java/br/com/operadorzero/FoundationRulesTest.java`
 - `services/api/src/test/java/br/com/operadorzero/identity/GoogleAuthSuccessHandlerTest.java`
 - `services/api/src/test/java/br/com/operadorzero/shared/config/RedisOAuthSessionConfigurationTest.java`
+- `src/App.tsx` e `scripts/auth-flow-scenarios.mjs`
 - `AUTHENTICATION.md` e notas relacionadas de arquitetura, seguranca, roadmap e producao
 
 ### O que foi feito
@@ -16,6 +17,7 @@
 - Preservados `state`, `nonce` e verificador PKCE entre reinicios ou troca de instancia do Render, sem alterar a sessao opaca de usuario persistida no PostgreSQL.
 - Adicionado log sanitizado de falha Google contendo somente codigo tecnico validado e classe da excecao.
 - Adicionados testes da configuracao Redis, serializacao completa do pedido OAuth e ausencia de detalhes sensiveis no log.
+- Adicionada orientacao especifica quando uma conta Google nova tenta usar o fluxo Entrar sem aceite dos Termos.
 
 ### Motivo
 - O primeiro callback real falhou porque o Render Free reiniciou a API durante o consentimento e a nova instancia nao possuia o pedido de autorizacao mantido apenas em memoria.
@@ -27,10 +29,11 @@
 - Testes de regressao falharam antes do patch por ausencia da sessao Redis e do diagnostico sanitizado.
 - `mvn -B clean verify`: 27 testes aprovados.
 - `npm run check`: lint, cenarios, build, bundle e configuracao de deploy aprovados.
+- Deploy `12ca58c` Live; readiness `200`; cookie temporario seguro presente; cadastro Google, callback e sessao autenticada validados E2E.
 
 ### Pendencias
-- Publicar no Render e repetir callback/sessao Google E2E.
-- Se o log retornar `invalid_token_response`, validar novamente o segredo do cliente no Render sem copiar o valor para codigo ou conversa.
+- Desativar o segredo Google anterior agora que o E2E foi concluido.
+- Concluir DNS e entrega E2E da Resend antes de liberar usuarios reais.
 
 ## 2026-07-23 - Homologacao inicial do Google OAuth no staging
 

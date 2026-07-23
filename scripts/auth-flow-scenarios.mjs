@@ -22,4 +22,8 @@ if (!app.includes('getCurrentSession()') || !app.includes("mode === 'reset'")) {
   throw new Error('Restauracao de sessao ou recuperacao de senha nao esta conectada a interface.')
 }
 
+if (!app.includes("oauthCode === 'TERMS_REQUIRED'") || !app.includes('Selecione Criar conta')) {
+  throw new Error('Conta Google nova nao orienta o usuario a concluir cadastro e aceite.')
+}
+
 console.log('Fluxos frontend de sessao, CSRF, verificacao e recuperacao validados.')

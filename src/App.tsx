@@ -562,6 +562,8 @@ export default function App() {
         } else if (oauth === 'error' && active) {
           const message = oauthCode === 'ACCOUNT_LINK_REQUIRED'
             ? 'Este e-mail já existe. Entre com senha para vincular o Google com segurança.'
+            : oauthCode === 'TERMS_REQUIRED'
+              ? 'Esta conta Google ainda não está cadastrada. Selecione Criar conta, aceite os Termos e tente novamente.'
             : 'Não foi possível concluir o acesso com Google.'
           setAuthNotice(message)
           setAuthMode('login')
