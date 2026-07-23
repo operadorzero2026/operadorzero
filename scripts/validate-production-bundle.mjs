@@ -11,6 +11,13 @@ const forbidden = [
   /S3_SECRET_KEY/,
   /DATABASE_PASSWORD/,
   /RESEND_API_KEY/,
+  /Operação Linha de Frente/i,
+  /Cerco ao Distrito 7/i,
+  /Missão Vale Sombrio/i,
+  /Valkyrie Ops/i,
+  /Echo Squad/i,
+  /Sentinelas PR/i,
+  /Campo Bravo Zero/i,
 ]
 
 async function filesIn(directory) {

@@ -1,5 +1,11 @@
 # Frontend web
 
+## Estado oficial sem conteúdo fictício
+
+Desde 2026-07-23, a build oficial não importa os protótipos demonstrativos de Operações, Equipes, Ranking, Classificados, Comunidade, Destaques ou Conquistas. A landing apresenta estados vazios e o painel autenticado usa somente a identidade retornada por `/api/auth/session`.
+
+Enquanto um módulo não possuir persistência e autorização reais no backend, ele deve mostrar `Nenhum registro` e não pode aceitar uma ação que exista apenas no estado React. Os protótipos antigos permanecem fora do bundle oficial como referência temporária de produto e não podem ser reativados sem contratos reais. Esta decisão está ligada a [[05-SEGURANCA-E-PRIVACIDADE]] e [[01-ESTADO-ATUAL-DO-PROJETO]].
+
 ## Localizacao brasileira dependente
 
 Os formularios de Classificados, propostas, Operacoes, Minha Equipe e Meu Operador reutilizam `BrazilLocationFields`. O usuario escolhe primeiro um dos 27 estados; somente depois a cidade e habilitada com os municipios da UF retornados pela API oficial de localidades do IBGE. A troca de estado limpa a cidade anterior, ha cache por sessao, estado de carregamento e tentativa novamente em caso de falha. Em producao, a API do Operador Zero tambem deve validar a combinacao UF/municipio, sem confiar apenas no frontend.

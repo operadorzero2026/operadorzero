@@ -1,5 +1,34 @@
 # Histórico de alterações
 
+## 2026-07-23 - Remoção de conteúdo fictício da aplicação oficial
+
+### Arquivos alterados
+- `src/App.tsx`
+- `src/styles.css`
+- `scripts/real-content-scenarios.mjs`
+- `scripts/validate-production-bundle.mjs`
+- `package.json`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Removidos da aplicação oficial eventos, operadores, equipes, pontuações, anúncios, publicações, convites, alertas, conquistas e destaques fictícios.
+- Landing e painel autenticado passaram a exibir estados vazios honestos até existirem dados persistidos no backend.
+- O perfil autenticado usa somente nome, callsign, username e e-mail retornados pela sessão real.
+- A validação do bundle passou a bloquear novamente os principais nomes fictícios usados no protótipo.
+
+### Motivo
+- Garantir que o domínio oficial apresente exclusivamente dados reais gerados por contas reais.
+
+### Impacto
+- Frontend, testes e documentação. Autenticação real preservada; módulos ainda sem backend permanecem visíveis apenas como estados vazios.
+
+### Testes
+- `npm run check` e inspeção do bundle de produção.
+
+### Pendências
+- Criar APIs persistentes e autorização por módulo antes de habilitar publicação de operações, equipes, classificados, comunidade, ranking e conquistas.
+
 ## 2026-07-23 - Remocao da monetizacao e destaques gratuitos
 
 ### Arquivos alterados
