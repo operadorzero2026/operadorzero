@@ -16,6 +16,32 @@ type ApiError = {
 
 let csrfToken: string | null = null
 let csrfHeader = 'X-CSRF-TOKEN'
+const AUTH_REQUEST_TIMEOUT_MS = 15000
+
+class ApiTimeoutError extends Error {
+  constructor() {
+    super('A conexao esta demorando para iniciar. Aguarde alguns segundos e tente novamente.')
+    this.name = 'ApiTimeoutError'
+  }
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === 'AbortError'
+}
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = AUTH_REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController()
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal })
+  } catch (error) {
+    if (isAbortError(error)) throw new ApiTimeoutError()
+    throw error
+  } finally {
+    window.clearTimeout(timeout)
+  }
+}
 
 function getApiBaseUrl() {
   if (!configuredApiUrl) {
@@ -42,7 +68,7 @@ async function readError(response: Response) {
 
 async function ensureCsrf() {
   if (csrfToken) return
-  const response = await fetch(`${getApiBaseUrl()}/api/auth/csrf`, {
+  const response = await fetchWithTimeout(`${getApiBaseUrl()}/api/auth/csrf`, {
     method: 'GET',
     credentials: 'include',
     headers: { Accept: 'application/json' },
@@ -55,7 +81,7 @@ async function ensureCsrf() {
 
 async function post<T>(path: string, body: Record<string, unknown>): Promise<T> {
   await ensureCsrf()
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+  const response = await fetchWithTimeout(`${getApiBaseUrl()}${path}`, {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -105,23 +131,18 @@ export async function prepareGoogleLogin(termsAccepted: boolean) {
 }
 
 export async function getCurrentSession(timeoutMs = 7000): Promise<SessionUser | null> {
-  const controller = new AbortController()
-  const timeout = window.setTimeout(() => controller.abort(), timeoutMs)
   try {
-    const response = await fetch(`${getApiBaseUrl()}/api/auth/session`, {
+    const response = await fetchWithTimeout(`${getApiBaseUrl()}/api/auth/session`, {
       method: 'GET',
       credentials: 'include',
       headers: { Accept: 'application/json' },
-      signal: controller.signal,
-    })
+    }, timeoutMs)
     if (response.status === 204 || response.status === 401) return null
     if (!response.ok) throw await readError(response)
     return response.json() as Promise<SessionUser>
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return null
+    if (error instanceof ApiTimeoutError) return null
     throw error
-  } finally {
-    window.clearTimeout(timeout)
   }
 }
 

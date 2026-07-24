@@ -13,6 +13,10 @@ for (const required of [
   'new AbortController()',
   'controller.abort()',
   "error.name === 'AbortError'",
+  'AUTH_REQUEST_TIMEOUT_MS = 15000',
+  'fetchWithTimeout',
+  'ApiTimeoutError',
+  'A conexao esta demorando para iniciar.',
 ]) {
   if (!api.includes(required)) throw new Error(`Contrato de autenticacao ausente: ${required}`)
 }
@@ -27,6 +31,10 @@ if (!app.includes('getCurrentSession()') || !app.includes("mode === 'reset'")) {
 
 if (!app.includes('Continuar no site')) {
   throw new Error('Bootstrap de sessao nao oferece saida manual quando a API demora.')
+}
+
+if (!api.includes('if (error instanceof ApiTimeoutError) return null')) {
+  throw new Error('Timeout do bootstrap deve continuar silencioso e sem simular sessao.')
 }
 
 if (!app.includes("oauthCode === 'TERMS_REQUIRED'") || !app.includes('Selecione Criar conta')) {

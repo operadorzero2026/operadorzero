@@ -1,5 +1,31 @@
 # Histórico de alterações
 
+## 2026-07-24 - Recuperação do cadastro Google quando a API demora
+
+### Arquivos alterados
+- `src/api.ts`
+- `scripts/auth-flow-scenarios.mjs`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Centralizado o limite de espera das chamadas de autenticação.
+- CSRF e preparação do redirecionamento Google agora expiram após quinze segundos.
+- Em falha de tempo, o botão volta a aceitar clique e exibe orientação amigável.
+- A validação inicial de sessão continua silenciosa e limitada a sete segundos.
+
+### Motivo
+- Evitar que `Continuar com Google` permaneça indefinidamente em `Aguarde...` durante a inicialização do serviço gratuito no Render.
+
+### Impacto
+- Frontend de autenticação; nenhuma alteração em credenciais, cookies, OAuth ou autorização do backend.
+
+### Testes
+- Cenários automatizados, build e validação do fluxo Google em navegador real.
+
+### Pendências
+- O primeiro acesso ainda pode levar alguns segundos enquanto o serviço gratuito desperta.
+
 ## 2026-07-24 - Saída segura da validação inicial de sessão
 
 ### Arquivos alterados

@@ -8,6 +8,8 @@ Enquanto um módulo não possuir persistência e autorização reais no backend,
 
 A restauração inicial de sessão possui limite de sete segundos. Se o serviço gratuito estiver despertando ou indisponível, a requisição é cancelada e a landing pública continua normalmente. A tela de validação também oferece `Continuar no site`; nenhuma identidade é simulada quando esse caminho é usado.
 
+As demais solicitações de autenticação, incluindo a preparação do cadastro pelo Google, possuem limite de quinze segundos. Se a API não responder nesse período, o botão é reativado e a interface orienta o usuário a aguardar alguns segundos e tentar novamente. O timeout não cria sessão e não contorna CSRF, termos ou validações do backend.
+
 ## Localizacao brasileira dependente
 
 Os formularios de Classificados, propostas, Operacoes, Minha Equipe e Meu Operador reutilizam `BrazilLocationFields`. O usuario escolhe primeiro um dos 27 estados; somente depois a cidade e habilitada com os municipios da UF retornados pela API oficial de localidades do IBGE. A troca de estado limpa a cidade anterior, ha cache por sessao, estado de carregamento e tentativa novamente em caso de falha. Em producao, a API do Operador Zero tambem deve validar a combinacao UF/municipio, sem confiar apenas no frontend.
