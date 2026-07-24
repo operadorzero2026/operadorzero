@@ -6,6 +6,8 @@ Desde 2026-07-23, a build oficial não importa os protótipos demonstrativos de 
 
 Enquanto um módulo não possuir persistência e autorização reais no backend, ele deve mostrar `Nenhum registro` e não pode aceitar uma ação que exista apenas no estado React. Os protótipos antigos permanecem fora do bundle oficial como referência temporária de produto e não podem ser reativados sem contratos reais. Esta decisão está ligada a [[05-SEGURANCA-E-PRIVACIDADE]] e [[01-ESTADO-ATUAL-DO-PROJETO]].
 
+A restauração inicial de sessão possui limite de sete segundos. Se o serviço gratuito estiver despertando ou indisponível, a requisição é cancelada e a landing pública continua normalmente. A tela de validação também oferece `Continuar no site`; nenhuma identidade é simulada quando esse caminho é usado.
+
 ## Localizacao brasileira dependente
 
 Os formularios de Classificados, propostas, Operacoes, Minha Equipe e Meu Operador reutilizam `BrazilLocationFields`. O usuario escolhe primeiro um dos 27 estados; somente depois a cidade e habilitada com os municipios da UF retornados pela API oficial de localidades do IBGE. A troca de estado limpa a cidade anterior, ha cache por sessao, estado de carregamento e tentativa novamente em caso de falha. Em producao, a API do Operador Zero tambem deve validar a combinacao UF/municipio, sem confiar apenas no frontend.

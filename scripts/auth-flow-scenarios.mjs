@@ -10,6 +10,9 @@ for (const required of [
   '/api/auth/logout',
   '/api/auth/verify-email',
   '/api/auth/password-reset',
+  'new AbortController()',
+  'controller.abort()',
+  "error.name === 'AbortError'",
 ]) {
   if (!api.includes(required)) throw new Error(`Contrato de autenticacao ausente: ${required}`)
 }
@@ -20,6 +23,10 @@ for (const forbidden of ['localStorage', 'sessionStorage', 'DEMO_PASSWORD', 'Ope
 
 if (!app.includes('getCurrentSession()') || !app.includes("mode === 'reset'")) {
   throw new Error('Restauracao de sessao ou recuperacao de senha nao esta conectada a interface.')
+}
+
+if (!app.includes('Continuar no site')) {
+  throw new Error('Bootstrap de sessao nao oferece saida manual quando a API demora.')
 }
 
 if (!app.includes("oauthCode === 'TERMS_REQUIRED'") || !app.includes('Selecione Criar conta')) {

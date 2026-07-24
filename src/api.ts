@@ -104,15 +104,25 @@ export async function prepareGoogleLogin(termsAccepted: boolean) {
   return `${getApiBaseUrl()}${result.authorizationPath}`
 }
 
-export async function getCurrentSession(): Promise<SessionUser | null> {
-  const response = await fetch(`${getApiBaseUrl()}/api/auth/session`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: { Accept: 'application/json' },
-  })
-  if (response.status === 204 || response.status === 401) return null
-  if (!response.ok) throw await readError(response)
-  return response.json() as Promise<SessionUser>
+export async function getCurrentSession(timeoutMs = 7000): Promise<SessionUser | null> {
+  const controller = new AbortController()
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const response = await fetch(`${getApiBaseUrl()}/api/auth/session`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+    })
+    if (response.status === 204 || response.status === 401) return null
+    if (!response.ok) throw await readError(response)
+    return response.json() as Promise<SessionUser>
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') return null
+    throw error
+  } finally {
+    window.clearTimeout(timeout)
+  }
 }
 
 export async function logout() {

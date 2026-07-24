@@ -1,5 +1,32 @@
 # Histórico de alterações
 
+## 2026-07-24 - Saída segura da validação inicial de sessão
+
+### Arquivos alterados
+- `src/api.ts`
+- `src/App.tsx`
+- `src/styles.css`
+- `scripts/auth-flow-scenarios.mjs`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Adicionado cancelamento da consulta `/api/auth/session` após sete segundos.
+- A expiração da consulta passa a abrir a landing pública sem criar sessão ou usuário fictício.
+- Adicionado botão `Continuar no site` durante a validação.
+
+### Motivo
+- Impedir que o site fique preso quando o serviço gratuito do Render estiver despertando.
+
+### Impacto
+- Bootstrap da autenticação no frontend; login, cadastro, cookies e validações do backend permanecem inalterados.
+
+### Testes
+- Cenários de autenticação, build e reprodução em navegador real.
+
+### Pendências
+- Avaliar serviço sem suspensão automática quando o volume de usuários justificar.
+
 ## 2026-07-23 - Remoção de conteúdo fictício da aplicação oficial
 
 ### Arquivos alterados

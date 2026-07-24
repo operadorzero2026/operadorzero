@@ -238,7 +238,7 @@ export default function App() {
     return () => { active = false }
   }, [])
 
-  if (authChecking) return <div className="auth-boot"><Brand/><span>Validando sessão segura...</span></div>
+  if (authChecking) return <div className="auth-boot"><Brand/><span>Validando sessão segura...</span><button onClick={() => setAuthChecking(false)}>Continuar no site</button></div>
   if (currentUser) return <Dashboard user={currentUser} onLogout={() => { void logout().finally(() => setCurrentUser(null)) }}/>
 
   const authenticated = (user: SessionUser) => { setAuthMode(null); setAuthNotice(''); setCurrentUser(user) }
