@@ -48,7 +48,7 @@ services:
       - key: AUTH_COOKIE_SECURE
         value: "true"
       - key: AUTH_COOKIE_SAME_SITE
-        value: None
+        value: Lax
       - key: MAIL_ENABLED
         sync: false
       - key: MAIL_FROM

@@ -4,13 +4,17 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/api/:path*", "destination": "https://operadorzero-api-staging.onrender.com/api/:path*" },
+    { "source": "/actuator/:path*", "destination": "https://operadorzero-api-staging.onrender.com/actuator/:path*" },
+    { "source": "/oauth2/:path*", "destination": "https://operadorzero-api-staging.onrender.com/oauth2/:path*" },
+    { "source": "/login/oauth2/:path*", "destination": "https://operadorzero-api-staging.onrender.com/login/oauth2/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://servicodados.ibge.gov.br https://*.onrender.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://servicodados.ibge.gov.br; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'" },
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(self), payment=()" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
