@@ -22,7 +22,8 @@
 - Suíte frontend, build e contrato estático de reenvio.
 
 ### Pendências
-- Publicar TXT DMARC inicial no DNS administrado pelo Registro.br e acompanhar a entrega antes de endurecer a política.
+- O TXT `_dmarc.mail` com política inicial `p=none` foi publicado e validado nos servidores autoritativos e no Google Public DNS.
+- Acompanhar relatórios e entregabilidade antes de evoluir DMARC para `quarantine` ou `reject`.
 
 ## 2026-07-28 - Recuperação da tela após cancelar o Google
 
