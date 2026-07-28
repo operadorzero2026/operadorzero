@@ -1,5 +1,30 @@
 # Histórico de alterações
 
+## 2026-07-28 - Login como ação principal da página inicial
+
+### Arquivos alterados
+- `src/App.tsx`
+- `scripts/real-content-scenarios.mjs`
+- [[06-FRONTEND-WEB]]
+- [[99-HISTORICO-DE-ALTERACOES]]
+
+### O que foi feito
+- `Entrar` passou a ser o botão principal no cabeçalho, menu móvel e hero.
+- `Criar perfil gratuito` passou a ser a segunda opção, com apresentação visual secundária.
+- Adicionado teste de regressão para preservar a ordem e a hierarquia das ações na primeira dobra.
+
+### Motivo
+- Priorizar o retorno de usuários que já possuem conta sem remover o acesso ao cadastro.
+
+### Impacto
+- Frontend público e documentação; autenticação, backend e banco não foram alterados.
+
+### Testes
+- Cenário estático da hierarquia das ações, suíte frontend e build.
+
+### Pendências
+- Homologar visualmente em desktop e celular após publicação.
+
 ## 2026-07-28 - Localização GPS e endereço opcional nos campos
 
 ### Arquivos alterados

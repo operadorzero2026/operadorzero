@@ -3,6 +3,12 @@ import { readFile } from 'node:fs/promises'
 
 const app = await readFile('src/App.tsx', 'utf8')
 
+const heroLogin = app.indexOf("onClick={() => setAuthMode('login')}>Entrar <ArrowRight")
+const heroSignup = app.indexOf("className=\"text-button link-button\" onClick={() => setAuthMode('signup')}>Criar perfil gratuito")
+if (heroLogin < 0 || heroSignup < 0 || heroLogin > heroSignup) {
+  throw new Error('A primeira dobra deve priorizar Entrar e manter Criar perfil gratuito como segunda opção.')
+}
+
 const fictionalContent = [
   'Operação Linha de Frente',
   'Cerco ao Distrito 7',

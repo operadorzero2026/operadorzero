@@ -58,6 +58,8 @@ Desde 2026-07-27, a restauração de sessão ocorre em segundo plano e nunca sub
 
 A landing oficial usa o posicionamento “O airsoft brasileiro em um só lugar”, mantém conteúdo real e estados vazios, apresenta a ação de cadastro na primeira tela móvel e inclui uma seção institucional sobre gratuidade, privacidade, regras e segurança. A implementação e os riscos de produção estão registrados em [[17-DIAGNOSTICO-E-PLANO-DE-PRODUCAO-2026-07-27]].
 
+Na primeira experiência pública, `Entrar` é a ação principal no cabeçalho, menu móvel e hero. `Criar perfil gratuito` permanece imediatamente disponível como ação secundária. As seções posteriores de convite continuam conduzindo ao cadastro.
+
 ## Experiência conectada demonstrativa
 
 O componente `Dashboard` em `src/App.tsx` representa a visão inicial de um operador conectado. Exibe identidade/callsign, equipe, rankings municipal e estadual, pontuação, reputação, próxima operação, pendências, evolução recente e conquista. Possui sidebar no desktop, navegação inferior no mobile, menu de perfil e saída do modo demonstração.
