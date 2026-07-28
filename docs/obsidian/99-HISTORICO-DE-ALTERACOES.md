@@ -1984,3 +1984,34 @@
 ### Pendências
 - Executar preflight/backup e aplicar `V16` de forma controlada antes de deploy.
 - Validar E2E autenticado em ambiente com PostgreSQL e usuários de teste.
+
+## 2026-07-28 - Deploy da Comunidade no domínio oficial
+
+### Arquivos alterados
+- `docs/obsidian/14-COMUNIDADE.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Publicado o commit `4260599` na branch `deploy/render-vercel`.
+- CI aprovada nos jobs frontend, backend com build Docker, configuração de deploy e Gitleaks.
+- Backend publicado no Render; Flyway validou 16 migrations e aplicou `V16__community_posts_comments_and_moderation.sql` no PostgreSQL 17.
+- Frontend publicado em produção na Vercel e associado a `operadorzero.com.br`.
+- Docker Desktop 29.6.2 instalado localmente em modo por usuário; o daemon permanece pendente da ativação administrativa do WSL.
+
+### Motivo
+- Disponibilizar a Comunidade funcional para usuários reais no domínio oficial.
+
+### Impacto
+- Frontend, backend, PostgreSQL, Render, Vercel, GitHub Actions e ambiente local de desenvolvimento.
+
+### Testes
+- `npm run check`: aprovado.
+- `mvn -B clean verify`: 69 testes, zero falhas.
+- GitHub Actions `30392633595`: quatro jobs aprovados.
+- Render `live`, schema na versão 16 e sem erro no período do deploy.
+- Vercel `READY`, sem erro ou fatal nos logs do deployment.
+- HTTP 200 para readiness, categorias, feed e `/comunidade` pela origem oficial.
+- Card autenticado abriu `/comunidade`; formulário autenticado `/comunidade/nova` carregou sem publicar conteúdo de teste.
+
+### Pendências
+- Autorizar a ativação do WSL em uma janela administrativa e reiniciar o Windows para habilitar o daemon local do Docker.

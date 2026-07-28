@@ -65,6 +65,8 @@ Moderação:
 
 ## Verificação e implantação
 
-Testes cobrem serviço, migration, contratos frontend, rota, ausência de fixtures, voto único, idempotência e RBAC de moderação. Antes de publicar esta migration fora de ambiente descartável, executar backup/preflight do PostgreSQL e smoke test autenticado. A alteração local não implica deploy automático.
+Testes cobrem serviço, migration, contratos frontend, rota, ausência de fixtures, voto único, idempotência e RBAC de moderação.
+
+Em 2026-07-28, a CI aprovou frontend, backend, build Docker, configuração de deploy e varredura de segredos. O Render validou as 16 migrations e aplicou a V16 no PostgreSQL 17; o serviço retornou ao estado `live`. A Vercel publicou o mesmo commit em produção e associou `operadorzero.com.br`. Readiness, categorias, feed vazio real, rota pública, card autenticado e formulário de criação autenticado foram verificados pela origem oficial.
 
 Veja [[99-HISTORICO-DE-ALTERACOES]].
