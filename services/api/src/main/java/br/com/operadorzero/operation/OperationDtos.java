@@ -41,7 +41,7 @@ public final class OperationDtos {
         @Size(max = 100) String customModality,
         @Size(max = 6000) String rules,
         @NotNull @Positive Integer participantLimit,
-        @Positive Integer teamLimit,
+        @Positive @Max(20) Integer teamLimit,
         @NotNull @PositiveOrZero BigDecimal registrationPrice,
         @Size(max = 500) String paymentMethods,
         @NotNull @Min(12) @Max(99) Integer minimumAge,
@@ -53,6 +53,12 @@ public final class OperationDtos {
     ) {}
 
     public record UpdateStatusRequest(@NotBlank @Size(max = 32) String status, @Size(max = 500) String reason) {}
+    public record ParticipationRequest(@NotNull UUID operationTeamId) {}
+    public record OperationTeamResponse(UUID id, String name, int capacity, long participantCount) {}
+    public record ParticipantResponse(UUID operatorId, String callsign, String displayName, String status,
+                                      UUID operationTeamId, String operationTeamName) {}
+    public record OperationRosterResponse(List<OperationTeamResponse> teams, List<ParticipantResponse> participants,
+                                          UUID currentUserTeamId) {}
 
     public record OperationSummary(
         UUID id, String name, String description, UUID fieldId, String fieldName, UUID mapId, String mapName,

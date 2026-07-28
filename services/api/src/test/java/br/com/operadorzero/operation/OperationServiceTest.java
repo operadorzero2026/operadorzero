@@ -17,6 +17,24 @@ import org.junit.jupiter.api.Test;
 
 class OperationServiceTest {
     @Test
+    void participationUsesTheSelectedOperationTeam() {
+        OperationRepository repository = mock(OperationRepository.class);
+        AuthenticatedUser user = new AuthenticatedUser(10L, UUID.randomUUID(), "operator@example.test", "operator",
+            "Operator", "Zero", List.of("OPERATOR"));
+        UUID operationId = UUID.randomUUID();
+        UUID operationTeamId = UUID.randomUUID();
+        Instant now = Instant.parse("2026-07-28T12:00:00Z");
+        when(repository.requestParticipation(operationId, operationTeamId, user.internalId(), now)).thenReturn(1);
+        OperationService service = new OperationService(repository, mock(AuditEventRepository.class),
+            Clock.fixed(now, ZoneOffset.UTC));
+
+        var response = service.requestParticipation(user, operationId,
+            new OperationDtos.ParticipationRequest(operationTeamId));
+
+        assertThat(response.message()).isEqualTo("Solicitação registrada.");
+    }
+
+    @Test
     void publishRejectsOperationThatIsNotAnOwnedDraft() {
         OperationRepository repository = mock(OperationRepository.class);
         AuthenticatedUser user = new AuthenticatedUser(10L, UUID.randomUUID(), "operator@example.test", "operator",

@@ -1,5 +1,9 @@
 # Operações
 
+## Participantes e escolha de time — 2026-07-28
+
+Ao selecionar uma operação, o usuário acessa o detalhe com times, capacidade e lista real de participantes. A migration `V14__operation_teams_and_participant_roster.sql` cria `operation_team`, vincula `operation_participant.operation_team_id`, gera dois times por padrão ou respeita o limite configurado e distribui inscrições anteriores sem apagá-las. A inscrição exige `operationTeamId` pertencente à operação; o backend valida publicação, organizador, capacidade e lista de espera em uma única operação SQL. Rascunhos permanecem visíveis apenas ao organizador.
+
 ## Publicação funcional — 2026-07-28
 
 O organizador pode escolher `Salvar rascunho` ou `Publicar operação` no cadastro. A publicação usa `POST /api/operations/{id}/publish`, aceita exclusivamente uma operação própria em estado `DRAFT` e a move atomicamente para `REGISTRATION_OPEN`, registrando `published_at` e auditoria. Rascunhos aparecem somente para o próprio organizador; depois da publicação, a operação entra na pesquisa dos demais operadores e aceita solicitações de participação.

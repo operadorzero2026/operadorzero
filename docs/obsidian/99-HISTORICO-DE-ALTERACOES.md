@@ -1,5 +1,34 @@
 # Histórico de alterações
 
+## 2026-07-28 - Participantes e escolha de time nas operações
+
+### Arquivos alterados
+- `src/OperationsPage.tsx`, `src/api.ts`, `src/styles.css`
+- `services/api/src/main/java/br/com/operadorzero/operation/OperationController.java`
+- `services/api/src/main/java/br/com/operadorzero/operation/OperationService.java`
+- `services/api/src/main/java/br/com/operadorzero/operation/OperationRepository.java`
+- `services/api/src/main/java/br/com/operadorzero/operation/OperationDtos.java`
+- `services/api/src/main/resources/db/migration/V14__operation_teams_and_participant_roster.sql`
+- `services/api/src/test/java/br/com/operadorzero/operation/OperationServiceTest.java`
+- [[05-SEGURANCA-E-PRIVACIDADE]], [[06-FRONTEND-WEB]], [[09-OPERACOES]] e [[99-HISTORICO-DE-ALTERACOES]]
+
+### O que foi feito
+- Detalhe clicável com lista de participantes agrupada por time.
+- Escolha obrigatória de time na inscrição, com capacidade e lista de espera validadas no backend.
+- Criação automática de times e migração segura das inscrições existentes.
+
+### Motivo
+- Permitir que jogadores consultem a composição e escolham o time desejado antes de entrar.
+
+### Impacto
+- Frontend, backend e banco de dados; migration aditiva com preservação de inscrições.
+
+### Testes
+- `npm run check` e `mvn test`, incluindo propagação do time escolhido.
+
+### Pendências
+- Renomear e reorganizar times pelo organizador permanece para uma evolução posterior.
+
 ## 2026-07-28 - Publicação de operações
 
 ### Arquivos alterados

@@ -4,6 +4,9 @@ import br.com.operadorzero.operation.OperationDtos.OperationFilter;
 import br.com.operadorzero.operation.OperationDtos.OperationResponse;
 import br.com.operadorzero.operation.OperationDtos.OperationSummary;
 import br.com.operadorzero.operation.OperationDtos.SaveOperationRequest;
+import br.com.operadorzero.operation.OperationDtos.OperationRosterResponse;
+import br.com.operadorzero.operation.OperationDtos.OperationTeamResponse;
+import br.com.operadorzero.operation.OperationDtos.ParticipantResponse;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -109,6 +112,55 @@ public class OperationRepository {
             """, Map.of("status", status, "now", Timestamp.from(now), "id", operationId, "userId", userId));
     }
 
+    public void createTeams(UUID operationId, long userId) {
+        jdbc.update("""
+            INSERT INTO operation_team(operation_id, name, capacity, sort_order)
+            SELECT o.id, CASE n WHEN 1 THEN 'Time Alfa' WHEN 2 THEN 'Time Bravo' ELSE 'Time ' || n END,
+                   CEIL(o.participant_limit::numeric / LEAST(COALESCE(o.team_limit, 2), 20))::integer, n
+            FROM airsoft_operation o
+            CROSS JOIN LATERAL generate_series(1, LEAST(COALESCE(o.team_limit, 2), 20)) AS n
+            WHERE o.public_id = :operationId AND o.organizer_user_id = :userId
+            ON CONFLICT (operation_id, sort_order) DO NOTHING
+            """, Map.of("operationId", operationId, "userId", userId));
+    }
+
+    public OperationRosterResponse roster(UUID operationId, long userId) {
+        List<OperationTeamResponse> teams = jdbc.query("""
+            SELECT ot.public_id, ot.name, ot.capacity,
+                   count(op.id) FILTER (WHERE op.status IN ('REQUESTED','APPROVED','CONFIRMED','CHECKED_IN')) participant_count
+            FROM operation_team ot
+            JOIN airsoft_operation o ON o.id = ot.operation_id
+            LEFT JOIN operation_participant op ON op.operation_team_id = ot.id
+            WHERE o.public_id = :operationId
+              AND (o.status <> 'DRAFT' OR o.organizer_user_id = :userId)
+            GROUP BY ot.id ORDER BY ot.sort_order
+            """, Map.of("operationId", operationId, "userId", userId), (r, i) -> new OperationTeamResponse(
+                r.getObject("public_id", UUID.class), r.getString("name"), r.getInt("capacity"), r.getLong("participant_count")));
+        List<ParticipantResponse> participants = jdbc.query("""
+            SELECT p.public_id operator_id, p.callsign, p.display_name, op.status,
+                   ot.public_id operation_team_id, ot.name operation_team_name
+            FROM operation_participant op
+            JOIN airsoft_operation o ON o.id = op.operation_id
+            JOIN operator_profile p ON p.user_id = op.user_id
+            LEFT JOIN operation_team ot ON ot.id = op.operation_team_id
+            WHERE o.public_id = :operationId
+              AND (o.status <> 'DRAFT' OR o.organizer_user_id = :userId)
+              AND op.status NOT IN ('CANCELLED','REJECTED')
+            ORDER BY ot.sort_order NULLS LAST, lower(p.callsign), p.public_id
+            """, Map.of("operationId", operationId, "userId", userId), (r, i) -> new ParticipantResponse(
+                r.getObject("operator_id", UUID.class), r.getString("callsign"), r.getString("display_name"),
+                r.getString("status"), r.getObject("operation_team_id", UUID.class), r.getString("operation_team_name")));
+        UUID currentTeamId = jdbc.query("""
+            SELECT ot.public_id FROM operation_participant op
+            JOIN airsoft_operation o ON o.id = op.operation_id
+            JOIN operation_team ot ON ot.id = op.operation_team_id
+            WHERE o.public_id = :operationId AND op.user_id = :userId
+              AND op.status NOT IN ('CANCELLED','REJECTED')
+            """, Map.of("operationId", operationId, "userId", userId), (r, i) -> r.getObject("public_id", UUID.class))
+            .stream().findFirst().orElse(null);
+        return new OperationRosterResponse(teams, participants, currentTeamId);
+    }
+
     public int publish(UUID operationId, long userId, Instant now) {
         return jdbc.update("""
             UPDATE airsoft_operation
@@ -118,15 +170,27 @@ public class OperationRepository {
             """, Map.of("now", Timestamp.from(now), "id", operationId, "userId", userId));
     }
 
-    public int requestParticipation(UUID operationId, long userId, Instant now) {
+    public int requestParticipation(UUID operationId, UUID operationTeamId, long userId, Instant now) {
         return jdbc.update("""
-            INSERT INTO operation_participant(operation_id,user_id,status,requested_at,updated_at)
-            SELECT id,:userId,CASE WHEN waiting_list_enabled AND
-              (SELECT count(*) FROM operation_participant p WHERE p.operation_id=airsoft_operation.id AND p.status IN ('APPROVED','CONFIRMED','CHECKED_IN')) >= participant_limit
-              THEN 'WAITING_LIST' WHEN approval_required THEN 'REQUESTED' ELSE 'APPROVED' END,:now,:now
-            FROM airsoft_operation WHERE public_id=:id AND status IN ('PUBLISHED','REGISTRATION_OPEN','FULL')
-            ON CONFLICT (operation_id,user_id) DO NOTHING
-            """, Map.of("id", operationId, "userId", userId, "now", Timestamp.from(now)));
+            INSERT INTO operation_participant(operation_id,user_id,status,operation_team_id,requested_at,updated_at)
+            SELECT o.id,:userId,
+              CASE WHEN tc.total >= ot.capacity OR oc.total >= o.participant_limit THEN 'WAITING_LIST'
+                   WHEN o.approval_required THEN 'REQUESTED' ELSE 'APPROVED' END,
+              ot.id,:now,:now
+            FROM airsoft_operation o
+            JOIN operation_team ot ON ot.operation_id = o.id AND ot.public_id = :operationTeamId
+            CROSS JOIN LATERAL (SELECT count(*) total FROM operation_participant p
+              WHERE p.operation_team_id = ot.id AND p.status IN ('REQUESTED','APPROVED','CONFIRMED','CHECKED_IN')) tc
+            CROSS JOIN LATERAL (SELECT count(*) total FROM operation_participant p
+              WHERE p.operation_id = o.id AND p.status IN ('REQUESTED','APPROVED','CONFIRMED','CHECKED_IN')) oc
+            WHERE o.public_id=:id AND o.status IN ('PUBLISHED','REGISTRATION_OPEN','FULL')
+              AND o.organizer_user_id <> :userId
+              AND ((tc.total < ot.capacity AND oc.total < o.participant_limit) OR o.waiting_list_enabled)
+            ON CONFLICT (operation_id,user_id) DO UPDATE
+              SET status=EXCLUDED.status, operation_team_id=EXCLUDED.operation_team_id,
+                  requested_at=EXCLUDED.requested_at, updated_at=EXCLUDED.updated_at
+              WHERE operation_participant.status IN ('CANCELLED','REJECTED')
+            """, Map.of("id", operationId, "operationTeamId", operationTeamId, "userId", userId, "now", Timestamp.from(now)));
     }
 
     public int cancelParticipation(UUID operationId, long userId, Instant now) {

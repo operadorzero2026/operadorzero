@@ -1,12 +1,14 @@
-import { CalendarDays, MapPin, Plus, Search, Target, Users } from 'lucide-react'
+import { CalendarDays, MapPin, Plus, Search, Target, Users, X } from 'lucide-react'
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import {
   cancelOperationParticipation,
   createOperation,
   getFields,
   getMaps,
+  getOperationRoster,
   getOperations,
   Operation,
+  OperationRoster,
   publishOperation,
   requestOperationParticipation,
   VenueField,
@@ -45,7 +47,10 @@ export function OperationsPage() {
     [query, setQuery] = useState(''),
     [showCreate, setShowCreate] = useState(false),
     [feedback, setFeedback] = useState(''),
-    [pending, setPending] = useState('')
+    [pending, setPending] = useState(''),
+    [selected, setSelected] = useState<Operation | null>(null),
+    [roster, setRoster] = useState<OperationRoster | null>(null),
+    [selectedTeam, setSelectedTeam] = useState('')
   const load = useCallback(async (q = '') => {
     try {
       setItems((await getOperations(q)).items)
@@ -117,15 +122,28 @@ export function OperationsPage() {
       setPending('')
     }
   }
-  const participate = async (item: Operation, cancel = false) => {
+  const openOperation = async (item: Operation) => {
+    setSelected(item)
+    setRoster(null)
+    setSelectedTeam('')
+    try {
+      const result = await getOperationRoster(item.id)
+      setRoster(result)
+      setSelectedTeam(result.currentUserTeamId || result.teams.find(team => team.participantCount < team.capacity)?.id || result.teams[0]?.id || '')
+    } catch (err) {
+      setFeedback(err instanceof Error ? err.message : 'Não foi possível carregar os participantes.')
+    }
+  }
+  const participate = async (item: Operation, cancel = false, operationTeamId = '') => {
     setPending(item.id)
     try {
       if (cancel) await cancelOperationParticipation(item.id)
-      else await requestOperationParticipation(item.id)
+      else await requestOperationParticipation(item.id, operationTeamId)
       setFeedback(
         cancel ? 'Participação cancelada.' : 'Solicitação registrada.',
       )
       await load(query)
+      if (selected?.id === item.id) await openOperation(item)
     } catch (err) {
       setFeedback(
         err instanceof Error ? err.message : 'Não foi possível concluir.',
@@ -348,7 +366,7 @@ export function OperationsPage() {
         ) : (
           <div className="operation-list">
             {items.map((item) => (
-              <article key={item.id}>
+              <article key={item.id} onClick={() => void openOperation(item)} role="button" tabIndex={0}>
                 <div>
                   <small>{statusLabels[item.status] || item.status}</small>
                   <h3>{item.name}</h3>
@@ -380,7 +398,7 @@ export function OperationsPage() {
                     </span>
                   )}
                   {item.managedByCurrentUser && item.status === 'DRAFT' ? (
-                    <button className="module-primary" disabled={pending === item.id} onClick={() => void publish(item)}>
+                    <button className="module-primary" disabled={pending === item.id} onClick={(event) => { event.stopPropagation(); void publish(item) }}>
                       {pending === item.id ? 'Publicando…' : 'Publicar operação'}
                     </button>
                   ) : item.managedByCurrentUser ? (
@@ -389,16 +407,16 @@ export function OperationsPage() {
                   item.participantStatus !== 'CANCELLED' ? (
                     <button
                       disabled={pending === item.id}
-                      onClick={() => void participate(item, true)}
+                      onClick={(event) => { event.stopPropagation(); void participate(item, true) }}
                     >
                       Cancelar participação
                     </button>
                   ) : (
                     <button
                       disabled={pending === item.id}
-                      onClick={() => void participate(item)}
+                      onClick={(event) => { event.stopPropagation(); void openOperation(item) }}
                     >
-                      Solicitar participação
+                      Ver detalhes e inscrever-se
                     </button>
                   )}
                 </div>
@@ -407,6 +425,28 @@ export function OperationsPage() {
           </div>
         )}
       </section>
+      {selected && (
+        <div className="classified-modal-backdrop" role="presentation" onClick={() => setSelected(null)}>
+          <section className="classified-modal operation-detail-modal" role="dialog" aria-modal="true" aria-label={`Detalhes de ${selected.name}`} onClick={(event) => event.stopPropagation()}>
+            <button type="button" className="classified-modal-close" aria-label="Fechar" onClick={() => setSelected(null)}><X /></button>
+            <small>{statusLabels[selected.status] || selected.status}</small>
+            <h2>{selected.name}</h2>
+            <p>{selected.description}</p>
+            <div className="operation-roster-summary"><span><MapPin /> {selected.fieldName} · {selected.city}/{selected.stateCode}</span><span><Users /> {selected.participantCount}/{selected.participantLimit} participantes</span></div>
+            {!roster ? <p>Carregando times e participantes…</p> : <>
+              <div className="operation-team-grid">
+                {roster.teams.map(team => <article key={team.id} className={selectedTeam === team.id ? 'active' : ''}>
+                  <label><input type="radio" name="operationTeam" value={team.id} checked={selectedTeam === team.id} onChange={() => setSelectedTeam(team.id)} disabled={Boolean(roster.currentUserTeamId)} /><strong>{team.name}</strong><small>{team.participantCount}/{team.capacity} inscritos</small></label>
+                  <div>{roster.participants.filter(person => person.operationTeamId === team.id).map(person => <p key={person.operatorId}><span className="operator-avatar">{person.callsign.charAt(0).toUpperCase()}</span><b>{person.callsign}</b><small>{person.status === 'WAITING_LIST' ? 'Lista de espera' : person.displayName}</small></p>)}</div>
+                </article>)}
+              </div>
+              {roster.participants.length === 0 && <p className="module-empty">Ainda não há participantes inscritos.</p>}
+              {!selected.managedByCurrentUser && !roster.currentUserTeamId && <button className="module-primary" disabled={!selectedTeam || pending === selected.id} onClick={() => void participate(selected, false, selectedTeam)}>{pending === selected.id ? 'Inscrevendo…' : 'Inscrever-se no time escolhido'}</button>}
+              {roster.currentUserTeamId && <p className="module-feedback">Você já está inscrito em {roster.teams.find(team => team.id === roster.currentUserTeamId)?.name || 'um time'}.</p>}
+            </>}
+          </section>
+        </div>
+      )}
     </main>
   )
 }

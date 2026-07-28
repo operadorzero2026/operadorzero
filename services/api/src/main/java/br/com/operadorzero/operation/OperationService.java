@@ -7,6 +7,8 @@ import br.com.operadorzero.operation.OperationDtos.OperationListResponse;
 import br.com.operadorzero.operation.OperationDtos.OperationResponse;
 import br.com.operadorzero.operation.OperationDtos.SaveOperationRequest;
 import br.com.operadorzero.operation.OperationDtos.UpdateStatusRequest;
+import br.com.operadorzero.operation.OperationDtos.ParticipationRequest;
+import br.com.operadorzero.operation.OperationDtos.OperationRosterResponse;
 import br.com.operadorzero.operation.OperationRepository.FieldRef;
 import br.com.operadorzero.shared.audit.AuditEventRepository;
 import br.com.operadorzero.shared.web.BusinessException;
@@ -46,6 +48,12 @@ public class OperationService {
         return repository.find(operationId, user.internalId()).orElseThrow(() -> BusinessException.notFound("Operação não encontrada."));
     }
 
+    @Transactional(readOnly = true)
+    public OperationRosterResponse roster(AuthenticatedUser user, UUID operationId) {
+        detail(user, operationId);
+        return repository.roster(operationId, user.internalId());
+    }
+
     @Transactional
     public OperationResponse create(AuthenticatedUser user, SaveOperationRequest request) {
         validateTimes(request);
@@ -60,6 +68,7 @@ public class OperationService {
             .orElseThrow(() -> BusinessException.badRequest("MAP_FIELD_MISMATCH", "O mapa não pertence ao campo selecionado."));
         Instant now = clock.instant();
         UUID id = repository.create(user.internalId(), field, mapId, request, modality, entryMode, now);
+        repository.createTeams(id, user.internalId());
         audit.record(user.internalId(), "OPERATION_CREATED", "OPERATION", id, null, now);
         return detail(user, id);
     }
@@ -84,10 +93,10 @@ public class OperationService {
     }
 
     @Transactional
-    public MessageResponse requestParticipation(AuthenticatedUser user, UUID id) {
+    public MessageResponse requestParticipation(AuthenticatedUser user, UUID id, ParticipationRequest request) {
         Instant now = clock.instant();
-        if (repository.requestParticipation(id, user.internalId(), now) != 1) {
-            throw BusinessException.conflict("PARTICIPATION_UNAVAILABLE", "A participação já foi solicitada ou as inscrições não estão abertas.");
+        if (repository.requestParticipation(id, request.operationTeamId(), user.internalId(), now) != 1) {
+            throw BusinessException.conflict("PARTICIPATION_UNAVAILABLE", "A inscrição não está disponível para este time.");
         }
         audit.record(user.internalId(), "OPERATION_PARTICIPATION_REQUESTED", "OPERATION", id, null, now);
         return new MessageResponse("Solicitação registrada.");

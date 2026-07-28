@@ -7,6 +7,8 @@ import br.com.operadorzero.operation.OperationDtos.OperationListResponse;
 import br.com.operadorzero.operation.OperationDtos.OperationResponse;
 import br.com.operadorzero.operation.OperationDtos.SaveOperationRequest;
 import br.com.operadorzero.operation.OperationDtos.UpdateStatusRequest;
+import br.com.operadorzero.operation.OperationDtos.ParticipationRequest;
+import br.com.operadorzero.operation.OperationDtos.OperationRosterResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -45,9 +47,10 @@ public class OperationController {
         return service.search(user, new OperationFilter(q, city, stateCode, modality, status, from, to, limit));
     }
     @GetMapping("/{id}") OperationResponse detail(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) { return service.detail(user, id); }
+    @GetMapping("/{id}/roster") OperationRosterResponse roster(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) { return service.roster(user, id); }
     @PostMapping @ResponseStatus(HttpStatus.CREATED) OperationResponse create(@AuthenticationPrincipal AuthenticatedUser user, @Valid @RequestBody SaveOperationRequest request) { return service.create(user, request); }
     @PatchMapping("/{id}/status") OperationResponse status(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id, @Valid @RequestBody UpdateStatusRequest request) { return service.updateStatus(user, id, request); }
     @PostMapping("/{id}/publish") OperationResponse publish(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) { return service.publish(user, id); }
-    @PostMapping("/{id}/participation") @ResponseStatus(HttpStatus.CREATED) MessageResponse participate(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) { return service.requestParticipation(user, id); }
+    @PostMapping("/{id}/participation") @ResponseStatus(HttpStatus.CREATED) MessageResponse participate(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id, @Valid @RequestBody ParticipationRequest request) { return service.requestParticipation(user, id, request); }
     @PostMapping("/{id}/participation/cancel") MessageResponse cancel(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) { return service.cancelParticipation(user, id); }
 }

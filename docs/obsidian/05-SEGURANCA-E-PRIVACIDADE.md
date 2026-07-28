@@ -1,5 +1,9 @@
 # Segurança e privacidade
 
+## Times e participantes de operações — 2026-07-28
+
+O roster exige sessão e respeita a visibilidade do detalhe da operação. A inscrição aceita somente UUID de time pertencente à mesma operação, impede inscrição do organizador, aplica capacidade/lista de espera no banco e mantém unicidade por operação/usuário. Callsign e nome de exibição são a projeção mínima exibida; e-mail e demais dados privados não entram na resposta. Veja [[09-OPERACOES]].
+
 ## Autorização de publicação — 2026-07-28
 
 A publicação de operação é validada por objeto no backend: somente o `organizer_user_id` da operação pode executar a transição de `DRAFT` para `REGISTRATION_OPEN`. A consulta não expõe rascunhos a terceiros, a transição é condicional no banco e a ação gera auditoria. Veja [[09-OPERACOES]].

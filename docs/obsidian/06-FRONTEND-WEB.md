@@ -1,5 +1,9 @@
 # Frontend web
 
+## Detalhe e times da operação — 2026-07-28
+
+Os cartões de operações abrem um detalhe com campo, vagas, times e participantes. O operador escolhe um time por controle explícito antes de solicitar inscrição; depois de inscrito, a tela informa o time atual. A interface não calcula vagas nem altera composição localmente: recarrega o roster da API conforme [[09-OPERACOES]].
+
 ## Publicação de operações — 2026-07-28
 
 O formulário de operação oferece ações separadas para salvar rascunho e publicar com inscrições abertas. Rascunhos próprios permanecem na listagem com ação de publicação posterior; organizadores não recebem botão para participar da própria operação. O estado apresentado vem sempre da API, conforme [[09-OPERACOES]].
