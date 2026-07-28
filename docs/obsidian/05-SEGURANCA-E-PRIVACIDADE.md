@@ -1,5 +1,9 @@
 # Segurança e privacidade
 
+## Autorização de publicação — 2026-07-28
+
+A publicação de operação é validada por objeto no backend: somente o `organizer_user_id` da operação pode executar a transição de `DRAFT` para `REGISTRATION_OPEN`. A consulta não expõe rascunhos a terceiros, a transição é condicional no banco e a ação gera auditoria. Veja [[09-OPERACOES]].
+
 ## Mídia controlada — 2026-07-28
 
 Fotos de operador seguem a mesma fronteira segura das logos: apenas o proprietário autenticado altera e lê a própria foto; o backend valida conteúdo real, tamanho e dimensões, reencoda PNG/JPEG e persiste bytes em tabela isolada. Não são armazenados nome original nem metadados, e o disco efêmero do Render não é utilizado. O contrato está documentado em [[13-MEU-OPERADOR]] e `FILE-UPLOAD-POLICY.md`.

@@ -27,14 +27,15 @@ public class OperationRepository {
             SELECT o.public_id, o.name, o.description, f.public_id field_public_id, f.name field_name,
                    m.public_id map_public_id, m.name map_name, o.city, o.state_code, o.operation_date,
                    o.presentation_time, o.start_time, o.end_time, o.modality, o.status, o.participant_limit,
-                   o.registration_price, COALESCE(pc.total, 0) participant_count, mine.status participant_status
+                   o.registration_price, COALESCE(pc.total, 0) participant_count, mine.status participant_status,
+                   o.organizer_user_id = :userId managed_by_current_user
             FROM airsoft_operation o
             JOIN airsoft_field f ON f.id = o.field_id
             LEFT JOIN field_map m ON m.id = o.map_id
             LEFT JOIN operation_participant mine ON mine.operation_id = o.id AND mine.user_id = :userId
             LEFT JOIN (SELECT operation_id, count(*) total FROM operation_participant
                        WHERE status IN ('APPROVED','CONFIRMED','CHECKED_IN') GROUP BY operation_id) pc ON pc.operation_id = o.id
-            WHERE o.status <> 'DRAFT'
+            WHERE (o.status <> 'DRAFT' OR o.organizer_user_id = :userId)
               AND (:q = '' OR lower(o.name) LIKE :query OR lower(f.name) LIKE :query)
               AND (:city = '' OR lower(o.city) = lower(:city))
               AND (:stateCode = '' OR o.state_code = upper(:stateCode))
@@ -51,7 +52,8 @@ public class OperationRepository {
                 row.getTime("presentation_time").toLocalTime(), row.getTime("start_time").toLocalTime(),
                 row.getTime("end_time").toLocalTime(), row.getString("modality"), row.getString("status"),
                 row.getInt("participant_limit"), row.getLong("participant_count"),
-                row.getBigDecimal("registration_price"), row.getString("participant_status")));
+                row.getBigDecimal("registration_price"), row.getString("participant_status"),
+                row.getBoolean("managed_by_current_user")));
     }
 
     public Optional<OperationResponse> find(UUID operationId, long userId) {
@@ -105,6 +107,15 @@ public class OperationRepository {
               published_at=CASE WHEN :status IN ('PUBLISHED','REGISTRATION_OPEN') AND published_at IS NULL THEN :now ELSE published_at END
             WHERE public_id=:id AND organizer_user_id=:userId
             """, Map.of("status", status, "now", Timestamp.from(now), "id", operationId, "userId", userId));
+    }
+
+    public int publish(UUID operationId, long userId, Instant now) {
+        return jdbc.update("""
+            UPDATE airsoft_operation
+            SET status = 'REGISTRATION_OPEN', published_at = COALESCE(published_at, :now),
+                updated_at = :now, version = version + 1
+            WHERE public_id = :id AND organizer_user_id = :userId AND status = 'DRAFT'
+            """, Map.of("now", Timestamp.from(now), "id", operationId, "userId", userId));
     }
 
     public int requestParticipation(UUID operationId, long userId, Instant now) {

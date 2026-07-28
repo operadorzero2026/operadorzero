@@ -1,5 +1,9 @@
 # Operações
 
+## Publicação funcional — 2026-07-28
+
+O organizador pode escolher `Salvar rascunho` ou `Publicar operação` no cadastro. A publicação usa `POST /api/operations/{id}/publish`, aceita exclusivamente uma operação própria em estado `DRAFT` e a move atomicamente para `REGISTRATION_OPEN`, registrando `published_at` e auditoria. Rascunhos aparecem somente para o próprio organizador; depois da publicação, a operação entra na pesquisa dos demais operadores e aceita solicitações de participação.
+
 ## Base funcional iniciada em 2026-07-28
 
 A migration `V8__fields_maps_and_operations.sql` e os módulos `operation` e `venue` iniciam a implementação persistente descrita em [[19-EXPANSAO-FUNCIONAL-OPERADORZERO-2026-07-28]]. Campos, mapas, operações e participação deixam de depender de conteúdo demonstrativo.

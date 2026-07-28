@@ -47,6 +47,7 @@ public class OperationController {
     @GetMapping("/{id}") OperationResponse detail(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) { return service.detail(user, id); }
     @PostMapping @ResponseStatus(HttpStatus.CREATED) OperationResponse create(@AuthenticationPrincipal AuthenticatedUser user, @Valid @RequestBody SaveOperationRequest request) { return service.create(user, request); }
     @PatchMapping("/{id}/status") OperationResponse status(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id, @Valid @RequestBody UpdateStatusRequest request) { return service.updateStatus(user, id, request); }
+    @PostMapping("/{id}/publish") OperationResponse publish(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) { return service.publish(user, id); }
     @PostMapping("/{id}/participation") @ResponseStatus(HttpStatus.CREATED) MessageResponse participate(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) { return service.requestParticipation(user, id); }
     @PostMapping("/{id}/participation/cancel") MessageResponse cancel(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) { return service.cancelParticipation(user, id); }
 }

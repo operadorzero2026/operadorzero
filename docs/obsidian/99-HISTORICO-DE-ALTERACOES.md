@@ -1,5 +1,33 @@
 # Histórico de alterações
 
+## 2026-07-28 - Publicação de operações
+
+### Arquivos alterados
+- `src/OperationsPage.tsx`, `src/api.ts`
+- `services/api/src/main/java/br/com/operadorzero/operation/OperationController.java`
+- `services/api/src/main/java/br/com/operadorzero/operation/OperationService.java`
+- `services/api/src/main/java/br/com/operadorzero/operation/OperationRepository.java`
+- `services/api/src/main/java/br/com/operadorzero/operation/OperationDtos.java`
+- `services/api/src/test/java/br/com/operadorzero/operation/OperationServiceTest.java`
+- [[05-SEGURANCA-E-PRIVACIDADE]], [[06-FRONTEND-WEB]], [[09-OPERACOES]] e [[99-HISTORICO-DE-ALTERACOES]]
+
+### O que foi feito
+- Adicionadas as opções de salvar rascunho e publicar imediatamente.
+- Rascunhos próprios passam a aparecer ao organizador com publicação posterior.
+- Publicação move atomicamente o rascunho para inscrições abertas e libera participação de outros operadores.
+
+### Motivo
+- Completar o fluxo real de organização, que anteriormente encerrava apenas no rascunho.
+
+### Impacto
+- Frontend e backend; sem migration e sem alteração destrutiva de dados.
+
+### Testes
+- `npm run check` e `mvn test`, incluindo bloqueio de publicação fora de um rascunho próprio.
+
+### Pendências
+- Edição detalhada de rascunhos permanece fora deste incremento.
+
 ## 2026-07-28 - Tempo de atividade no airsoft e equipe na busca
 
 ### Arquivos alterados

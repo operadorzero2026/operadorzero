@@ -58,7 +58,7 @@ public final class OperationDtos {
         UUID id, String name, String description, UUID fieldId, String fieldName, UUID mapId, String mapName,
         String city, String stateCode, LocalDate operationDate, LocalTime presentationTime, LocalTime startTime,
         LocalTime endTime, String modality, String status, int participantLimit, long participantCount,
-        BigDecimal registrationPrice, String participantStatus
+        BigDecimal registrationPrice, String participantStatus, boolean managedByCurrentUser
     ) {}
 
     public record OperationResponse(

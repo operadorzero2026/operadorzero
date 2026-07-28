@@ -1,5 +1,9 @@
 # Frontend web
 
+## Publicação de operações — 2026-07-28
+
+O formulário de operação oferece ações separadas para salvar rascunho e publicar com inscrições abertas. Rascunhos próprios permanecem na listagem com ação de publicação posterior; organizadores não recebem botão para participar da própria operação. O estado apresentado vem sempre da API, conforme [[09-OPERACOES]].
+
 ## Experiência do operador — 2026-07-28
 
 `Meu Operador` possui campo de data para início no airsoft e apresenta o tempo ativo resumido. `OperatorSearch` exibe callsign, equipe ativa e experiência na mesma linha, preservando estados explícitos para perfil sem equipe ou sem data. O cálculo é recebido da API, conforme [[13-MEU-OPERADOR]].

@@ -74,6 +74,16 @@ public class OperationService {
     }
 
     @Transactional
+    public OperationResponse publish(AuthenticatedUser user, UUID id) {
+        Instant now = clock.instant();
+        if (repository.publish(id, user.internalId(), now) != 1) {
+            throw BusinessException.conflict("OPERATION_NOT_PUBLISHABLE", "A operação não foi encontrada ou não está mais como rascunho.");
+        }
+        audit.record(user.internalId(), "OPERATION_PUBLISHED", "OPERATION", id, null, now);
+        return detail(user, id);
+    }
+
+    @Transactional
     public MessageResponse requestParticipation(AuthenticatedUser user, UUID id) {
         Instant now = clock.instant();
         if (repository.requestParticipation(id, user.internalId(), now) != 1) {
