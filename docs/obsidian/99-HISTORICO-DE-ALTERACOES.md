@@ -1,5 +1,35 @@
 # Histórico de alterações
 
+## 2026-07-28 - Injeção dos módulos funcionais em produção
+
+### Arquivos alterados
+- `services/api/src/main/java/br/com/operadorzero/operation/OperationService.java`
+- `services/api/src/main/java/br/com/operadorzero/operator/OperatorService.java`
+- `services/api/src/main/java/br/com/operadorzero/performance/PerformanceService.java`
+- `services/api/src/main/java/br/com/operadorzero/team/TeamService.java`
+- `services/api/src/main/java/br/com/operadorzero/venue/VenueService.java`
+- `services/api/src/test/java/br/com/operadorzero/FoundationRulesTest.java`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Marcados explicitamente os construtores de produção dos services que também possuem construtor alternativo para relógio de teste.
+- Adicionado teste de regressão que exige exatamente um ponto de injeção em cada service afetado.
+- Criada `AUTH_HASH_KEY` aleatória somente no ambiente Render, sem registrar ou expor o valor.
+- Confirmada no log real a aplicação transacional das migrations `V5` a `V9` no PostgreSQL.
+
+### Motivo
+- O Spring não selecionava automaticamente o construtor quando a classe possuía dois construtores, impedindo a inicialização após as migrations.
+
+### Impacto
+- Inicialização do backend e ambiente Render. A chave nova invalida sessões e links de autenticação emitidos anteriormente; usuários e dados permanecem preservados.
+
+### Testes
+- `mvn -B clean verify`: 51 testes aprovados, zero falhas.
+- Flyway: nove migrations validadas e schema atualizado de `V4` para `V9` com sucesso.
+
+### Pendências
+- Concluir deploy do commit corretivo, validar readiness e executar smoke test externo antes de publicar o frontend.
+
 ## 2026-07-28 - Correção da validação dentro da imagem Docker
 
 ### Arquivos alterados

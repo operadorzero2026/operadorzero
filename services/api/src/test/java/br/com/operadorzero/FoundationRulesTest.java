@@ -2,11 +2,30 @@ package br.com.operadorzero;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import br.com.operadorzero.operation.OperationService;
+import br.com.operadorzero.operator.OperatorService;
+import br.com.operadorzero.performance.PerformanceService;
+import br.com.operadorzero.team.TeamService;
+import br.com.operadorzero.venue.VenueService;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.junit.jupiter.api.Test;
 
 class FoundationRulesTest {
+    @Test
+    void servicesWithTestClockConstructorsDeclareTheProductionInjectionPoint() {
+        for (Class<?> service : new Class<?>[] {
+            OperationService.class, OperatorService.class, PerformanceService.class, TeamService.class, VenueService.class
+        }) {
+            assertThat(Arrays.stream(service.getDeclaredConstructors())
+                .filter(constructor -> constructor.isAnnotationPresent(Autowired.class)))
+                .as(service.getSimpleName())
+                .hasSize(1);
+        }
+    }
+
     @Test
     void productionConfigurationValidatesSchemaAndHidesErrorDetails() throws Exception {
         String yaml = Files.readString(Path.of("src/main/resources/application.yml"));

@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ public class OperationService {
     private final AuditEventRepository audit;
     private final Clock clock;
 
+    @Autowired
     public OperationService(OperationRepository repository, AuditEventRepository audit) {
         this(repository, audit, Clock.systemUTC());
     }

@@ -12,6 +12,7 @@ import br.com.operadorzero.performance.PerformanceRepository.RecordRef;
 import br.com.operadorzero.shared.audit.AuditEventRepository;
 import br.com.operadorzero.shared.web.BusinessException;
 import java.time.Clock;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Set;
@@ -27,6 +28,7 @@ public class PerformanceService {
     private static final Set<String> SCOPES=Set.of("FULL","PARTIAL");
     private static final Set<String> ACTIONS=Set.of("CONFIRM_ORGANIZER","CONFIRM_TEAM","CORRECT","REJECT");
     private final PerformanceRepository repository;private final AuditEventRepository audit;private final Clock clock;
+    @Autowired
     public PerformanceService(PerformanceRepository repository,AuditEventRepository audit){this(repository,audit,Clock.systemUTC());}
     PerformanceService(PerformanceRepository repository,AuditEventRepository audit,Clock clock){this.repository=repository;this.audit=audit;this.clock=clock;}
     public PerformanceListResponse mine(AuthenticatedUser user){return new PerformanceListResponse(repository.mine(user.internalId()));}

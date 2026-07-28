@@ -15,6 +15,7 @@ import br.com.operadorzero.shared.audit.AuditEventRepository;
 import br.com.operadorzero.shared.web.BusinessException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Clock;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashSet;
@@ -43,6 +44,7 @@ public class OperatorService {
     private final AuthRateLimiter rateLimiter;
     private final Clock clock;
 
+    @Autowired
     public OperatorService(OperatorRepository repository, BrazilLocationValidator locations,
                            AuditEventRepository audit, AuthRateLimiter rateLimiter) {
         this(repository, locations, audit, rateLimiter, Clock.systemUTC());

@@ -11,6 +11,7 @@ import br.com.operadorzero.venue.VenueDtos.MapListResponse;
 import br.com.operadorzero.venue.VenueDtos.SaveFieldRequest;
 import br.com.operadorzero.venue.VenueDtos.SaveMapRequest;
 import java.time.Clock;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Set;
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class VenueService {
     private static final Set<String> TERRAINS=Set.of("CQB","URBAN","FOREST","MIXED","INDUSTRIAL","OPEN","NIGHT","INDOOR","OUTDOOR");
     private final VenueRepository repository; private final BrazilLocationValidator locations; private final AuditEventRepository audit; private final Clock clock;
+    @Autowired
     public VenueService(VenueRepository repository,BrazilLocationValidator locations,AuditEventRepository audit){this(repository,locations,audit,Clock.systemUTC());}
     VenueService(VenueRepository repository,BrazilLocationValidator locations,AuditEventRepository audit,Clock clock){this.repository=repository;this.locations=locations;this.audit=audit;this.clock=clock;}
     public FieldListResponse fields(AuthenticatedUser user,String q,String city,String state,int limit){return new FieldListResponse(repository.fields(user.internalId(),norm(q),norm(city),norm(state),limit));}
