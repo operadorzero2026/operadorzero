@@ -17,6 +17,8 @@ assert.ok(app.includes('<OperatorPage') && app.includes('<TeamPage') && app.incl
 assert.ok(operatorPage.includes('getOperatorProfile') && operatorPage.includes('updateOperatorProfile'))
 assert.ok(operatorSearch.includes('searchOperators') && operatorSearch.includes('350'))
 assert.ok(teamPage.includes('getTeamWorkspace') && teamPage.includes('acceptTeamInvitation'))
+assert.ok(api.includes('uploadTeamLogo') && api.includes('body instanceof FormData'))
+assert.ok(teamPage.includes('image/png,image/jpeg') && teamPage.includes('2048 × 2048'))
 assert.ok(security.includes('"/api/operators/**", "/api/teams/**"') && security.includes('.anyRequest().denyAll()'))
 
 const functionalSource = [api, operatorPage, operatorSearch, teamPage].join('\n')

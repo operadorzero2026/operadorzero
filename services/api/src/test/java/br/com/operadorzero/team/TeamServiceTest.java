@@ -2,6 +2,9 @@ package br.com.operadorzero.team;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -14,6 +17,8 @@ import br.com.operadorzero.team.TeamDtos.InviteRequest;
 import br.com.operadorzero.team.TeamRepository.InvitationRow;
 import br.com.operadorzero.team.TeamRepository.MembershipRow;
 import jakarta.servlet.http.HttpServletRequest;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -22,6 +27,8 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockMultipartFile;
+import javax.imageio.ImageIO;
 
 class TeamServiceTest {
     private final TeamRepository repository = mock(TeamRepository.class);
@@ -73,5 +80,29 @@ class TeamServiceTest {
         assertThatThrownBy(() -> service.acceptInvitation(user, invitationId))
             .isInstanceOfSatisfying(BusinessException.class,
                 exception -> org.assertj.core.api.Assertions.assertThat(exception.status().value()).isEqualTo(403));
+    }
+
+    @Test
+    void captainCanUploadSanitizedPngLogo() throws Exception {
+        when(repository.activeMembership(user.internalId(), teamId))
+            .thenReturn(Optional.of(new MembershipRow(20L, user.internalId(), "CAPTAIN", teamId)));
+        BufferedImage image = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", output);
+
+        service.saveLogo(user, teamId, new MockMultipartFile("file", "logo.png", "image/png", output.toByteArray()));
+
+        verify(repository).saveLogo(eq(20L), eq(user.internalId()), eq("image/png"), any(byte[].class), eq(clock.instant()));
+    }
+
+    @Test
+    void rejectsLogoThatIsNotARealImage() {
+        when(repository.activeMembership(user.internalId(), teamId))
+            .thenReturn(Optional.of(new MembershipRow(20L, user.internalId(), "CAPTAIN", teamId)));
+
+        assertThatThrownBy(() -> service.saveLogo(user, teamId,
+            new MockMultipartFile("file", "fake.png", "image/png", "not-an-image".getBytes())))
+            .isInstanceOfSatisfying(BusinessException.class,
+                exception -> org.assertj.core.api.Assertions.assertThat(exception.code()).isEqualTo("INVALID_TEAM_LOGO"));
     }
 }

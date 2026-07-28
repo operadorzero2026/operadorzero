@@ -108,6 +108,8 @@ A camada HTTP recupera automaticamente, uma única vez, mutações recusadas por
 
 Erros de validação retornados pela API exibem o primeiro campo inválido com rótulo amigável. Na criação e edição de equipes, a sigla aceita letras, números, pontos e hífens, com orientação no próprio campo.
 
+Minha Equipe permite selecionar uma logo PNG/JPEG durante a criação e substituí-la depois na área de identidade visual. A interface informa limites de 2 MB e 2048 × 2048 e exibe a imagem persistida; a validação de segurança continua obrigatoriamente no backend.
+
 Veja [[01-ESTADO-ATUAL-DO-PROJETO]].
 
 ## Autenticação same-origin - 2026-07-28

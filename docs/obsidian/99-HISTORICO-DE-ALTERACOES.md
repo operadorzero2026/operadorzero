@@ -1,5 +1,43 @@
 # Histórico de alterações
 
+## 2026-07-28 - Upload seguro de logo da equipe
+
+### Arquivos alterados
+- `src/TeamPage.tsx`
+- `src/api.ts`
+- `src/functional-modules.css`
+- `services/api/src/main/java/br/com/operadorzero/team/TeamController.java`
+- `services/api/src/main/java/br/com/operadorzero/team/TeamService.java`
+- `services/api/src/main/java/br/com/operadorzero/team/TeamRepository.java`
+- `services/api/src/main/java/br/com/operadorzero/team/TeamDtos.java`
+- `services/api/src/main/resources/application.yml`
+- `services/api/src/main/resources/db/migration/V11__team_logos.sql`
+- `services/api/src/test/java/br/com/operadorzero/team/TeamServiceTest.java`
+- `FILE-UPLOAD-POLICY.md`
+- [[05-SEGURANCA-E-PRIVACIDADE]]
+- [[06-FRONTEND-WEB]]
+- [[10-MINHA-EQUIPE]]
+- [[99-HISTORICO-DE-ALTERACOES]]
+
+### O que foi feito
+- Adicionada logo opcional na criação da equipe e substituição por capitão/gestor.
+- Implementados upload multipart, leitura autenticada e persistência binária em tabela separada.
+- PNG/JPEG são identificados pelo conteúdo, limitados a 2 MB e 2048 × 2048, decodificados e reencodados antes da persistência.
+- Metadados, nome original e conteúdo adicional não são preservados; formatos ativos ou não suportados são recusados.
+
+### Motivo
+- Permitir identidade visual real para as equipes sem usar o disco efêmero do Render nem aceitar arquivos não validados.
+
+### Impacto
+- Frontend, backend, banco, segurança e documentação.
+
+### Testes
+- Suítes frontend/backend, validação de imagem real e rejeição de conteúdo inválido.
+
+### Pendências
+- Publicar, aplicar a migration V11 e homologar upload/leitura com conta autenticada.
+- Migrar os binários para object storage privado quando a infraestrutura estiver disponível.
+
 ## 2026-07-28 - Siglas de equipe com pontos e erro de campo claro
 
 ### Arquivos alterados

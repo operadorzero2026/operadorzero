@@ -12,6 +12,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -21,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/teams")
@@ -41,6 +46,20 @@ public class TeamController {
     TeamResponse create(@AuthenticationPrincipal AuthenticatedUser user,
                         @Valid @RequestBody CreateTeamRequest request) {
         return service.create(user, request);
+    }
+
+    @PostMapping(value = "/{teamId}/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void saveLogo(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID teamId,
+                  @RequestParam("file") MultipartFile file) {
+        service.saveLogo(user, teamId, file);
+    }
+
+    @GetMapping("/{teamId}/logo")
+    ResponseEntity<byte[]> logo(@PathVariable UUID teamId) {
+        TeamRepository.LogoRow logo = service.logo(teamId);
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(logo.contentType()))
+            .cacheControl(CacheControl.noStore()).body(logo.imageData());
     }
 
     @PatchMapping("/{teamId}")

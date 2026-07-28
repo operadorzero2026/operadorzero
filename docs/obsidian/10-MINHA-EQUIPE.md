@@ -58,7 +58,7 @@ Criar constraints/índices parciais para nome ativo único, equipe principal ati
 
 Autorizar cada ação pela equipe, vínculo e permissão no backend. Administrador auxiliar não remove fundador, transfere capitania, promove a si próprio ou concede permissão superior. Aplicar rate limit, intervalo contra repetição, preferências/bloqueios, auditoria e suspensão por abuso.
 
-Logo aceita somente JPEG/PNG/WebP após MIME real, tamanho, quarentena, antimalware, remoção EXIF, nome aleatório e redimensionamento. SVG/HTML/executáveis/compactados/extensão dupla são bloqueados. Veja [[05-SEGURANCA-E-PRIVACIDADE]].
+Logo aceita somente JPEG/PNG após identificação real, limite de 2 MB e 2048 × 2048, decodificação e regravação que remove metadados e conteúdo adicional. SVG/WebP/GIF/HTML e arquivos ilegíveis são bloqueados. Enquanto não há bucket, os bytes reprocessados ficam em tabela PostgreSQL separada, nunca no disco efêmero ou webroot. Veja [[05-SEGURANCA-E-PRIVACIDADE]].
 
 ## Estado funcional em 2026-07-27
 
@@ -66,6 +66,8 @@ A migration aditiva `V7__teams_and_invitations.sql` e os componentes `TeamServic
 
 O banco garante uma equipe ativa por usuário, um capitão ativo por equipe, nome ativo único e um convite pendente por equipe/convidado. Aceite, recusa, saída e transferência são transacionais, autorizados pelo vínculo do usuário, auditados e preservados no histórico. Convites expiram em 15 dias e têm limite de 20 por dia; gestores não podem convidar outro gestor e o capitão não pode sair antes da transferência.
 
-Contratos autenticados: `GET /api/teams/workspace`, `POST /api/teams`, `PATCH /api/teams/{teamId}`, `POST /api/teams/{teamId}/invitations`, ações `accept|decline`, `POST /api/teams/leave` e `POST /api/teams/{teamId}/captaincy`. Permanecem pendentes consulta visual do histórico, remoção/promoção granular, preferências/bloqueios, arquivamento e logo em storage seguro.
+Contratos autenticados: `GET /api/teams/workspace`, `POST /api/teams`, `PATCH /api/teams/{teamId}`, `POST /api/teams/{teamId}/logo`, `GET /api/teams/{teamId}/logo`, `POST /api/teams/{teamId}/invitations`, ações `accept|decline`, `POST /api/teams/leave` e `POST /api/teams/{teamId}/captaincy`. Permanecem pendentes consulta visual do histórico, remoção/promoção granular, preferências/bloqueios, arquivamento e migração das logos para object storage quando disponível.
+
+A criação permite selecionar uma logo opcional; depois, capitão e gestores podem substituí-la na administração. A imagem exibida vem sempre do conteúdo reprocessado pelo backend.
 
 Siglas de equipe aceitam de 2 a 12 caracteres entre letras, números, pontos e hífens, incluindo formatos tradicionais como `A.T.A.C.`. A validação existe no navegador e no backend; mensagens de erro identificam o campo inválido sem expor detalhes internos.

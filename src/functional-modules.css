@@ -233,6 +233,23 @@
   font-weight: 900;
   font-size: 1.2rem;
 }
+
+.team-logo-image {
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  background: #11140f;
+}
+
+.module-form input[type="file"] {
+  padding: 10px;
+}
+
+.module-form label small {
+  color: #7f8478;
+  font-size: 10px;
+}
 .team-heading > strong {
   color: #b7b95e;
   font-size: 0.78rem;

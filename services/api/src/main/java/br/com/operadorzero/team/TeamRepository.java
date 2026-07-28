@@ -59,6 +59,37 @@ public class TeamRepository {
         }
     }
 
+    public void saveLogo(long teamId, long userId, String contentType, byte[] imageData, Instant now) {
+        jdbc.update("""
+            INSERT INTO team_logo(team_id, content_type, image_data, updated_by, updated_at)
+            VALUES (:teamId, :contentType, :imageData, :userId, :now)
+            ON CONFLICT (team_id) DO UPDATE SET content_type = EXCLUDED.content_type,
+                image_data = EXCLUDED.image_data, updated_by = EXCLUDED.updated_by, updated_at = EXCLUDED.updated_at
+            """, new MapSqlParameterSource().addValue("teamId", teamId).addValue("contentType", contentType)
+                .addValue("imageData", imageData).addValue("userId", userId).addValue("now", Timestamp.from(now)));
+        jdbc.update("UPDATE team SET version = version + 1, updated_at = :now WHERE id = :teamId",
+            Map.of("teamId", teamId, "now", Timestamp.from(now)));
+    }
+
+    public Optional<LogoRow> findLogo(UUID teamId) {
+        try {
+            return Optional.ofNullable(jdbc.queryForObject("""
+                SELECT tl.content_type, tl.image_data FROM team_logo tl
+                JOIN team t ON t.id = tl.team_id
+                WHERE t.public_id = :teamId AND t.status = 'ACTIVE'
+                """, Map.of("teamId", teamId), (row, index) ->
+                new LogoRow(row.getString("content_type"), row.getBytes("image_data"))));
+        } catch (EmptyResultDataAccessException exception) {
+            return Optional.empty();
+        }
+    }
+
+    public boolean hasLogo(long teamId) {
+        Boolean present = jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM team_logo WHERE team_id = :teamId)",
+            Map.of("teamId", teamId), Boolean.class);
+        return Boolean.TRUE.equals(present);
+    }
+
     public long createTeam(long userId, String name, String acronym, String city, String stateCode,
                            String gameStyle, boolean ownsField, String description, String recruitmentStatus, Instant now) {
         Long id = jdbc.queryForObject("""
@@ -238,5 +269,6 @@ public class TeamRepository {
     public record UserRow(long id, UUID publicId, String callsign) {}
     public record InvitationRow(long id, UUID publicId, long teamId, long inviteeUserId, long inviterUserId,
                                 String proposedRole, String status, Instant expiresAt, UUID teamPublicId) {}
+    public record LogoRow(String contentType, byte[] imageData) {}
 }
 

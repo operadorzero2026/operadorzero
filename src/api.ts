@@ -70,6 +70,7 @@ export type Team = {
   recruitmentStatus: string
   currentUserRole: string
   members: TeamMember[]
+  hasLogo: boolean
   version: number
 }
 
@@ -210,7 +211,7 @@ async function apiRequest<T>(path: string, init: RequestInit = {}, timeoutMs = A
       credentials: 'include',
       headers: {
         Accept: 'application/json',
-        ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(init.body && !(init.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
         ...(mutating ? { [csrfHeader]: csrfToken! } : {}),
         ...init.headers,
       },
@@ -285,6 +286,12 @@ export const getOperatorPublicProfile = (username: string) =>
 
 export const getTeamWorkspace = () => apiRequest<TeamWorkspace>('/api/teams/workspace')
 export const createTeam = (team: Record<string, unknown>) => apiRequest<Team>('/api/teams', json('POST', team))
+export const uploadTeamLogo = (teamId: string, file: File) => {
+  const body = new FormData()
+  body.append('file', file)
+  return apiRequest<void>(`/api/teams/${encodeURIComponent(teamId)}/logo`, { method: 'POST', body })
+}
+export const teamLogoUrl = (teamId: string, version: number) => `${getApiBaseUrl()}/api/teams/${encodeURIComponent(teamId)}/logo?v=${version}`
 export const updateTeam = (teamId: string, team: Record<string, unknown>) =>
   apiRequest<Team>(`/api/teams/${encodeURIComponent(teamId)}`, json('PATCH', team))
 export const inviteOperator = (teamId: string, invitation: { operatorId: string; proposedRole: string; message: string }) =>

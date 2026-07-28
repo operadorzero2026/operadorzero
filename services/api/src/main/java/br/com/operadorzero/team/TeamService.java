@@ -19,6 +19,10 @@ import br.com.operadorzero.team.TeamRepository.MembershipRow;
 import br.com.operadorzero.team.TeamRepository.TeamRow;
 import br.com.operadorzero.team.TeamRepository.UserRow;
 import jakarta.servlet.http.HttpServletRequest;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.Clock;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.time.Duration;
@@ -27,12 +31,19 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class TeamService {
+    private static final long MAX_LOGO_BYTES = 2L * 1024 * 1024;
+    private static final int MAX_LOGO_DIMENSION = 2048;
     private static final Set<String> RECRUITMENT = Set.of("OPEN", "INVITE_ONLY", "CLOSED");
     private static final Set<String> INVITABLE_ROLES = Set.of("MANAGER", "MEMBER");
     private static final Set<String> MANAGEMENT_ROLES = Set.of("CAPTAIN", "MANAGER");
@@ -213,6 +224,19 @@ public class TeamService {
         return response(refreshed);
     }
 
+    @Transactional
+    public void saveLogo(AuthenticatedUser user, UUID teamId, MultipartFile file) {
+        MembershipRow membership = managedMembership(user.internalId(), teamId);
+        SanitizedLogo logo = sanitizeLogo(file);
+        repository.saveLogo(membership.teamId(), user.internalId(), logo.contentType(), logo.data(), clock.instant());
+        audit.record(user.internalId(), "TEAM_LOGO_UPDATED", "TEAM", teamId, null, clock.instant());
+    }
+
+    @Transactional(readOnly = true)
+    public TeamRepository.LogoRow logo(UUID teamId) {
+        return repository.findLogo(teamId).orElseThrow(() -> BusinessException.notFound("Logo da equipe não encontrada."));
+    }
+
     private InvitationRow invitation(UUID invitationId, long userId) {
         InvitationRow invitation = repository.lockInvitation(invitationId)
             .orElseThrow(() -> BusinessException.notFound("Convite não encontrado."));
@@ -239,8 +263,48 @@ public class TeamService {
             .orElseThrow(() -> BusinessException.notFound("Equipe não encontrada."));
         return new TeamResponse(team.publicId(), team.name(), team.acronym(), team.city(), team.stateCode(),
             team.gameStyle(), team.ownsField(), team.description(), team.recruitmentStatus(), membership.role(),
-            repository.members(team.id()), team.version());
+            repository.members(team.id()), repository.hasLogo(team.id()), team.version());
     }
+
+    private SanitizedLogo sanitizeLogo(MultipartFile file) {
+        if (file == null || file.isEmpty()) throw BusinessException.badRequest("EMPTY_TEAM_LOGO", "Selecione uma imagem para a logo.");
+        if (file.getSize() > MAX_LOGO_BYTES) throw BusinessException.badRequest("TEAM_LOGO_TOO_LARGE", "A logo deve ter no máximo 2 MB.");
+        try (ImageInputStream input = new MemoryCacheImageInputStream(new ByteArrayInputStream(file.getBytes()))) {
+            var readers = ImageIO.getImageReaders(input);
+            if (!readers.hasNext()) throw invalidLogo();
+            ImageReader reader = readers.next();
+            try {
+                reader.setInput(input, true, true);
+                String format = reader.getFormatName().toLowerCase(Locale.ROOT);
+                if (!Set.of("png", "jpeg", "jpg").contains(format)) throw invalidLogo();
+                int width = reader.getWidth(0);
+                int height = reader.getHeight(0);
+                if (width < 1 || height < 1 || width > MAX_LOGO_DIMENSION || height > MAX_LOGO_DIMENSION) {
+                    throw BusinessException.badRequest("TEAM_LOGO_DIMENSIONS", "A logo deve ter no máximo 2048 × 2048 pixels.");
+                }
+                BufferedImage image = reader.read(0);
+                String outputFormat = "png".equals(format) ? "png" : "jpg";
+                String contentType = "png".equals(outputFormat) ? "image/png" : "image/jpeg";
+                ByteArrayOutputStream output = new ByteArrayOutputStream();
+                if (!ImageIO.write(image, outputFormat, output)) throw invalidLogo();
+                byte[] sanitized = output.toByteArray();
+                if (sanitized.length == 0 || sanitized.length > MAX_LOGO_BYTES) {
+                    throw BusinessException.badRequest("TEAM_LOGO_TOO_LARGE", "A logo processada deve ter no máximo 2 MB.");
+                }
+                return new SanitizedLogo(contentType, sanitized);
+            } finally {
+                reader.dispose();
+            }
+        } catch (IOException exception) {
+            throw invalidLogo();
+        }
+    }
+
+    private BusinessException invalidLogo() {
+        return BusinessException.badRequest("INVALID_TEAM_LOGO", "Envie uma imagem PNG ou JPEG válida.");
+    }
+
+    private record SanitizedLogo(String contentType, byte[] data) {}
 
     private String recruitment(String value) {
         String normalized = upper(value);

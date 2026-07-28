@@ -80,7 +80,7 @@ Hashes de tokens, sessões, endereços e identificadores de auditoria usam HMAC-
 - Busca de operador aplica rate limit e projeção mínima, sem e-mail, nome real, telefone ou localização exata.
 - Convite, aceite, recusa, saída e transferência validam proprietário/vínculo/função no service e registram auditoria.
 - Nenhum token ou dado funcional é persistido em Web Storage; mutações usam cookie de sessão e CSRF.
-- Upload de avatar/logo continua bloqueado até existir object storage com MIME real, limites, quarentena, antimalware e remoção de metadados.
+- Upload de avatar continua bloqueado. Logo de equipe possui exceção controlada: somente capitão/gestor envia PNG/JPEG de até 2 MB e 2048 × 2048; o backend identifica, decodifica e reencoda a imagem, remove metadados e persiste bytes em tabela PostgreSQL separada. Nenhum arquivo usa o disco efêmero ou o webroot. Outros uploads continuam dependendo de object storage e controles adicionais.
 - Pendente antes de usuários reais em escala: validar município pertencente à UF também no backend, executar as migrations em PostgreSQL isolado/backup e ampliar testes de integração de IDOR e concorrência.
 
 ## Sessão first-party no domínio oficial - 2026-07-28

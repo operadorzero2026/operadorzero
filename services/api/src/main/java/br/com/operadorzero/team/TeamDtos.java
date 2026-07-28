@@ -61,6 +61,7 @@ public final class TeamDtos {
         String recruitmentStatus,
         String currentUserRole,
         List<MemberResponse> members,
+        boolean hasLogo,
         long version
     ) {}
 
