@@ -11,6 +11,7 @@ import br.com.operadorzero.team.TeamDtos.InvitationResponse;
 import br.com.operadorzero.team.TeamDtos.InviteRequest;
 import br.com.operadorzero.team.TeamDtos.MessageResponse;
 import br.com.operadorzero.team.TeamDtos.TeamResponse;
+import br.com.operadorzero.team.TeamDtos.TeamSummaryResponse;
 import br.com.operadorzero.team.TeamDtos.TeamWorkspaceResponse;
 import br.com.operadorzero.team.TeamDtos.TransferCaptaincyRequest;
 import br.com.operadorzero.team.TeamDtos.UpdateTeamRequest;
@@ -222,6 +223,11 @@ public class TeamService {
         MembershipRow refreshed = repository.activeMembership(user.internalId(), teamId)
             .orElseThrow(() -> BusinessException.notFound("Equipe não encontrada."));
         return response(refreshed);
+    }
+
+    @Transactional(readOnly = true)
+    public TeamSummaryResponse summary() {
+        return new TeamSummaryResponse(repository.countActiveTeams());
     }
 
     @Transactional

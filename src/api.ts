@@ -300,6 +300,7 @@ export const getOperatorPublicProfile = (username: string) =>
   apiRequest<OperatorSummary>(`/api/operators/${encodeURIComponent(username)}`)
 
 export const getTeamWorkspace = () => apiRequest<TeamWorkspace>('/api/teams/workspace')
+export const getTeamSummary = () => apiRequest<{ total: number }>('/api/teams/summary')
 export const createTeam = (team: Record<string, unknown>) => apiRequest<Team>('/api/teams', json('POST', team))
 export const uploadTeamLogo = (teamId: string, file: File) => {
   const body = new FormData()

@@ -95,3 +95,6 @@ Consultas de próximas operações usam `start_at >= now()` e `ORDER BY start_at
 PDF somente após validação de MIME real, limite configurável, quarentena, antimalware, nome aleatório, storage compatível com S3 e URL assinada. Textos são dados, sem HTML arbitrário. Informações adicionais bloqueiam valores, dados bancários, meios de pagamento, QR Codes e links. Mudanças de data, local, regras, documento, missão, time, participante, cancelamento e finalização geram auditoria com ator, valores anterior/novo, motivo e correlação.
 
 Local preciso reservado, missões secretas, briefing privado e composição interna nunca podem ser recuperados por troca de ID. Veja [[05-SEGURANCA-E-PRIVACIDADE]].
+## Resumo na Visão Geral (2026-07-28)
+
+A [[06-FRONTEND-WEB|Visão Geral]] apresenta até três operações publicadas e disponíveis em datas futuras. A ordenação dá preferência à cidade do operador, depois ao estado e, dentro de cada faixa regional, à operação mais próxima na agenda.

@@ -26,6 +26,10 @@ import {
 } from 'lucide-react'
 import {
   getCurrentSession,
+  getOperations,
+  getOperatorProfile,
+  getOperatorRanking,
+  getTeamSummary,
   login,
   logout,
   prepareGoogleLogin,
@@ -34,6 +38,8 @@ import {
   requestPasswordRecovery,
   resetPassword,
   SessionUser,
+  Operation,
+  RankingEntry,
   verifyEmail,
 } from './api'
 import { OperatorPage } from './OperatorPage'
@@ -205,8 +211,27 @@ function Dashboard({ onLogout, onUserUpdated, user }: { onLogout: () => Promise<
   const [activeView, setActiveView] = useState('Visão geral')
   const [logoutPending, setLogoutPending] = useState(false)
   const [logoutError, setLogoutError] = useState('')
+  const [overview, setOverview] = useState<{ operations: Operation[]; teamTotal: number; ranking: RankingEntry[] }>({ operations: [], teamTotal: 0, ranking: [] })
+  const [overviewLoading, setOverviewLoading] = useState(true)
+  const [overviewError, setOverviewError] = useState('')
   const callsign = user.callsign || user.displayName
   const initial = callsign.charAt(0).toUpperCase()
+  useEffect(() => {
+    let active = true
+    Promise.all([getOperatorProfile(), getOperations(), getTeamSummary(), getOperatorRanking()])
+      .then(([profile, operationResponse, teamSummary, rankingResponse]) => {
+        if (!active) return
+        const today = new Date().toISOString().slice(0, 10)
+        const available = operationResponse.items.filter(operation => operation.operationDate >= today && !['DRAFT', 'FINISHED', 'CANCELLED'].includes(operation.status))
+        const proximity = (operation: Operation) => operation.city === profile.city && operation.stateCode === profile.stateCode ? 0 : operation.stateCode === profile.stateCode ? 1 : 2
+        available.sort((left, right) => proximity(left) - proximity(right) || `${left.operationDate}T${left.startTime}`.localeCompare(`${right.operationDate}T${right.startTime}`))
+        setOverview({ operations: available.slice(0, 3), teamTotal: teamSummary.total, ranking: rankingResponse.items.slice(0, 3) })
+      })
+      .catch(() => active && setOverviewError('Não foi possível atualizar todos os dados da visão geral.'))
+      .finally(() => active && setOverviewLoading(false))
+    return () => { active = false }
+  }, [])
+  const operationDate = (value: string) => new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(`${value}T12:00:00`))
   return <div className="app-shell">
     <aside className="app-sidebar"><Brand compact/><nav aria-label="Navegação do operador">{dashboardNav.map(({ label, icon: Icon }) => <button onClick={() => setActiveView(label)} className={activeView === label ? 'active' : ''} key={label}><Icon/><span>{label}</span>{activeView === label && <i/>}</button>)}</nav><div className="sidebar-footer"><p>Jogue. Registre.<br/><b>Evolua.</b></p></div></aside>
     <div className="app-main">
@@ -215,7 +240,13 @@ function Dashboard({ onLogout, onUserUpdated, user }: { onLogout: () => Promise<
         <section className="dashboard-welcome"><div><p>BEM-VINDO</p><h1>Olá, <em>{callsign}.</em></h1></div></section>
         <section className="operator-strip real-operator-strip"><div className="operator-identity"><span className="operator-avatar">{initial}</span><div><small>OPERADOR</small><h2>{callsign}</h2><p>{user.displayName} · @{user.username}</p></div></div><div><small>STATUS DO PERFIL</small><strong>ATIVO</strong><span>Conta disponível</span></div></section>
         <section className="real-dashboard-intro"><div><p className="eyebrow"><span/> SUA JORNADA</p><h2>Comece pelo que importa.</h2><p>Encontre operações, organize sua equipe e acompanhe sua participação na comunidade.</p></div></section>
-        <div className="real-empty-grid">{['Operações','Equipe','Ranking','Comunidade'].map(area => <button key={area} onClick={() => setActiveView(area === 'Equipe' ? 'Minha equipe' : area === 'Ranking' ? 'Rankings' : area)}><span>{area}</span><strong>Nenhum registro</strong><ArrowRight/></button>)}</div>
+        {overviewError && <p className="overview-warning" role="status">{overviewError}</p>}
+        <div className="overview-grid">
+          <section className="overview-card overview-operations"><header><div><small>PRÓXIMAS DATAS</small><h3>Operações</h3></div><button onClick={() => setActiveView('Operações')} aria-label="Ver todas as operações"><ArrowRight/></button></header>{overviewLoading ? <p className="overview-muted">Atualizando agenda...</p> : overview.operations.length ? <div className="overview-operation-list">{overview.operations.map(operation => <button key={operation.id} onClick={() => setActiveView('Operações')}><time>{operationDate(operation.operationDate)}</time><span><b>{operation.name}</b><small>{operation.city} · {operation.stateCode} · {operation.startTime.slice(0,5)}</small></span></button>)}</div> : <p className="overview-muted">Nenhuma operação disponível nas próximas datas.</p>}</section>
+          <section className="overview-card overview-team"><header><div><small>COMUNIDADE ATIVA</small><h3>Equipes</h3></div><Users/></header><strong>{overviewLoading ? '—' : overview.teamTotal.toLocaleString('pt-BR')}</strong><p>equipes cadastradas no OperadorZero</p><button className="overview-link" onClick={() => setActiveView('Minha equipe')}>Acessar equipes <ArrowRight/></button></section>
+          <section className="overview-card overview-ranking"><header><div><small>CLASSIFICAÇÃO GERAL</small><h3>Ranking</h3></div><Trophy/></header>{overviewLoading ? <p className="overview-muted">Atualizando ranking...</p> : overview.ranking.length ? <ol>{overview.ranking.map(entry => <li key={entry.operatorId}><em>{entry.position}</em><span><b>{entry.callsign || entry.displayName}</b><small>{entry.teamName || `${entry.city || 'Local não informado'} · ${entry.stateCode || 'BR'}`}</small></span><strong>{entry.finalScore.toLocaleString('pt-BR')} pts</strong></li>)}</ol> : <p className="overview-muted">O ranking ainda não possui resultados.</p>}<button className="overview-link" onClick={() => setActiveView('Rankings')}>Ver ranking completo <ArrowRight/></button></section>
+          <section className="overview-card overview-community"><h3>Comunidade</h3><p>O ponto de encontro de operadores, equipes e organizadores do airsoft.</p></section>
+        </div>
       </main>}
     </div>
     <nav className="mobile-app-nav" aria-label="Navegação mobile">{dashboardNav.filter(item => ['Visão geral','Operações','Campos','Notificações','Meu Operador'].includes(item.label)).map(({label,icon:Icon}) => <button onClick={() => setActiveView(label)} className={activeView === label ? 'active' : ''} key={label}><Icon/><span>{label}</span></button>)}</nav>

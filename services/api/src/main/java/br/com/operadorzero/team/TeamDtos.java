@@ -48,6 +48,7 @@ public final class TeamDtos {
     public record TransferCaptaincyRequest(@NotNull UUID operatorId, @Size(max = 500) String reason) {}
 
     public record TeamWorkspaceResponse(TeamResponse team, List<InvitationResponse> receivedInvitations) {}
+    public record TeamSummaryResponse(long total) {}
 
     public record TeamResponse(
         UUID id,

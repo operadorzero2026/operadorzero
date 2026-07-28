@@ -1927,3 +1927,30 @@
 - Confirmar um novo cadastro por e-mail e o recebimento da confirmação em uma caixa postal de homologação.
 - Acompanhar relatórios e entregabilidade antes de evoluir DMARC de `p=none` para `quarantine` ou `reject`.
 - Desativar o segredo Google anterior somente depois da homologação final, preservando rollback até lá.
+## 2026-07-28 - Visão Geral com operações, equipes e ranking reais
+
+### Arquivos alterados
+- `src/App.tsx`, `src/api.ts` e `src/styles.css`
+- `services/api/src/main/java/br/com/operadorzero/team/TeamController.java`
+- `services/api/src/main/java/br/com/operadorzero/team/TeamService.java`
+- `services/api/src/main/java/br/com/operadorzero/team/TeamRepository.java`
+- `services/api/src/main/java/br/com/operadorzero/team/TeamDtos.java`
+- documentação [[06-FRONTEND-WEB]], [[09-OPERACOES]], [[10-MINHA-EQUIPE]], [[11-RANKING]] e [[14-COMUNIDADE]]
+
+### O que foi feito
+- Substituídos os placeholders da Visão Geral por operações futuras priorizadas por região/data, total de equipes ativas e os três melhores operadores do ranking.
+- Comunidade reduzida a título e subtítulo descritivo.
+- Criado endpoint autenticado de resumo para a contagem de equipes ativas.
+
+### Motivo
+- Apresentar informações úteis e reais nos cartões principais do painel.
+
+### Impacto
+- Frontend web e backend, sem alteração de banco.
+
+### Testes
+- `npm run build`: sucesso.
+- `mvn test` em `services/api`: 63 testes, zero falhas.
+
+### Pendências
+- Nenhuma pendência de código identificada.

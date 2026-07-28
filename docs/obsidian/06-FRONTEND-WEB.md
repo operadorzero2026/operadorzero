@@ -135,3 +135,6 @@ Veja [[01-ESTADO-ATUAL-DO-PROJETO]].
 ## Autenticação same-origin - 2026-07-28
 
 `src/api.ts` usa a origem atual da página quando `VITE_API_URL` não é fornecida. Em produção, `vercel.json` encaminha as rotas de API, readiness e OAuth para o backend antes do fallback da SPA. O navegador não precisa aceitar cookies de terceiros para restaurar a sessão criada por e-mail/senha ou Google. Ambiente local continua podendo apontar diretamente para a API com `VITE_API_URL`.
+## Visão geral com dados reais (2026-07-28)
+
+A Visão Geral autenticada consulta dados reais de [[09-OPERACOES]], [[10-MINHA-EQUIPE]] e [[11-RANKING]]. Exibe até três operações futuras, priorizando cidade e estado do operador e, em seguida, a data mais próxima; o total de equipes ativas; e os três primeiros operadores do ranking geral. O cartão Comunidade contém somente título e subtítulo, conforme [[14-COMUNIDADE]].

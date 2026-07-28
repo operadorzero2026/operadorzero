@@ -23,6 +23,11 @@ public class TeamRepository {
         this.jdbc = jdbc;
     }
 
+    public long countActiveTeams() {
+        Long total = jdbc.queryForObject("SELECT COUNT(*) FROM team WHERE status = 'ACTIVE'", Map.of(), Long.class);
+        return total == null ? 0 : total;
+    }
+
     public Optional<MembershipRow> activeMembership(long userId) {
         try {
             return Optional.ofNullable(jdbc.queryForObject("""

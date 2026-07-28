@@ -86,3 +86,6 @@ Experiência: 1–2 operações 40%; 3–5 60%; 6–10 80%; acima de 10, 100%. E
 ## Testes
 
 `npm run test:ranking` cobre 18 cenários: comando, assalto, defesa, médico, sniper, novato, veterano, contestação, coordenação, assédio, troca de equipe, posição falsa, operação longa/curta, ID adulterado, duplicidade, autovoto e penalidade contestada. Esses testes validam o motor demonstrativo; backend ainda exigirá testes unitários, integração PostgreSQL, concorrência, autorização, privacidade e carga.
+## Destaque na Visão Geral (2026-07-28)
+
+A [[06-FRONTEND-WEB|Visão Geral]] apresenta somente os três primeiros colocados do ranking geral, com posição, operador, equipe ou localidade e pontuação final calculada pela regra vigente.

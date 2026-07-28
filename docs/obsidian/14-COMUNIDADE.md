@@ -77,3 +77,6 @@ Votos, advertências e participação comunitária não alteram K/D, ranking, re
 - Contratar/revisar ferramenta contextual e de mídia sem enviar dados além da finalidade.
 - Fazer revisão jurídica brasileira, LGPD, Marco Civil, direitos autorais, proteção de menores e procedimento com autoridades.
 - Revisar os termos com jurídico; os textos atuais são rascunhos, não parecer legal.
+## Apresentação na Visão Geral (2026-07-28)
+
+Na [[06-FRONTEND-WEB|Visão Geral]], Comunidade é uma apresentação mínima: somente o título e um pequeno subtítulo descritivo, sem métricas, listas ou chamadas adicionais.

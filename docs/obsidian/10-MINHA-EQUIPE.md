@@ -75,3 +75,6 @@ Contratos autenticados: `GET /api/teams/workspace`, `POST /api/teams`, `PATCH /a
 A criação permite selecionar uma logo opcional; depois, capitão e gestores podem substituí-la na administração. A imagem exibida vem sempre do conteúdo reprocessado pelo backend.
 
 Siglas de equipe aceitam de 2 a 12 caracteres entre letras, números, pontos e hífens, incluindo formatos tradicionais como `A.T.A.C.`. A validação existe no navegador e no backend; mensagens de erro identificam o campo inválido sem expor detalhes internos.
+## Total na Visão Geral (2026-07-28)
+
+O backend disponibiliza um resumo autenticado com a quantidade total de equipes ativas cadastradas, consumido pela [[06-FRONTEND-WEB|Visão Geral]].

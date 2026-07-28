@@ -5,6 +5,7 @@ import br.com.operadorzero.team.TeamDtos.CreateTeamRequest;
 import br.com.operadorzero.team.TeamDtos.InviteRequest;
 import br.com.operadorzero.team.TeamDtos.MessageResponse;
 import br.com.operadorzero.team.TeamDtos.TeamResponse;
+import br.com.operadorzero.team.TeamDtos.TeamSummaryResponse;
 import br.com.operadorzero.team.TeamDtos.TeamWorkspaceResponse;
 import br.com.operadorzero.team.TeamDtos.TransferCaptaincyRequest;
 import br.com.operadorzero.team.TeamDtos.UpdateTeamRequest;
@@ -46,6 +47,11 @@ public class TeamController {
     TeamResponse create(@AuthenticationPrincipal AuthenticatedUser user,
                         @Valid @RequestBody CreateTeamRequest request) {
         return service.create(user, request);
+    }
+
+    @GetMapping("/summary")
+    TeamSummaryResponse summary() {
+        return service.summary();
     }
 
     @PostMapping(value = "/{teamId}/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
