@@ -1,5 +1,33 @@
 # Histórico de alterações
 
+## 2026-07-28 - Siglas de equipe com pontos e erro de campo claro
+
+### Arquivos alterados
+- `src/TeamPage.tsx`
+- `src/api.ts`
+- `services/api/src/main/java/br/com/operadorzero/team/TeamDtos.java`
+- `services/api/src/test/java/br/com/operadorzero/team/TeamDtosTest.java`
+- [[10-MINHA-EQUIPE]]
+- [[06-FRONTEND-WEB]]
+- [[99-HISTORICO-DE-ALTERACOES]]
+
+### O que foi feito
+- Permitidos pontos em siglas de equipe no frontend e no backend, mantendo o limite de 2 a 12 caracteres e a exigência de pelo menos uma letra ou número.
+- A interface passou a apresentar o campo e a regra específica quando a API retorna erro de validação.
+- Adicionados testes para aceitar `A.T.A.C.` e rejeitar siglas formadas somente por pontuação.
+
+### Motivo
+- O cadastro apresentado pelo usuário era rejeitado pela sigla `A.T.A.C.`, mas exibia apenas a mensagem genérica “Revise os campos informados”.
+
+### Impacto
+- Frontend, backend e documentação; nenhuma migration é necessária porque a coluna existente já comporta 12 caracteres.
+
+### Testes
+- Testes frontend e backend, build e validações de produção.
+
+### Pendências
+- Publicar frontend e backend e repetir o cadastro real.
+
 ## 2026-07-28 - Correção de acesso negado ao criar equipe
 
 ### Arquivos alterados

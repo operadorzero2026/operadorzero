@@ -106,6 +106,8 @@ A busca com debounce aparece na barra superior e no convite de equipe, retorna s
 
 A camada HTTP recupera automaticamente, uma única vez, mutações recusadas por token CSRF desatualizado. A recuperação obtém um novo token e repete o mesmo payload; erros reais de autorização continuam sendo exibidos e nunca são convertidos em sucesso.
 
+Erros de validação retornados pela API exibem o primeiro campo inválido com rótulo amigável. Na criação e edição de equipes, a sigla aceita letras, números, pontos e hífens, com orientação no próprio campo.
+
 Veja [[01-ESTADO-ATUAL-DO-PROJETO]].
 
 ## Autenticação same-origin - 2026-07-28

@@ -16,7 +16,8 @@ public final class TeamDtos {
 
     public record CreateTeamRequest(
         @NotBlank @Size(min = 3, max = 80) String name,
-        @NotBlank @Pattern(regexp = "[A-Za-z0-9-]{2,12}") String acronym,
+        @NotBlank @Pattern(regexp = "(?=.*[A-Za-z0-9])[A-Za-z0-9.-]{2,12}",
+            message = "use de 2 a 12 caracteres: letras, números, pontos ou hífens") String acronym,
         @NotBlank @Size(max = 80) String city,
         @NotBlank @Size(min = 2, max = 2) String stateCode,
         @NotBlank @Size(max = 80) String gameStyle,
@@ -27,7 +28,8 @@ public final class TeamDtos {
 
     public record UpdateTeamRequest(
         @NotBlank @Size(min = 3, max = 80) String name,
-        @NotBlank @Pattern(regexp = "[A-Za-z0-9-]{2,12}") String acronym,
+        @NotBlank @Pattern(regexp = "(?=.*[A-Za-z0-9])[A-Za-z0-9.-]{2,12}",
+            message = "use de 2 a 12 caracteres: letras, números, pontos ou hífens") String acronym,
         @NotBlank @Size(max = 80) String city,
         @NotBlank @Size(min = 2, max = 2) String stateCode,
         @NotBlank @Size(max = 80) String gameStyle,

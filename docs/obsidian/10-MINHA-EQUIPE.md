@@ -67,3 +67,5 @@ A migration aditiva `V7__teams_and_invitations.sql` e os componentes `TeamServic
 O banco garante uma equipe ativa por usuário, um capitão ativo por equipe, nome ativo único e um convite pendente por equipe/convidado. Aceite, recusa, saída e transferência são transacionais, autorizados pelo vínculo do usuário, auditados e preservados no histórico. Convites expiram em 15 dias e têm limite de 20 por dia; gestores não podem convidar outro gestor e o capitão não pode sair antes da transferência.
 
 Contratos autenticados: `GET /api/teams/workspace`, `POST /api/teams`, `PATCH /api/teams/{teamId}`, `POST /api/teams/{teamId}/invitations`, ações `accept|decline`, `POST /api/teams/leave` e `POST /api/teams/{teamId}/captaincy`. Permanecem pendentes consulta visual do histórico, remoção/promoção granular, preferências/bloqueios, arquivamento e logo em storage seguro.
+
+Siglas de equipe aceitam de 2 a 12 caracteres entre letras, números, pontos e hífens, incluindo formatos tradicionais como `A.T.A.C.`. A validação existe no navegador e no backend; mensagens de erro identificam o campo inválido sem expor detalhes internos.

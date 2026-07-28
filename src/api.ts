@@ -93,7 +93,9 @@ export type Operation = { id:string; name:string; description:string; fieldId:st
 export type RankingEntry = { position:number; operatorId:string; username:string; displayName:string; callsign:string; city?:string|null; stateCode?:string|null; teamId?:string|null; teamName?:string|null; teamAcronym?:string|null; gross:number; factor:number; bonus:number; penalties:number; finalScore:number; positionVariation:number; operationsConsidered:number }
 export type PerformanceRecord = { id:string; operationId:string; operationName:string; operationDate:string; operatorId:string; operatorCallsign:string; representedTeamId?:string|null; representedTeamName?:string|null; eliminations:number; deaths:number; objectivesCompleted:number; roundWins:number; result:string; positionUsed?:string|null; notes?:string|null; highlightReceived?:string|null; penaltyPoints:number; abandoned:boolean; participationScope:string; status:string; organizerConfirmed:boolean; teamConfirmed:boolean; organizerNotes?:string|null; currentUserRecord:boolean; canReviewAsOrganizer:boolean; canReviewAsTeam:boolean; canContest:boolean; createdAt:string; updatedAt:string; version:number }
 
-type ApiError = { code?: string; message?: string; correlationId?: string }
+type ApiError = { code?: string; message?: string; correlationId?: string; fields?: Array<{ field: string; message: string }> }
+
+const FIELD_LABELS: Record<string, string> = { acronym: 'Sigla' }
 
 export class ApiClientError extends Error {
   code?: string
@@ -177,7 +179,11 @@ async function readError(response: Response) {
     : 'Não foi possível concluir a solicitação.'
   try {
     const error = await response.json() as ApiError
-    return new ApiClientError(error.message || fallback, error.code, error.correlationId)
+    const fieldError = error.fields?.[0]
+    const message = fieldError
+      ? `${FIELD_LABELS[fieldError.field] || 'Campo'}: ${fieldError.message}`
+      : error.message || fallback
+    return new ApiClientError(message, error.code, error.correlationId)
   } catch {
     return new ApiClientError(fallback)
   }
