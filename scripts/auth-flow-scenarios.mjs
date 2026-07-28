@@ -63,6 +63,15 @@ if (!api.includes('if (error instanceof ApiTimeoutError) return null')) {
   throw new Error('Timeout do bootstrap deve continuar silencioso e sem simular sessao.')
 }
 
+for (const csrfRecoveryContract of [
+  'response.status === 403',
+  "error.code !== 'ACCESS_DENIED'",
+  'csrfToken = null',
+  'response = await send()',
+]) {
+  if (!api.includes(csrfRecoveryContract)) throw new Error(`Recuperacao de CSRF ausente: ${csrfRecoveryContract}`)
+}
+
 if (!app.includes("oauthCode === 'TERMS_REQUIRED'") || !app.includes('Selecione Criar conta')) {
   throw new Error('Conta Google nova nao orienta o usuario a concluir cadastro e aceite.')
 }

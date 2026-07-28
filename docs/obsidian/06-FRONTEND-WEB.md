@@ -104,6 +104,8 @@ O assistente e os filtros distinguem `Modalidade da operação` de `Tipo de jogo
 
 A busca com debounce aparece na barra superior e no convite de equipe, retorna somente projeção pública autorizada e nunca e-mail. Os formulários reutilizam `BrazilLocationFields`, têm escala responsiva em `functional-modules.css` e mantêm foco, labels e áreas de toque adequadas. Veja [[13-MEU-OPERADOR]], [[10-MINHA-EQUIPE]] e [[18-AUDITORIA-DE-TELAS-E-INTEGRACAO-2026-07-27]].
 
+A camada HTTP recupera automaticamente, uma única vez, mutações recusadas por token CSRF desatualizado. A recuperação obtém um novo token e repete o mesmo payload; erros reais de autorização continuam sendo exibidos e nunca são convertidos em sucesso.
+
 Veja [[01-ESTADO-ATUAL-DO-PROJETO]].
 
 ## Autenticação same-origin - 2026-07-28

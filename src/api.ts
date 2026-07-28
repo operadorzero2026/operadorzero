@@ -199,16 +199,24 @@ async function apiRequest<T>(path: string, init: RequestInit = {}, timeoutMs = A
   const method = (init.method || 'GET').toUpperCase()
   const mutating = !['GET', 'HEAD', 'OPTIONS'].includes(method)
   if (mutating) await ensureCsrf()
-  const response = await fetchWithTimeout(`${getApiBaseUrl()}${path}`, {
-    ...init,
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      ...(init.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(mutating ? { [csrfHeader]: csrfToken! } : {}),
-      ...init.headers,
-    },
-  }, timeoutMs)
+  const send = () => fetchWithTimeout(`${getApiBaseUrl()}${path}`, {
+      ...init,
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(mutating ? { [csrfHeader]: csrfToken! } : {}),
+        ...init.headers,
+      },
+    }, timeoutMs)
+  let response = await send()
+  if (mutating && response.status === 403) {
+    const error = await readError(response)
+    if (error.code !== 'ACCESS_DENIED') throw error
+    csrfToken = null
+    await ensureCsrf()
+    response = await send()
+  }
   if (!response.ok) throw await readError(response)
   if (response.status === 204) return undefined as T
   return response.json() as Promise<T>

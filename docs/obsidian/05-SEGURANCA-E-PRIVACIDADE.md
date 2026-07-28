@@ -86,3 +86,5 @@ Hashes de tokens, sessões, endereços e identificadores de auditoria usam HMAC-
 ## Sessão first-party no domínio oficial - 2026-07-28
 
 O frontend oficial usa proxy same-origin da Vercel para `/api`, `/actuator`, `/oauth2` e `/login/oauth2`. Login por senha, CSRF, callback Google e restauração de sessão passam por `operadorzero.com.br`, evitando dependência de cookies de terceiros no domínio `onrender.com`. Cookies continuam `HttpOnly` quando aplicável, `Secure`, com CSRF dedicado; segredos Google e Resend permanecem somente no backend. Veja `AUTHENTICATION.md` e [[06-FRONTEND-WEB]].
+
+Requisições mutáveis renovam o token CSRF e repetem a chamada uma única vez quando o servidor retorna `403 ACCESS_DENIED`. Isso recupera com segurança divergências entre o token mantido em memória e o cookie renovado por login, restauração de sessão ou outra aba, sem desabilitar CSRF nem ampliar permissões.

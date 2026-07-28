@@ -1,5 +1,30 @@
 # Histórico de alterações
 
+## 2026-07-28 - Correção de acesso negado ao criar equipe
+
+### Arquivos alterados
+- `src/api.ts`
+- `scripts/auth-flow-scenarios.mjs`
+- [[05-SEGURANCA-E-PRIVACIDADE]]
+- [[06-FRONTEND-WEB]]
+- [[99-HISTORICO-DE-ALTERACOES]]
+
+### O que foi feito
+- A camada HTTP passou a renovar o token CSRF e repetir uma mutação somente uma vez quando recebe `403 ACCESS_DENIED`.
+- Adicionado contrato automatizado para impedir a remoção acidental dessa recuperação.
+
+### Motivo
+- O token mantido em memória podia divergir do cookie CSRF renovado por outra aba ou ciclo de autenticação, fazendo o Spring negar a criação antes de chegar ao controller de equipes.
+
+### Impacto
+- Frontend e segurança das mutações autenticadas; regras de autorização, backend e banco permanecem inalterados.
+
+### Testes
+- Suíte frontend, build e validações de produção.
+
+### Pendências
+- Publicar e homologar o fluxo autenticado de criação de equipe.
+
 ## 2026-07-28 - Login como ação principal da página inicial
 
 ### Arquivos alterados
