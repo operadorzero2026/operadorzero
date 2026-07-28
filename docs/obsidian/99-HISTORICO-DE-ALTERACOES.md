@@ -26,9 +26,13 @@
 ### Testes
 - `mvn -B clean verify`: 51 testes aprovados, zero falhas.
 - Flyway: nove migrations validadas e schema atualizado de `V4` para `V9` com sucesso.
+- Readiness direto no Render e pelo proxy oficial: HTTP 200.
+- Navegador real: sessão persistida após recarga e abas Operações, Campos, Minha Equipe, Desempenho e Rankings carregadas sem erro interno.
+- Deployment Vercel `dpl_2Ji4SKSYppBqA6ANK7KZ5g6QrsXT`: `READY` e associado a `https://operadorzero.com.br`.
 
 ### Pendências
-- Concluir deploy do commit corretivo, validar readiness e executar smoke test externo antes de publicar o frontend.
+- PostgreSQL Free expira em 2026-08-20 e não possui PITR/exportação automática; migrar ou atualizar o plano antes dessa data.
+- Homologar cadastro de um novo usuário com endereço e conta Google que nunca tenham sido usados no sistema; os testes atuais reutilizaram uma conta real já autenticada.
 
 ## 2026-07-28 - Correção da validação dentro da imagem Docker
 
