@@ -4,6 +4,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.env.EnvironmentPostProcessor;
@@ -42,7 +44,7 @@ public final class RenderDatabaseUrlEnvironmentPostProcessor implements Environm
                 postgresUri.getHost(),
                 port,
                 postgresUri.getPath(),
-                postgresUri.getQuery(),
+                requireTls(postgresUri.getQuery()),
                 null
             );
 
@@ -62,6 +64,20 @@ public final class RenderDatabaseUrlEnvironmentPostProcessor implements Environm
         } catch (IllegalArgumentException | URISyntaxException ignored) {
             throw new IllegalStateException("DATABASE_URL deve ser uma URL PostgreSQL valida.");
         }
+    }
+
+    private String requireTls(String query) {
+        if (query != null && Stream.of(query.split("&"))
+            .filter(parameter -> parameter.regionMatches(true, 0, "sslmode=", 0, "sslmode=".length()))
+            .map(parameter -> parameter.substring("sslmode=".length()))
+            .anyMatch(mode -> mode.equalsIgnoreCase("require")
+                || mode.equalsIgnoreCase("verify-ca") || mode.equalsIgnoreCase("verify-full"))) {
+            return query;
+        }
+        String safeQuery = query == null ? "" : Stream.of(query.split("&"))
+            .filter(parameter -> !parameter.regionMatches(true, 0, "sslmode=", 0, "sslmode=".length()))
+            .collect(Collectors.joining("&"));
+        return safeQuery.isBlank() ? "sslmode=require" : safeQuery + "&sslmode=require";
     }
 
     @Override

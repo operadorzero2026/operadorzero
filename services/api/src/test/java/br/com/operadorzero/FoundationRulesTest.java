@@ -35,6 +35,16 @@ class FoundationRulesTest {
     }
 
     @Test
+    void productionRequiresKeyedHashesAndDoesNotEvictLiveAuthenticationState() throws Exception {
+        String yaml = Files.readString(Path.of("src/main/resources/application.yml"));
+        String render = Files.readString(Path.of("../../render.yaml"));
+
+        assertThat(yaml).contains("hash-key: ${AUTH_HASH_KEY:}");
+        assertThat(render).contains("key: AUTH_HASH_KEY", "maxmemoryPolicy: noeviction")
+            .doesNotContain("maxmemoryPolicy: allkeys-lru");
+    }
+
+    @Test
     void migrationsUseConstraintsAndNoDestructiveStatements() throws Exception {
         String v1 = Files.readString(Path.of("src/main/resources/db/migration/V1__identity_access_foundation.sql"));
         String v2 = Files.readString(Path.of("src/main/resources/db/migration/V2__operator_profile_privacy.sql"));
@@ -58,5 +68,24 @@ class FoundationRulesTest {
             "DELETE FROM role WHERE code = 'FINANCE_MANAGER'"
         );
         assertThat(v4).doesNotContain("DELETE FROM app_user", "DROP TABLE", "TRUNCATE");
+    }
+
+    @Test
+    void oauthIntentCleanupHasAnIndexedExpirationPath() throws Exception {
+        String v5 = Files.readString(Path.of("src/main/resources/db/migration/V5__oauth_intent_cleanup_index.sql"));
+
+        assertThat(v5).contains("oauth_registration_intent", "expires_at", "consumed_at", "CREATE INDEX");
+        assertThat(v5).doesNotContain("DROP TABLE", "TRUNCATE");
+    }
+
+    @Test
+    void operatorAndTeamMigrationsPreserveIdentityAndEnforceSingleActiveMembership() throws Exception {
+        String v6 = Files.readString(Path.of("src/main/resources/db/migration/V6__operator_profile_functionality.sql"));
+        String v7 = Files.readString(Path.of("src/main/resources/db/migration/V7__teams_and_invitations.sql"));
+
+        assertThat(v6).contains("operator_equipment", "operator_username_history", "operator_privacy_setting");
+        assertThat(v7).contains("team_invitation", "team_membership_history",
+            "uq_team_member_active_user", "uq_team_active_captain", "uq_team_invitation_pending");
+        assertThat(v6 + v7).doesNotContain("DROP TABLE", "TRUNCATE", "DELETE FROM app_user");
     }
 }

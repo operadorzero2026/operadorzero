@@ -30,3 +30,7 @@ O Operador Zero ainda nao esta pronto para operacao completa com usuarios reais.
 ## Sequencia
 
 Fundacao -> identidade/RBAC -> operador/equipe/operacoes -> ranking -> classificados/comunidade/chat -> arquivos -> destaques gratuitos -> endurecimento operacional. Ver [[07-ROADMAP-MVP]], [[05-SEGURANCA-E-PRIVACIDADE]] e [[99-HISTORICO-DE-ALTERACOES]].
+
+## Baseline de autenticacao endurecida em 2026-07-27
+
+A identidade exige `AUTH_HASH_KEY` exclusiva do backend para HMAC-SHA-256, preparacao de uso unico antes do Google OIDC, rate limit por IP e sujeito associado ao IP e limpeza indexada de intencoes OAuth. O Redis de staging usa `noeviction`. Antes de qualquer deploy, a chave deve ser cadastrada no Render; sua primeira ativacao invalida sessoes e links antigos. A migration `V5` permanece aditiva e nenhuma alteracao remota foi executada nesta etapa.

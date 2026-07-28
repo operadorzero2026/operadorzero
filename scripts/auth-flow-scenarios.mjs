@@ -3,6 +3,10 @@ import { readFile } from 'node:fs/promises'
 const api = await readFile('src/api.ts', 'utf8')
 const app = await readFile('src/App.tsx', 'utf8')
 
+if (!api.includes("import.meta.env.VITE_API_URL?.trim() || window.location.origin")) {
+  throw new Error('Producao deve usar a origem da pagina para manter cookies de autenticacao first-party.')
+}
+
 for (const required of [
   "credentials: 'include'",
   '/api/auth/csrf',
@@ -16,7 +20,7 @@ for (const required of [
   'AUTH_REQUEST_TIMEOUT_MS = 15000',
   'fetchWithTimeout',
   'ApiTimeoutError',
-  'A conexao esta demorando para iniciar.',
+  'A conexão está demorando para iniciar.',
 ]) {
   if (!api.includes(required)) throw new Error(`Contrato de autenticacao ausente: ${required}`)
 }
@@ -29,8 +33,30 @@ if (!app.includes('getCurrentSession()') || !app.includes("mode === 'reset'")) {
   throw new Error('Restauracao de sessao ou recuperacao de senha nao esta conectada a interface.')
 }
 
-if (!app.includes('Continuar no site')) {
-  throw new Error('Bootstrap de sessao nao oferece saida manual quando a API demora.')
+if (app.includes('if (authChecking) return') || app.includes('Validando sessão segura...')) {
+  throw new Error('Bootstrap de sessao nao deve bloquear a pagina publica.')
+}
+
+if (!app.includes('sessionRestoring') || !app.includes('Verificando acesso...')) {
+  throw new Error('Restauracao nao bloqueante da sessao deve informar seu estado.')
+}
+
+for (const coldStartContract of [
+  'AUTH_API_WAKE_TIMEOUT_MS = 180000',
+  'AUTH_API_WAKE_ATTEMPT_MS = 30000',
+  '/actuator/health/readiness',
+  'waitForAuthenticationApi()',
+  'O acesso está demorando mais que o esperado',
+]) {
+  if (!api.includes(coldStartContract)) throw new Error(`Cold start nao tratado: ${coldStartContract}`)
+}
+
+if (!app.includes('Conectando ao Google...')) {
+  throw new Error('Inicio Google deve informar progresso.')
+}
+
+if (app.includes('logout().finally(() => setCurrentUser(null))')) {
+  throw new Error('Interface nao pode confirmar logout quando a revogacao falha.')
 }
 
 if (!api.includes('if (error instanceof ApiTimeoutError) return null')) {

@@ -31,6 +31,8 @@ Segurança é critério de aceite, não etapa posterior. A baseline detalhada vi
 
 O browser recebe somente `VITE_API_URL`, que é configuração pública. Senhas fixas, tokens, chaves OAuth, banco, Redis, storage, e-mail e pagamentos são proibidos no bundle, no Git e no armazenamento do navegador. Login, cadastro, recuperação e Google apontam para a API; o modo demonstrativo existe apenas em build local de desenvolvimento. A CI valida o bundle e executa varredura de segredos. A implantação está conectada a [[16-ARQUITETURA-DE-PRODUCAO]].
 
+URLs PostgreSQL recebidas do ambiente são normalizadas sem credenciais na URL JDBC e exigem `sslmode=require` no mínimo; modos mais fortes, como `verify-full`, são preservados. A interface só confirma logout depois que a revogação no backend conclui. O diagnóstico de 2026-07-27 ainda registra riscos de timing de autenticação, bloqueio por sujeito e acesso direto ao endpoint de autorização Google para tratamento posterior; veja [[17-DIAGNOSTICO-E-PLANO-DE-PRODUCAO-2026-07-27]].
+
 Desde 2026-07-22, a identidade real esta implementada: Argon2id, tokens de uso unico armazenados como SHA-256, cookie de sessao `HttpOnly`, CSRF, rate limit Redis, respostas neutras de e-mail, auditoria e OIDC/PKCE. O token de recuperacao aparece apenas no link recebido e e removido da URL antes da renderizacao. A SPA mantem o token CSRF somente em memoria e o renova depois da autenticacao.
 
 Em 2026-07-23, o Google OIDC foi validado E2E no staging, incluindo intent protegido por CSRF, CORS explicito, PKCE, `nonce`, callback, criacao de conta e sessao autenticada. O cliente externo foi publicado no Google Auth Platform para remover a restricao a usuarios de teste; as origens autorizadas continuam explicitas e o callback permanece somente na API Render. Segredos Google permanecem apenas no Render. O segredo anterior do cliente OAuth deve ser removido apos esta homologacao.
@@ -64,3 +66,23 @@ O módulo [[09-OPERACOES]] exige autorização por objeto para gestão, inscriç
 ## Equipes
 
 [[10-MINHA-EQUIPE]] exige autorização por equipe e impede escalada de privilégio. Convite respeita preferências, bloqueios, rate limit e vínculo ativo único. Troca de equipe é transacional e preserva histórico. Busca pública nunca usa CPF, telefone, e-mail ou nome completo privado. Logos seguem a política de upload seguro e não aceitam SVG na primeira versão.
+
+## Endurecimento da autenticação em 2026-07-27
+
+Cadastro, recuperação e reenvio executam trabalho Argon2 equivalente para reduzir enumeração por tempo. O rate limit por sujeito foi associado ao IP de origem, evitando bloqueio global de uma conta por terceiros. O Google OIDC somente inicia depois de uma liberação de uso único criada pelo endpoint protegido por CSRF e rate limit; acesso direto não aloca pedido OAuth.
+
+Hashes de tokens, sessões, endereços e identificadores de auditoria usam HMAC-SHA-256 com `AUTH_HASH_KEY` exclusiva do backend. A chave é obrigatória quando a autenticação está habilitada, nunca usa prefixo `VITE_` e sua rotação invalida sessões e links pendentes. Intenções Google consumidas ou expiradas possuem limpeza indexada pela migration `V5`. O Redis usa `noeviction`; esgotamento fecha o fluxo em vez de expulsar silenciosamente estado de autenticação. Veja [[17-DIAGNOSTICO-E-PLANO-DE-PRODUCAO-2026-07-27]].
+## Controles dos módulos de operador e equipe — 2026-07-27
+
+- `/api/operators/**` e `/api/teams/**` exigem sessão; o restante continua `deny-by-default`.
+- IDs públicos UUID são usados nos contratos, enquanto IDs internos permanecem restritos ao backend.
+- Atualizações de perfil/equipe usam versão otimista; username e vínculos ativos têm constraints e validações no servidor.
+- Busca de operador aplica rate limit e projeção mínima, sem e-mail, nome real, telefone ou localização exata.
+- Convite, aceite, recusa, saída e transferência validam proprietário/vínculo/função no service e registram auditoria.
+- Nenhum token ou dado funcional é persistido em Web Storage; mutações usam cookie de sessão e CSRF.
+- Upload de avatar/logo continua bloqueado até existir object storage com MIME real, limites, quarentena, antimalware e remoção de metadados.
+- Pendente antes de usuários reais em escala: validar município pertencente à UF também no backend, executar as migrations em PostgreSQL isolado/backup e ampliar testes de integração de IDOR e concorrência.
+
+## Sessão first-party no domínio oficial - 2026-07-28
+
+O frontend oficial usa proxy same-origin da Vercel para `/api`, `/actuator`, `/oauth2` e `/login/oauth2`. Login por senha, CSRF, callback Google e restauração de sessão passam por `operadorzero.com.br`, evitando dependência de cookies de terceiros no domínio `onrender.com`. Cookies continuam `HttpOnly` quando aplicável, `Secure`, com CSRF dedicado; segredos Google e Resend permanecem somente no backend. Veja `AUTHENTICATION.md` e [[06-FRONTEND-WEB]].

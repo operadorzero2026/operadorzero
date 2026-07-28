@@ -1,11 +1,14 @@
 package br.com.operadorzero.identity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -75,6 +78,70 @@ class AuthServiceTest {
         verify(repository).saveSession(eq(account.id()), hash.capture(), any(), anyString(), any(), any());
         assertThat(hash.getValue()).hasSize(64);
         assertThat(response.getHeader("Set-Cookie")).contains("OZ_SESSION=", "HttpOnly", "SameSite=Lax");
+    }
+
+    @Test
+    void loginWithUnknownEmailStillPerformsArgon2Verification() {
+        when(repository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
+
+        long startedAt = System.nanoTime();
+        assertThatThrownBy(() -> service.login("missing@example.com", "CampoSeguro2026!", request(), new MockHttpServletResponse()))
+            .isInstanceOf(AuthException.class);
+
+        assertThat(Duration.ofNanos(System.nanoTime() - startedAt)).isGreaterThan(Duration.ofMillis(5));
+    }
+
+    @Test
+    void registrationForExistingAccountStillPerformsPasswordValidationAndArgon2Hashing() {
+        when(repository.findByEmail("new@example.com")).thenReturn(Optional.of(account("ACTIVE", encoder.encode("OutraSenha2026!"))));
+
+        long startedAt = System.nanoTime();
+        service.register("New Operator", "new@example.com", "CampoSeguro2026!", true, request());
+
+        assertThat(Duration.ofNanos(System.nanoTime() - startedAt)).isGreaterThan(Duration.ofMillis(5));
+        verify(repository, never()).createUser(anyString(), anyString(), anyString(), anyString(), anyString(),
+            anyString(), anyString(), anyString(), any(Instant.class));
+    }
+
+    @Test
+    void passwordRecoveryForUnknownEmailStillPerformsArgon2Work() {
+        when(repository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
+
+        long startedAt = System.nanoTime();
+        service.requestPasswordRecovery("missing@example.com", request());
+
+        assertThat(Duration.ofNanos(System.nanoTime() - startedAt)).isGreaterThan(Duration.ofMillis(5));
+        verify(repository, never()).saveAuthToken(anyLong(), anyString(), anyString(), any(), any());
+    }
+
+    @Test
+    void verificationResendForUnknownEmailStillPerformsArgon2Work() {
+        when(repository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
+
+        long startedAt = System.nanoTime();
+        service.resendVerification("missing@example.com", request());
+
+        assertThat(Duration.ofNanos(System.nanoTime() - startedAt)).isGreaterThan(Duration.ofMillis(5));
+        verify(repository, never()).saveAuthToken(anyLong(), anyString(), anyString(), any(), any());
+    }
+
+    @Test
+    void googlePreparationCreatesOneTimeLaunchGateAndCleansStaleRegistrationIntents() {
+        AuthProperties googleProperties = new AuthProperties(true, URI.create("http://localhost:4174"), "Operador Zero",
+            Duration.ofDays(7), Duration.ofMinutes(30), new AuthProperties.Cookie("OZ_SESSION", false, "Lax", ""),
+            new AuthProperties.Mail(true, "no-reply@example.test"), new AuthProperties.Google(true, "client", "secret", "callback"));
+        AuthService googleService = new AuthService(googleProperties, repository, encoder, new PasswordPolicy(), tokens,
+            rateLimiter, new AuthCookieService(googleProperties), events);
+        MockHttpServletRequest request = request();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        assertThat(googleService.prepareGoogle(true, request, response)).isEqualTo("/oauth2/authorization/google");
+
+        verify(repository).deleteStaleGoogleIntents(any(Instant.class));
+        verify(repository).saveGoogleIntent(anyString(), eq(AuthService.TERMS_VERSION), eq(AuthService.PRIVACY_VERSION),
+            any(Instant.class), any(Instant.class));
+        assertThat(GoogleAuthorizationRequestGate.consume(request)).isTrue();
+        assertThat(GoogleAuthorizationRequestGate.consume(request)).isFalse();
     }
 
     @Test

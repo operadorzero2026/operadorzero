@@ -1,6 +1,6 @@
 # Autenticacao
 
-Status em 2026-07-23: cadastro por e-mail/senha, confirmacao de e-mail, login, logout, recuperacao, troca de senha e Google OIDC estao implementados na API e conectados a SPA. No staging, cadastro Google, callback autenticado e criacao da sessao opaca foram validados E2E com conta de teste.
+Status em 2026-07-28: cadastro por e-mail/senha, confirmacao de e-mail, login, logout, recuperacao, troca de senha e Google OIDC estao implementados na API e conectados a SPA. O dominio oficial encaminha autenticacao para a API pela mesma origem; callback Google, persistencia apos recarga e logout foram validados E2E com uma conta de homologacao, sem expor credenciais.
 
 ## Contrato
 
@@ -14,16 +14,24 @@ Status em 2026-07-23: cadastro por e-mail/senha, confirmacao de e-mail, login, l
 - `POST /api/auth/password-reset`: altera a senha e revoga sessoes anteriores.
 - `POST /api/auth/google/intent` e `/oauth2/authorization/google`: OIDC Authorization Code com PKCE, `state` e `nonce` gerenciados pelo Spring Security.
 
-Senhas usam Argon2id. Tokens de verificacao, recuperacao, sessao e aceite OIDC sao aleatorios; somente SHA-256 e persistido. A sessao fica em cookie `HttpOnly`; em producao usa `Secure` e `SameSite=None` para a SPA hospedada em outro dominio. CSRF usa cookie/header separado e a SPA renova o token depois do login.
+Senhas usam Argon2id. Tokens de verificacao, recuperacao, sessao e aceite OIDC sao aleatorios; somente HMAC-SHA-256 com `AUTH_HASH_KEY` exclusiva do ambiente e persistido. A sessao fica em cookie `HttpOnly`; em producao usa `Secure` e `SameSite=Lax` porque SPA, API e callback sao expostos ao navegador pela mesma origem. CSRF usa cookie/header separado e a SPA renova o token depois do login.
 
 O handshake Google usa uma sessao temporaria separada (`OZ_OAUTH_SESSION`), `HttpOnly`, `Secure`, `SameSite=Lax` e com expiracao de 10 minutos. Em producao, essa sessao e persistida em Redis no namespace `operador-zero:oauth-session`, preservando `state`, `nonce` e o verificador PKCE durante reinicios ou troca de instancia. Falhas registram somente o codigo tecnico sanitizado e a classe da excecao, sem codigo de autorizacao, token, segredo ou descricao do provedor.
 
 Durante a inicializacao da API, o botao Google informa explicitamente o progresso. Se o usuario cancelar o provedor ou voltar pelo navegador, o evento `pageshow` limpa o estado pendente restaurado pelo cache de navegacao e permite uma nova tentativa.
 
-Cadastro, login, recuperacao e OIDC recebem rate limit por IP e sujeito no Redis. Falha do Redis fecha o fluxo de autenticacao, em vez de remover o limite. E-mail e Google dependem de configuracao externa; nenhuma credencial pertence ao frontend.
+Cadastro, login, recuperacao e OIDC recebem rate limit por IP e por sujeito associado ao IP no Redis, evitando bloqueio global de uma conta por terceiros. Falha do Redis fecha o fluxo de autenticacao, em vez de remover o limite. O redirecionamento Google somente e criado uma vez depois de `POST /api/auth/google/intent`; acesso direto a `/oauth2/authorization/google` nao inicia sessao OIDC. E-mail e Google dependem de configuracao externa; nenhuma credencial pertence ao frontend.
+
+Cadastro, recuperacao e reenvio executam trabalho criptografico equivalente para contas existentes e inexistentes. Intencoes Google consumidas ou expiradas sao removidas antes de novas intencoes, e a migration `V5` indexa esse caminho de limpeza.
 
 O envio transacional usa a API HTTPS da Resend com `Idempotency-Key`; `RESEND_API_KEY` existe somente no backend. Falhas do provedor sao registradas sem destinatario em claro, corpo da resposta ou chave. O dominio `mail.operadorzero.com.br` esta verificado e os e-mails de confirmacao e recuperacao foram entregues no E2E externo.
 
 Depois do cadastro, a interface oferece reenvio neutro da confirmacao e orienta a consultar Lixo Eletronico, sem revelar se o endereco ja existe. O provedor confirmou entrega ao servidor destinatario no diagnostico de 2026-07-28. O TXT `_dmarc.mail` com politica inicial `p=none` foi publicado no DNS do Registro.br e validado nos servidores autoritativos e no Google Public DNS.
 
 Pendencias antes de usuarios reais: DMARC e tratamento de bounce, remocao do segredo Google anterior depois da homologacao concluida, MFA administrativo, reautenticacao critica, central de sessoes, termos/privacidade aprovados e infraestrutura sem expiracao.
+
+## Cookies first-party no dominio oficial - 2026-07-28
+
+No ambiente web oficial, o browser nao acessa mais `*.onrender.com` diretamente. `vercel.json` encaminha `/api`, `/actuator`, `/oauth2` e `/login/oauth2` para a API, mantendo login, CSRF, sessao e callback Google sob `https://operadorzero.com.br`. Assim, os cookies de autenticacao deixam de depender da permissao do navegador para cookies de terceiros.
+
+No deploy, remova `VITE_API_URL` ou defina-a como `https://operadorzero.com.br`. No Render, mantenha `FRONTEND_BASE_URL=https://operadorzero.com.br` e configure `GOOGLE_REDIRECT_URI=https://operadorzero.com.br/login/oauth2/code/google`. A mesma URI deve ser cadastrada exatamente no Google Cloud Console antes da publicacao.

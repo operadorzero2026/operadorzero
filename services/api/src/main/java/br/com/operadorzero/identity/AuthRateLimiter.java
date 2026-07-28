@@ -3,6 +3,7 @@ package br.com.operadorzero.identity;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Duration;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -25,8 +26,10 @@ public class AuthRateLimiter {
     }
 
     public void check(String action, HttpServletRequest request, String subject, int limit, Duration window) {
-        String ipKey = key(action, "ip", request.getRemoteAddr());
-        String subjectKey = key(action, "subject", subject == null ? "anonymous" : subject.toLowerCase());
+        String remoteAddress = request.getRemoteAddr() == null ? "unknown" : request.getRemoteAddr();
+        String ipKey = key(action, "ip", remoteAddress);
+        String normalizedSubject = subject == null ? "anonymous" : subject.toLowerCase(Locale.ROOT);
+        String subjectKey = key(action, "subject-ip", normalizedSubject + "\u0000" + remoteAddress);
         try {
             long ipCount = increment(ipKey, window);
             long subjectCount = increment(subjectKey, window);

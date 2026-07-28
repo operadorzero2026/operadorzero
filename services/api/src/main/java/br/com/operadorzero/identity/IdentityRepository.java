@@ -196,6 +196,13 @@ public class IdentityRepository {
                 "now", dbTime(now), "expiresAt", dbTime(expiresAt)));
     }
 
+    public int deleteStaleGoogleIntents(Instant now) {
+        return jdbc.update("""
+            DELETE FROM oauth_registration_intent
+            WHERE expires_at <= :now OR consumed_at IS NOT NULL
+            """, Map.of("now", dbTime(now)));
+    }
+
     public boolean consumeGoogleIntent(String tokenHash, Instant now) {
         return jdbc.update("""
             UPDATE oauth_registration_intent SET consumed_at = :now

@@ -2,22 +2,22 @@ import { FormEvent, useEffect, useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
+  Bell,
+  Building2,
   CalendarDays,
   ChevronDown,
+  ClipboardCheck,
   Eye,
   EyeOff,
   LayoutDashboard,
   LockKeyhole,
   LogOut,
   Mail,
+  Map,
   Medal,
   Menu,
-  MessageCircle,
   Search,
   ShieldAlert,
-  ShieldCheck,
-  Star,
-  Tag,
   Target,
   Trophy,
   UserRound,
@@ -36,6 +36,13 @@ import {
   SessionUser,
   verifyEmail,
 } from './api'
+import { OperatorPage } from './OperatorPage'
+import { OperatorSearch } from './OperatorSearch'
+import { TeamPage } from './TeamPage'
+import { OperationsPage } from './OperationsPage'
+import { VenuesPage } from './VenuesPage'
+import { RankingsPage } from './RankingsPage'
+import { PerformancePage } from './PerformancePage'
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return <a className={`brand ${compact ? 'brand--compact' : ''}`} href="#inicio" aria-label="Operador Zero, início"><span>Operador</span><strong>Zero</strong></a>
@@ -141,7 +148,7 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
 
   return <div className="auth-overlay" role="presentation" onMouseDown={event => event.target === event.currentTarget && onClose()}>
     <section className="auth-panel" role="dialog" aria-modal="true" aria-labelledby="auth-title">
-      <div className="auth-visual" aria-hidden="true"><Brand/><p>Jogue. Registre.<br/>Ranqueie. Evolua.</p><span>ACESSO SEGURO · OPERADOR ZERO</span></div>
+      <div className="auth-visual" aria-hidden="true"><Brand/><p>Jogue. Registre.<br/>Ranqueie. Evolua.</p><span>OPERADOR ZERO</span></div>
       <div className="auth-content">
         <button className="auth-close" onClick={onClose} aria-label="Fechar"><X/></button>
         {(isRecovery || isReset) && <button className="auth-back" onClick={() => onModeChange('login')}><ArrowLeft size={16}/> Voltar para entrar</button>}
@@ -159,7 +166,6 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
         {notice && <p className="auth-notice" role="status">{notice}</p>}
         {mode === 'signup' && verificationEmail && <button className="forgot-link" type="button" disabled={pendingAction !== null} onClick={resendConfirmation}>Reenviar confirmação</button>}
         {!isRecovery && !isReset && <p className="auth-switch">{mode === 'login' ? 'Ainda não tem conta?' : 'Já possui uma conta?'} <button onClick={() => onModeChange(mode === 'login' ? 'signup' : 'login')}>{mode === 'login' ? 'Criar conta' : 'Entrar'}</button></p>}
-        <p className="auth-security"><ShieldCheck size={16}/> Credenciais são enviadas somente à API e não ficam persistidas no navegador.</p>
       </div>
     </section>
   </div>
@@ -168,51 +174,51 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
 const dashboardNav = [
   { label: 'Visão geral', icon: LayoutDashboard },
   { label: 'Operações', icon: Target },
+  { label: 'Campos', icon: Building2 },
+  { label: 'Mapas', icon: Map },
   { label: 'Minha equipe', icon: Users },
+  { label: 'Operadores', icon: UserRound },
+  { label: 'Desempenho', icon: ClipboardCheck },
   { label: 'Rankings', icon: Trophy },
-  { label: 'Classificados', icon: Tag },
-  { label: 'Comunidade', icon: MessageCircle },
-  { label: 'Destaques', icon: Star },
   { label: 'Conquistas', icon: Medal },
+  { label: 'Notificações', icon: Bell },
   { label: 'Meu Operador', icon: UserRound },
 ]
 
 const emptyCopy: Record<string, { title: string; description: string }> = {
-  'Operações': { title: 'Nenhuma operação publicada', description: 'Operações aparecerão aqui somente depois de cadastradas e persistidas por organizadores reais.' },
-  'Minha equipe': { title: 'Você ainda não participa de uma equipe', description: 'Equipes e convites serão exibidos quando existirem registros reais vinculados à sua conta.' },
-  'Rankings': { title: 'Ranking ainda sem resultados', description: 'A classificação começará após operações e resultados reais serem confirmados.' },
-  'Classificados': { title: 'Nenhum classificado publicado', description: 'A área permanecerá vazia até que anúncios reais possam ser armazenados com segurança.' },
-  'Comunidade': { title: 'Nenhuma publicação na comunidade', description: 'Publicações aparecerão somente quando forem criadas por contas reais e persistidas pela API.' },
-  'Destaques': { title: 'Nenhum destaque ativo', description: 'A plataforma não cria destaques fictícios. Apenas conteúdo real e auditado será exibido.' },
-  'Conquistas': { title: 'Nenhuma conquista registrada', description: 'Conquistas serão calculadas a partir de atividades reais confirmadas.' },
+  'Operações': { title: 'Nenhuma operação encontrada', description: 'Não há operações para os filtros selecionados.' },
+  'Minha equipe': { title: 'Você ainda não participa de uma equipe', description: 'Crie uma equipe, consulte seus convites ou encontre equipes da sua região.' },
+  'Rankings': { title: 'Você ainda não possui resultados no ranking', description: 'Participe de operações válidas para começar seu histórico.' },
+  'Classificados': { title: 'Nenhum item encontrado', description: 'Não há anúncios ou procuras disponíveis no momento.' },
+  'Comunidade': { title: 'Ainda não existem publicações nesta categoria', description: 'Escolha outra categoria ou volte mais tarde.' },
+  'Destaques': { title: 'Nenhum destaque ativo', description: 'Não há destaques da comunidade no momento.' },
+  'Conquistas': { title: 'Nenhuma conquista registrada', description: 'Seu progresso aparecerá conforme você participar das atividades.' },
 }
 
 function EmptyWorkspace({ area, onHome }: { area: string; onHome: () => void }) {
-  const copy = emptyCopy[area] ?? { title: 'Nenhum conteúdo disponível', description: 'Esta área aguarda dados reais da plataforma.' }
-  return <main className="real-empty-page"><p className="eyebrow"><span/> CONTEÚDO REAL</p><h1>{area}</h1><section className="real-empty-state"><Search/><h2>{copy.title}</h2><p>{copy.description}</p><small>Nenhum dado demonstrativo ou gerado automaticamente é exibido.</small><button onClick={onHome}>Voltar à visão geral <ArrowRight/></button></section></main>
+  const copy = emptyCopy[area] ?? { title: 'Nenhum conteúdo disponível', description: 'Não há itens nesta área.' }
+  return <main className="real-empty-page"><h1>{area}</h1><section className="real-empty-state"><Search/><h2>{copy.title}</h2><p>{copy.description}</p><button onClick={onHome}>Voltar à visão geral <ArrowRight/></button></section></main>
 }
 
-function OperatorAccount({ user }: { user: SessionUser }) {
-  return <main className="real-empty-page"><p className="eyebrow"><span/> IDENTIDADE AUTENTICADA</p><h1>Meu Operador</h1><section className="real-account"><span className="operator-avatar">{(user.callsign || user.displayName).charAt(0).toUpperCase()}</span><div><small>CONTA REAL</small><h2>{user.callsign || user.displayName}</h2><p>{user.displayName} · @{user.username}</p><p>{user.email}</p></div></section><p className="real-data-note"><ShieldCheck/> Esta tela usa somente informações retornadas pela sessão autenticada. Pontuação, equipe, reputação e histórico não são inventados.</p></main>
-}
-
-function Dashboard({ onLogout, user }: { onLogout: () => void; user: SessionUser }) {
+function Dashboard({ onLogout, onUserUpdated, user }: { onLogout: () => Promise<boolean>; onUserUpdated: (user: SessionUser) => void; user: SessionUser }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [activeView, setActiveView] = useState('Visão geral')
+  const [logoutPending, setLogoutPending] = useState(false)
+  const [logoutError, setLogoutError] = useState('')
   const callsign = user.callsign || user.displayName
   const initial = callsign.charAt(0).toUpperCase()
   return <div className="app-shell">
-    <aside className="app-sidebar"><Brand compact/><nav aria-label="Navegação do operador">{dashboardNav.map(({ label, icon: Icon }) => <button onClick={() => setActiveView(label)} className={activeView === label ? 'active' : ''} key={label}><Icon/><span>{label}</span>{activeView === label && <i/>}</button>)}</nav><div className="sidebar-footer"><p>Operador Zero <b>produção</b><br/>Conteúdo verificado</p></div></aside>
+    <aside className="app-sidebar"><Brand compact/><nav aria-label="Navegação do operador">{dashboardNav.map(({ label, icon: Icon }) => <button onClick={() => setActiveView(label)} className={activeView === label ? 'active' : ''} key={label}><Icon/><span>{label}</span>{activeView === label && <i/>}</button>)}</nav><div className="sidebar-footer"><p>Jogue. Registre.<br/><b>Evolua.</b></p></div></aside>
     <div className="app-main">
-      <header className="app-topbar"><div className="real-search-status"><ShieldCheck/><span>Exibindo somente dados reais</span></div><div className="profile-control"><button onClick={() => setProfileOpen(!profileOpen)} aria-expanded={profileOpen}><span className="profile-avatar">{initial}</span><span><b>{callsign}</b><small>@{user.username}</small></span><ChevronDown/></button>{profileOpen && <div className="profile-menu"><p>{user.email}</p><button onClick={onLogout}><LogOut/> Sair da conta</button></div>}</div></header>
-      {activeView === 'Meu Operador' ? <OperatorAccount user={user}/> : activeView !== 'Visão geral' ? <EmptyWorkspace area={activeView} onHome={() => setActiveView('Visão geral')}/> : <main className="dashboard real-dashboard">
-        <section className="dashboard-welcome"><div><p>CONTA AUTENTICADA</p><h1>Olá, <em>{callsign}.</em></h1><span>Este painel não utiliza dados fictícios.</span></div></section>
-        <section className="operator-strip real-operator-strip"><div className="operator-identity"><span className="operator-avatar">{initial}</span><div><small>IDENTIDADE DA SESSÃO</small><h2>{callsign}</h2><p>{user.displayName} · @{user.username}</p></div></div><div><small>CONTA</small><strong>ATIVA</strong><span>Autenticada pela API</span></div></section>
-        <section className="real-dashboard-intro"><div><p className="eyebrow"><span/> ATIVIDADE</p><h2>Sua atividade começa vazia.</h2><p>Operações, equipes, rankings, classificados, comunidade e conquistas serão mostrados apenas quando houver dados reais persistidos e vinculados à sua conta.</p></div><ShieldCheck/></section>
+      <header className="app-topbar"><OperatorSearch/><div className="profile-control"><button onClick={() => setProfileOpen(!profileOpen)} aria-expanded={profileOpen}><span className="profile-avatar">{initial}</span><span><b>{callsign}</b><small>@{user.username}</small></span><ChevronDown/></button>{profileOpen && <div className="profile-menu"><p>{user.email}</p><button disabled={logoutPending} onClick={async () => { setLogoutPending(true); setLogoutError(''); const completed = await onLogout(); setLogoutPending(false); if (!completed) setLogoutError('Não foi possível encerrar a sessão. Verifique sua conexão e tente novamente.') }}><LogOut/> {logoutPending ? 'Encerrando...' : 'Sair da conta'}</button>{logoutError && <small className="logout-error" role="alert">{logoutError}</small>}</div>}</div></header>
+      {activeView === 'Meu Operador' ? <OperatorPage onUserUpdated={updated => onUserUpdated({ ...user, ...updated })}/> : activeView === 'Minha equipe' ? <TeamPage/> : activeView === 'Operações' ? <OperationsPage/> : activeView === 'Campos' ? <VenuesPage mode="fields"/> : activeView === 'Mapas' ? <VenuesPage mode="maps"/> : activeView === 'Desempenho' ? <PerformancePage/> : activeView === 'Rankings' ? <RankingsPage/> : activeView !== 'Visão geral' ? <EmptyWorkspace area={activeView} onHome={() => setActiveView('Visão geral')}/> : <main className="dashboard real-dashboard">
+        <section className="dashboard-welcome"><div><p>BEM-VINDO</p><h1>Olá, <em>{callsign}.</em></h1></div></section>
+        <section className="operator-strip real-operator-strip"><div className="operator-identity"><span className="operator-avatar">{initial}</span><div><small>OPERADOR</small><h2>{callsign}</h2><p>{user.displayName} · @{user.username}</p></div></div><div><small>STATUS DO PERFIL</small><strong>ATIVO</strong><span>Conta disponível</span></div></section>
+        <section className="real-dashboard-intro"><div><p className="eyebrow"><span/> SUA JORNADA</p><h2>Comece pelo que importa.</h2><p>Encontre operações, organize sua equipe e acompanhe sua participação na comunidade.</p></div></section>
         <div className="real-empty-grid">{['Operações','Equipe','Ranking','Comunidade'].map(area => <button key={area} onClick={() => setActiveView(area === 'Equipe' ? 'Minha equipe' : area === 'Ranking' ? 'Rankings' : area)}><span>{area}</span><strong>Nenhum registro</strong><ArrowRight/></button>)}</div>
       </main>}
     </div>
-    <nav className="mobile-app-nav" aria-label="Navegação mobile">{dashboardNav.filter(item => ['Visão geral','Operações','Rankings','Comunidade','Meu Operador'].includes(item.label)).map(({label,icon:Icon}) => <button onClick={() => setActiveView(label)} className={activeView === label ? 'active' : ''} key={label}><Icon/><span>{label}</span></button>)}</nav>
+    <nav className="mobile-app-nav" aria-label="Navegação mobile">{dashboardNav.filter(item => ['Visão geral','Operações','Campos','Notificações','Meu Operador'].includes(item.label)).map(({label,icon:Icon}) => <button onClick={() => setActiveView(label)} className={activeView === label ? 'active' : ''} key={label}><Icon/><span>{label}</span></button>)}</nav>
   </div>
 }
 
@@ -220,7 +226,7 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [authMode, setAuthMode] = useState<AuthMode | null>(null)
   const [currentUser, setCurrentUser] = useState<SessionUser | null>(null)
-  const [authChecking, setAuthChecking] = useState(AUTH_ENABLED)
+  const [sessionRestoring, setSessionRestoring] = useState(AUTH_ENABLED)
   const [authNotice, setAuthNotice] = useState('')
   const [resetTokenValue, setResetTokenValue] = useState('')
 
@@ -254,33 +260,47 @@ export default function App() {
           setAuthNotice(message); setAuthMode('login')
         }
         const session = await getCurrentSession()
-        if (active) setCurrentUser(session)
+        if (active) {
+          setCurrentUser(session)
+          if (oauth === 'success' && !session) {
+            setAuthNotice('O Google confirmou o acesso, mas a sessão não foi restaurada. Tente novamente ou use e-mail e senha.')
+            setAuthMode('login')
+          }
+        }
       } catch (error) {
         if (active) { setAuthNotice(error instanceof Error ? error.message : 'Não foi possível validar o acesso.'); setAuthMode('login') }
       } finally {
-        if (active) setAuthChecking(false)
+        if (active) setSessionRestoring(false)
       }
     }
     void restore()
     return () => { active = false }
   }, [])
 
-  if (authChecking) return <div className="auth-boot"><Brand/><span>Validando sessão segura...</span><button onClick={() => setAuthChecking(false)}>Continuar no site</button></div>
-  if (currentUser) return <Dashboard user={currentUser} onLogout={() => { void logout().finally(() => setCurrentUser(null)) }}/>
+  if (currentUser) return <Dashboard user={currentUser} onUserUpdated={setCurrentUser} onLogout={async () => {
+    try {
+      await logout()
+      setCurrentUser(null)
+      return true
+    } catch {
+      return false
+    }
+  }}/>
 
   const authenticated = (user: SessionUser) => { setAuthMode(null); setAuthNotice(''); setCurrentUser(user) }
   const nav = ['Operações', 'Como funciona', 'Comunidade']
   return <div className={`site-shell ${IS_STAGING ? 'site-shell--staging' : ''}`}>
     {IS_STAGING && <div className="staging-banner" role="status"><ShieldAlert/> Ambiente de testes — não utilize informações pessoais reais.</div>}
-    <header className="topbar"><Brand compact/><nav className="desktop-nav" aria-label="Navegação principal">{nav.map(item => <a key={item} href={`#${item.toLowerCase().replaceAll(' ', '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`}>{item}</a>)}</nav><div className="header-actions"><button className="text-button" onClick={() => setAuthMode('login')}>Entrar</button><button className="button button--small" onClick={() => setAuthMode('signup')}>Criar conta</button></div><button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-label="Abrir menu">{menuOpen ? <X/> : <Menu/>}</button>{menuOpen && <div className="mobile-menu">{nav.map(item => <a key={item} onClick={() => setMenuOpen(false)} href={`#${item.toLowerCase().replaceAll(' ', '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`}>{item}</a>)}<button onClick={() => { setMenuOpen(false); setAuthMode('signup') }}>Criar conta</button><button onClick={() => { setMenuOpen(false); setAuthMode('login') }}>Entrar</button></div>}</header>
+    <header className="topbar"><Brand compact/><nav className="desktop-nav" aria-label="Navegação principal">{nav.map(item => <a key={item} href={`#${item.toLowerCase().replaceAll(' ', '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`}>{item}</a>)}</nav><div className="header-actions">{sessionRestoring && <span className="session-status" role="status">Verificando acesso...</span>}<button className="text-button" onClick={() => setAuthMode('login')}>Entrar</button><button className="button button--small" onClick={() => setAuthMode('signup')}>Criar conta</button></div><button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-label="Abrir menu">{menuOpen ? <X/> : <Menu/>}</button>{menuOpen && <div className="mobile-menu">{nav.map(item => <a key={item} onClick={() => setMenuOpen(false)} href={`#${item.toLowerCase().replaceAll(' ', '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`}>{item}</a>)}<button onClick={() => { setMenuOpen(false); setAuthMode('signup') }}>Criar conta</button><button onClick={() => { setMenuOpen(false); setAuthMode('login') }}>Entrar</button></div>}</header>
     <main>
-      <section className="hero" id="inicio"><div className="hero-art" aria-hidden="true"><img src="/operador-zero-identity.jpeg" alt=""/></div><div className="hero-shade"/><div className="hero-content"><p className="eyebrow reveal reveal--1"><span/> A plataforma do airsoft brasileiro</p><h1 className="reveal reveal--2">Sua próxima<br/><em>operação</em> começa aqui.</h1><p className="hero-copy reveal reveal--3">Uma plataforma construída para receber conteúdo verdadeiro de operadores, equipes e organizadores.</p><div className="hero-actions reveal reveal--4"><button className="button" onClick={() => setAuthMode('signup')}>Criar minha conta <ArrowRight size={18}/></button><a className="link-button" href="#como-funciona">Como funciona <ChevronDown size={17}/></a></div></div><div className="hero-index"><span>01</span><i/><small>CONTEÚDO REAL</small></div></section>
-      <section className="operations section" id="operacoes"><div className="section-heading"><div><p className="eyebrow"><span/> Agenda pública</p><h2>Operações publicadas</h2></div></div><div className="public-empty-state"><CalendarDays/><h3>Nenhuma operação publicada ainda</h3><p>Esta área exibirá somente operações cadastradas por organizadores reais. Não usamos eventos de exemplo para preencher a agenda.</p></div></section>
-      <section className="manifesto" id="como-funciona"><div className="manifesto-copy"><p className="eyebrow"><span/> Histórico confiável</p><h2>Dados reais.<br/><em>Sem simulação.</em></h2><p>A plataforma começa pela identidade autenticada. Cada novo módulo será liberado com persistência, autorização e auditoria no backend.</p></div><div className="steps"><div><UserRound/><span>01</span><div className="step-content"><h3>Cadastre-se</h3><p>Crie sua conta real com Google ou e-mail e senha.</p></div></div><div><ShieldCheck/><span>02</span><div className="step-content"><h3>Publique</h3><p>Conteúdo aparecerá somente após ser armazenado pela plataforma.</p></div></div><div><Trophy/><span>03</span><div className="step-content"><h3>Construa</h3><p>Histórico e ranking dependerão de atividades confirmadas.</p></div></div></div></section>
-      <section className="community" id="comunidade"><div><Users/><p className="eyebrow">Comunidade em formação</p><h2>Primeiro as pessoas. Depois os números.</h2><p>Nomes, equipes, eventos, anúncios e estatísticas só serão exibidos quando forem criados por usuários reais.</p></div></section>
+      <section className="hero" id="inicio"><div className="hero-art" aria-hidden="true"><img src="/operador-zero-identity.jpeg" alt=""/></div><div className="hero-shade"/><div className="hero-content"><p className="eyebrow reveal reveal--1"><span/> A plataforma do airsoft brasileiro</p><h1 className="reveal reveal--2">O airsoft brasileiro<br/><em>em um só lugar.</em></h1><p className="hero-copy reveal reveal--3">Encontre eventos, equipes, campos e operadores de todo o Brasil. Crie seu perfil e participe da comunidade.</p><div className="hero-actions reveal reveal--4"><button className="button" onClick={() => setAuthMode('signup')}>Criar perfil gratuito <ArrowRight size={18}/></button><a className="link-button" href="#operacoes">Explorar eventos <ChevronDown size={17}/></a></div></div><div className="hero-index"><span>01</span><i/><small>AIRSOFT BRASIL</small></div></section>
+      <section className="operations section" id="operacoes"><div className="section-heading"><div><p className="eyebrow"><span/> Agenda pública</p><h2>Operações publicadas</h2></div></div><div className="public-empty-state"><CalendarDays/><h3>Nenhuma operação publicada ainda</h3><p>As próximas operações da comunidade aparecerão aqui.</p></div></section>
+      <section className="manifesto" id="como-funciona"><div className="manifesto-copy"><p className="eyebrow"><span/> Sua jornada</p><h2>Jogue. Registre.<br/><em>Evolua.</em></h2><p>Crie sua identidade, encontre a comunidade da sua região e construa seu histórico no airsoft.</p></div><div className="steps"><div><UserRound/><span>01</span><div className="step-content"><h3>Cadastre-se</h3><p>Entre com Google ou use seu e-mail e senha.</p></div></div><div><CalendarDays/><span>02</span><div className="step-content"><h3>Participe</h3><p>Encontre equipes e operações perto de você.</p></div></div><div><Trophy/><span>03</span><div className="step-content"><h3>Evolua</h3><p>Acompanhe sua trajetória e suas conquistas.</p></div></div></div></section>
+      <section className="community" id="comunidade"><div><Users/><p className="eyebrow">Comunidade Operador Zero</p><h2>Conecte-se com quem vive o esporte.</h2><p>Compartilhe experiências, encontre equipes e acompanhe o airsoft da sua região.</p></div></section>
+      <section className="trust-section" id="sobre"><div><p className="eyebrow"><span/> Plataforma gratuita</p><h2>Organize sua jornada no airsoft.</h2><p>Crie seu perfil, encontre operações, forme equipes e participe da comunidade sem cobrança pela plataforma.</p></div><div className="trust-grid"><article id="termos"><h3>Termos de Uso</h3><p>Ao criar uma conta, você concorda em usar a plataforma com respeito, legalidade e informações verdadeiras.</p></article><article id="privacidade"><h3>Privacidade</h3><p>Você controla as informações que compartilha com outros operadores e equipes.</p></article><article id="regras"><h3>Regras da Comunidade</h3><p>Fair play, convivência respeitosa, segurança e procedência legal dos equipamentos são obrigatórios.</p></article><article id="seguranca"><h3>Segurança e denúncias</h3><p>Suspeitas de abuso ou falha podem ser comunicadas pelo canal oficial de atendimento.</p><a href="mailto:operadorzerosac@gmail.com">operadorzerosac@gmail.com</a></article></div></section>
       <section className="cta" id="convite"><p className="eyebrow"><span/> Sua identidade</p><h2>Comece pelo<br/>seu cadastro.</h2><p>Entre com Google ou crie uma conta com e-mail e senha.</p><button className="button" onClick={() => setAuthMode('signup')}>Criar minha conta <ArrowRight size={18}/></button></section>
     </main>
-    <footer><Brand compact/><p>Airsoft é esporte. Respeito, segurança e fair play sempre.</p><div><a href="#como-funciona">Funcionamento</a><a href="#comunidade">Comunidade</a><a href="mailto:operadorzerosac@gmail.com">Contato</a></div><small>© 2026 OPERADOR ZERO</small></footer>
+    <footer><Brand compact/><p>Airsoft é esporte. Respeito, segurança e fair play sempre.</p><div><a href="#sobre">Sobre</a><a href="#operacoes">Eventos</a><a href="#comunidade">Comunidade</a><a href="#termos">Termos</a><a href="#privacidade">Privacidade</a><a href="#seguranca">Segurança</a><a href="mailto:operadorzerosac@gmail.com">Contato</a><button onClick={() => setAuthMode('login')}>Entrar</button><button onClick={() => setAuthMode('signup')}>Criar conta</button></div><small>© 2026 OPERADOR ZERO</small></footer>
     {authMode && <AuthModal mode={authMode} onClose={() => { setAuthMode(null); setAuthNotice('') }} onModeChange={setAuthMode} onAuthenticated={authenticated} resetToken={resetTokenValue} initialNotice={authNotice}/>}
   </div>
 }

@@ -1,0 +1,19 @@
+{
+  "name": "Operador Zero",
+  "short_name": "Operador Zero",
+  "description": "A plataforma da comunidade brasileira de airsoft.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#090b08",
+  "theme_color": "#0a0c09",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

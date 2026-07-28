@@ -48,7 +48,250 @@
 
 ### Pendências
 - Nenhuma pendência de código identificada para este defeito.
+## 2026-07-28 - Registro, confirmação e contestação de desempenho
 
+### Arquivos alterados
+- `services/api/src/main/java/br/com/operadorzero/performance/*`
+- `services/api/src/test/java/br/com/operadorzero/performance/PerformanceServiceTest.java`
+- `services/api/src/main/java/br/com/operadorzero/ranking/RankingRepository.java`
+- `services/api/src/main/java/br/com/operadorzero/shared/config/SecurityConfig.java`
+- `src/PerformancePage.tsx`, `src/api.ts`, `src/App.tsx`, `src/functional-modules.css`
+- [[11-RANKING]] e [[19-EXPANSAO-FUNCIONAL-OPERADORZERO-2026-07-28]]
+
+### O que foi feito
+- Implementado registro de desempenho para participantes confirmados de operações finalizadas.
+- Implementadas confirmação do organizador, confirmação da equipe, correção, rejeição e contestação.
+- Adicionada equipe representada e controle de versão otimista.
+- Registros contestados passaram a ficar suspensos do ranking até decisão do organizador.
+- Criada a aba Desempenho dentro da navegação existente.
+
+### Motivo
+- Alimentar o ranking oficial com registros reais, revisáveis e auditáveis.
+
+### Impacto
+- Frontend, backend e documentação. Usa as tabelas da migration `V9`; nenhum deploy ou migration remota.
+
+### Testes
+- `npm run check`: aprovado.
+- `mvn -B clean verify`: 50 testes aprovados.
+- Testes adicionais cobrem bloqueio de registro sem presença confirmada e contestação por usuário alheio à operação.
+
+### Pendências
+- Validar `V8` e `V9` em PostgreSQL real após backup/preflight.
+- Homologar o fluxo completo no navegador com contas distintas de operador, organizador e liderança de equipe.
+- Substituir diálogos nativos de correção por modal dedicado na etapa de refinamento visual.
+
+## 2026-07-28 - Nova fórmula oficial de ranking e criação aberta
+
+### Arquivos alterados
+- `services/api/src/main/resources/db/migration/V9__performance_records_and_ranking.sql`
+- `services/api/src/main/java/br/com/operadorzero/ranking/*`
+- `services/api/src/test/java/br/com/operadorzero/ranking/RankingCalculatorTest.java`
+- `services/api/src/main/java/br/com/operadorzero/shared/config/SecurityConfig.java`
+- `src/RankingsPage.tsx`, `src/api.ts`, `src/App.tsx`, `src/functional-modules.css`
+- [[11-RANKING]] e [[19-EXPANSAO-FUNCIONAL-OPERADORZERO-2026-07-28]]
+
+### O que foi feito
+- Tornada oficial a fórmula solicitada em 2026-07-28, substituindo OZ-RANK 1.0.
+- Definida pontuação final como `(bruta + bônus - penalidades) × fator`, com bônus calculado apenas sobre registros confirmados por cada responsável.
+- Criadas tabelas versionadas de desempenho e contestação.
+- Implementado ranking real de operadores com filtros, detalhamento dos componentes e estado vazio.
+- Confirmado que qualquer usuário autenticado pode criar equipe, campo e operação; a administração posterior continua protegida pelo vínculo com o objeto.
+
+### Motivo
+- Aplicar as decisões explícitas de produto sem misturar fórmulas ou criar bloqueios de criação não solicitados.
+
+### Impacto
+- Backend, frontend, banco PostgreSQL e documentação. Nenhum deploy, commit ou aplicação remota de migration.
+
+### Testes
+- `npm run check`: aprovado.
+- `mvn -B clean verify`: 48 testes aprovados, incluindo três cenários específicos da fórmula.
+
+### Pendências
+- Aplicar `V8` e `V9` somente após backup/preflight em PostgreSQL real.
+- Implementar o fluxo completo de registro, confirmação, correção e contestação que alimenta o ranking.
+- Persistir snapshots periódicos para calcular variação histórica de posição; até lá a variação retornada é zero.
+
+## 2026-07-28 - Base persistente de campos, mapas e operações
+
+### Arquivos alterados
+- `services/api/src/main/resources/db/migration/V8__fields_maps_and_operations.sql`
+- `services/api/src/main/java/br/com/operadorzero/operation/*`
+- `services/api/src/main/java/br/com/operadorzero/venue/*`
+- `services/api/src/main/java/br/com/operadorzero/shared/config/SecurityConfig.java`
+- `src/api.ts`, `src/App.tsx`, `src/OperationsPage.tsx`, `src/VenuesPage.tsx`, `src/functional-modules.css`
+- [[00-LEIA-ANTES-CODEX]], [[09-OPERACOES]] e [[19-EXPANSAO-FUNCIONAL-OPERADORZERO-2026-07-28]]
+
+### O que foi feito
+- Auditadas a produção pública, as abas autenticadas do código, a documentação, migrations e contratos existentes.
+- Criados modelos persistentes para campos, mapas, operações e participantes.
+- Adicionadas busca, criação e visualização de campos/mapas/operações e solicitação/cancelamento de participação.
+- Ampliado o menu existente com Campos, Mapas, Operadores e Notificações, sem criar uma segunda navegação ou plataforma.
+- Mantidos uploads bloqueados e valores de inscrição estritamente informativos.
+
+### Motivo
+- Iniciar a expansão ampla solicitada sobre dados reais, autorização no backend e auditoria, evitando telas preenchidas com conteúdo fictício.
+
+### Impacto
+- Frontend, backend, banco PostgreSQL e documentação. Nenhum deploy, commit, push ou alteração de segredo.
+
+### Testes
+- Baseline: `npm run check` aprovado; `mvn -B clean verify` aprovado com 45 testes.
+- Após a alteração: `npm run check` aprovado; `mvn -B clean verify` aprovado com 45 testes.
+
+### Pendências
+- Aplicar `V8` somente após backup/preflight e validar a migration em PostgreSQL real.
+- Homologar o fluxo autenticado completo em navegador com uma conta de teste.
+- Concluir as etapas restantes detalhadas em [[19-EXPANSAO-FUNCIONAL-OPERADORZERO-2026-07-28]].
+- Implementar storage seguro antes de fotos, capas e plantas.
+
+## 2026-07-27 - Auditoria de telas e remoção de mensagens técnicas
+
+### Arquivos alterados
+- `src/App.tsx`
+- `src/api.ts`
+- `scripts/real-content-scenarios.mjs`
+- `scripts/auth-flow-scenarios.mjs`
+- `docs/obsidian/00-LEIA-ANTES-CODEX.md`
+- `docs/obsidian/01-ESTADO-ATUAL-DO-PROJETO.md`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/18-AUDITORIA-DE-TELAS-E-INTEGRACAO-2026-07-27.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Mapeadas as rotas públicas, nove destinos autenticados, protótipos desconectados, formulários, botões, endpoints existentes/ausentes e migrations necessárias.
+- Removidas da interface oficial mensagens sobre dados reais/fictícios, demonstração, API, backend, persistência, produção, sessão técnica e armazenamento de credenciais.
+- Reescritos landing, painel e estados vazios com linguagem natural, curta e orientada à jornada do operador.
+- Adicionados testes de regressão para impedir a volta dessas mensagens ao bundle oficial.
+
+### Motivo
+- Separar comunicação de produto de detalhes internos e preparar a funcionalização progressiva dos módulos.
+
+### Impacto
+- Frontend e documentação. Backend, banco e infraestrutura não foram alterados.
+
+### Testes
+- Baseline anterior: `npm run check` aprovado e `mvn -B clean verify` aprovado com 40 testes.
+- Pós-alteração: `npm run check` e busca global por mensagens técnicas.
+
+### Pendências
+- Implementar [[18-AUDITORIA-DE-TELAS-E-INTEGRACAO-2026-07-27]] a partir da Etapa 2, começando por Meu Operador, Equipes, Convites e busca segura.
+- Remover código morto somente depois que as novas superfícies funcionais substituírem todas as referências necessárias.
+- Nenhum deploy, push ou merge foi realizado.
+
+## 2026-07-27 - Cadastro Google tolerante ao cold start real
+
+### Arquivos alterados
+- `src/api.ts`
+- `scripts/auth-flow-scenarios.mjs`
+- `docs/obsidian/01-ESTADO-ATUAL-DO-PROJETO.md`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/17-DIAGNOSTICO-E-PLANO-DE-PRODUCAO-2026-07-27.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Confirmado nos logs que o Render Free levou cerca de 115 segundos para iniciar, acima do limite anterior de 45 segundos.
+- Adicionada espera de readiness com tentativas limitadas por até três minutos antes de CSRF e intent Google.
+- Publicado o frontend diretamente na Vercel; deployment `dpl_HoRvhgGQnpD1mMauGiPLRwVK3Df1` ficou `READY` com todos os aliases oficiais.
+
+### Motivo
+- Impedir que o cadastro Google seja encerrado pelo navegador enquanto a API gratuita ainda está despertando.
+
+### Impacto
+- Frontend oficial e Vercel. Nenhum backend, banco, segredo, migration ou configuração Render foi alterado.
+
+### Testes
+- `npm run check` aprovado.
+- Bundle oficial confirmado com `/actuator/health/readiness`.
+- `https://operadorzero.com.br/` e readiness da API responderam `200`.
+- Logs do backend sem falha OIDC correspondente; causa confirmada como timeout anterior ao redirecionamento.
+
+### Pendências
+- Revalidar com uma conta Google ainda não cadastrada depois de a API entrar novamente em repouso.
+- Infraestrutura gratuita continua sujeita a espera longa; serviço sem hibernação elimina essa latência.
+
+## 2026-07-27 - Endurecimento dos fluxos reais de autenticação
+
+### Arquivos alterados
+- `services/api/src/main/java/br/com/operadorzero/identity/AuthService.java`
+- `services/api/src/main/java/br/com/operadorzero/identity/AuthRateLimiter.java`
+- `services/api/src/main/java/br/com/operadorzero/identity/TokenSupport.java`
+- `services/api/src/main/java/br/com/operadorzero/identity/IdentityRepository.java`
+- `services/api/src/main/java/br/com/operadorzero/identity/GoogleAuthorizationRequestGate.java`
+- `services/api/src/main/java/br/com/operadorzero/shared/config/GatedOAuth2AuthorizationRequestResolver.java`
+- `services/api/src/main/java/br/com/operadorzero/shared/config/SecurityConfig.java`
+- `services/api/src/main/resources/db/migration/V5__oauth_intent_cleanup_index.sql`
+- testes backend, `.env.example`, `render.yaml` e documentação de autenticação/deploy
+
+### O que foi feito
+- Uniformizado o trabalho criptográfico de cadastro, recuperação e reenvio para reduzir enumeração por tempo.
+- Removido o bloqueio global de conta pelo limitador e exigida preparação CSRF/rate limited de uso único antes do Google OIDC.
+- Adicionada limpeza indexada de intenções OAuth consumidas ou expiradas.
+- Substituído SHA-256 determinístico por HMAC-SHA-256 com chave obrigatória no backend.
+- Alterado o Redis de `allkeys-lru` para `noeviction`.
+
+### Motivo
+- Fechar os oito achados de baixa severidade confirmados na auditoria integral sem enfraquecer login, cadastro ou OIDC legítimos.
+
+### Impacto
+- Backend, autenticação, Redis, migration aditiva, configuração de staging e documentação; nenhum deploy, push, merge ou alteração remota.
+
+### Testes
+- `mvn -B clean verify`: 40 testes aprovados.
+- `npm run check`: lint, cenários, build, bundle e configuração aprovados.
+- Teste direto confirma `404` sem intent e redirecionamento OIDC único com PKCE/nonce depois da preparação.
+
+### Pendências
+- Definir `AUTH_HASH_KEY` segura no Render antes de publicar; a ativação invalida sessões e links antigos.
+- Validar `V5` em PostgreSQL isolado; Docker não está instalado nesta máquina.
+- Executar smoke E2E em staging e nova verificação de segurança antes de promover o domínio oficial.
+
+## 2026-07-27 - Sessão não bloqueante, início Google recuperável e indexação oficial
+
+### Arquivos alterados
+- `src/App.tsx`
+- `src/api.ts`
+- `src/styles.css`
+- `index.html`
+- `vercel.json`
+- `public/robots.txt`
+- `public/sitemap.xml`
+- `public/manifest.webmanifest`
+- `scripts/auth-flow-scenarios.mjs`
+- `scripts/seo-scenarios.mjs`
+- `package.json`
+- `services/api/src/main/java/br/com/operadorzero/shared/config/RenderDatabaseUrlEnvironmentPostProcessor.java`
+- `services/api/src/test/java/br/com/operadorzero/RenderDatabaseUrlEnvironmentPostProcessorTest.java`
+- `docs/obsidian/00-LEIA-ANTES-CODEX.md`
+- `docs/obsidian/05-SEGURANCA-E-PRIVACIDADE.md`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/17-DIAGNOSTICO-E-PLANO-DE-PRODUCAO-2026-07-27.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Removido o bloqueio global “Validando sessão segura”; a restauração agora ocorre em segundo plano.
+- O início Google ganhou progresso específico, tolerância controlada ao cold start e recuperação em erro.
+- A saída só é confirmada depois que a API revoga a sessão.
+- A landing, a primeira dobra móvel e os links institucionais foram reorganizados sem dados fictícios.
+- O domínio oficial deixou de bloquear indexação e recebeu canonical, metadados sociais, JSON-LD, robots, sitemap e manifest reais.
+- URLs PostgreSQL do ambiente agora exigem TLS no mínimo com `sslmode=require`.
+
+### Motivo
+- Corrigir a percepção de travamento no cadastro Google, tornar a sessão segura em falhas de rede e preparar o domínio oficial para descoberta e compartilhamento.
+
+### Impacto
+- Frontend, autenticação, banco em trânsito, SEO, Vercel e documentação; sem migration, exclusão de dados ou alteração de segredo.
+
+### Testes
+- `npm run check` aprovado.
+- `mvn -B clean verify` aprovado com 30 testes.
+- Navegador real em 320 x 640 sem erro de console; CTA principal visível na primeira tela e modal rolável.
+
+### Pendências
+- Concluir a auditoria de segurança e o callback E2E com conta de teste antes de publicar.
+- Corrigir os riscos remanescentes de timing, rate limiting e autorização Google direta.
+- Aplicar política `noindex` ou proteção de acesso aos previews públicos da Vercel.
 ## 2026-07-24 - Recuperação do cadastro Google quando a API demora
 
 ### Arquivos alterados
@@ -1194,3 +1437,97 @@
 
 ### Pendências
 - Implementar os marcos do [[07-ROADMAP-MVP]] e validar juridicamente participação de menores.
+## 2026-07-27 - Meu Operador, busca e equipes com persistência real
+
+### Arquivos alterados
+- `src/api.ts`, `src/App.tsx`, `src/OperatorPage.tsx`, `src/OperatorSearch.tsx`, `src/TeamPage.tsx`, `src/functional-modules.css`
+- `services/api/src/main/java/br/com/operadorzero/operator/*`
+- `services/api/src/main/java/br/com/operadorzero/team/*`
+- `services/api/src/main/java/br/com/operadorzero/shared/audit/AuditEventRepository.java`
+- `services/api/src/main/resources/db/migration/V6__operator_profile_functionality.sql`
+- `services/api/src/main/resources/db/migration/V7__teams_and_invitations.sql`
+- `scripts/stage-two-scenarios.mjs` e testes Java relacionados
+- [[13-MEU-OPERADOR]], [[10-MINHA-EQUIPE]], [[06-FRONTEND-WEB]], [[05-SEGURANCA-E-PRIVACIDADE]] e [[18-AUDITORIA-DE-TELAS-E-INTEGRACAO-2026-07-27]]
+
+### O que foi feito
+- Implementados perfil, privacidade, equipamentos, busca segura, criação/edição de equipe, integrantes, convites, aceite/recusa, saída e transferência de capitania.
+- Removidos do caminho oficial os estados fictícios de Meu Operador e Minha Equipe.
+- Adicionados constraints, rate limits, autorização por vínculo/função, transações, versão otimista e auditoria.
+
+### Motivo
+- Iniciar a funcionalização dos módulos pós-login usando somente dados reais dos usuários.
+
+### Impacto
+- Frontend, backend, banco PostgreSQL e documentação; sem alteração em produção.
+
+### Testes
+- `npm run check`: aprovado, incluindo lint, cenários, build, bundle e configuração de deploy.
+- `mvn -B clean verify`: aprovado, 45 testes.
+
+### Pendências
+- Aplicar migrations somente após backup/preflight no ambiente adequado.
+- Criar rota pública de operador, histórico consultável e validação autoritativa município/UF no backend.
+- Implementar storage seguro antes de qualquer upload.
+- Nenhum deploy, push ou merge foi executado.
+## 2026-07-27 - Redução do congelamento no login e cadastro
+
+### Arquivos alterados
+- `services/api/pom.xml`
+- `services/api/src/main/resources/application.yml`
+
+### O que foi feito
+- Substituído o starter JPA/Hibernate pelo starter JDBC, compatível com os repositórios reais baseados em `NamedParameterJdbcTemplate`.
+- Desabilitada a procura de repositories Redis, inexistentes no projeto.
+
+### Motivo
+- O Render gratuito desligava a API por inatividade e o cold start observado levou 102,3 segundos, fazendo login e cadastro parecerem congelados.
+
+### Impacto
+- Backend e tempo de inicialização; schema, Flyway, autenticação, sessões Redis e contratos HTTP permanecem inalterados.
+
+### Testes
+- `mvn -B clean verify` e smoke test remoto após deploy.
+
+### Pendências
+- O plano gratuito ainda pode adormecer; confirmar o novo tempo de cold start após a publicação.
+- Configurar futuramente `api.operadorzero.com.br` para cookies de autenticação no mesmo domínio registrável.
+
+## 2026-07-28 - Correção do login Google e e-mail com sessão first-party
+
+### Arquivos alterados
+- `src/api.ts`
+- `vercel.json`
+- `scripts/auth-flow-scenarios.mjs`
+- `scripts/validate-deployment-config.mjs`
+- `AUTHENTICATION.md`
+- `ENVIRONMENT-VARIABLES.md`
+- `DEPLOYMENT.md`
+- `docs/obsidian/05-SEGURANCA-E-PRIVACIDADE.md`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Login, cadastro, sessão, CSRF e Google OAuth passaram a usar a origem oficial por proxy da Vercel.
+- Adicionadas regras de regressão para impedir que o fallback da SPA capture rotas de autenticação ou que o browser volte a acessar o Render diretamente.
+- Corrigido o estado visual que aparentava congelamento durante o cold start e a restauração permanente do estado pendente ao cancelar o Google ou voltar pelo navegador.
+- Adicionado reenvio neutro da confirmação e orientação para consultar Lixo Eletrônico; o Resend confirmou que a entrega recente foi aceita pelo servidor destinatário.
+- Publicado o TXT `_dmarc.mail` com política inicial `p=none`; Registro.br confirmou a atualização e a resposta foi validada nos servidores autoritativos e no Google Public DNS.
+
+### Motivo
+- A separação entre `operadorzero.com.br` e `onrender.com` transformava a sessão em cookie de terceiro, bloqueável pelo navegador e comum aos sintomas dos dois métodos de acesso.
+
+### Impacto
+- Frontend, roteamento de deploy e autenticação; sem alteração de schema ou segredos.
+
+### Testes
+- `npm run check`, `mvn -B clean verify`, regressão de retorno `pageshow`, probes remotos e navegação Playwright.
+
+### Deploy e verificação remota
+- Callback `https://operadorzero.com.br/login/oauth2/code/google` cadastrado no cliente Google, mantendo temporariamente o callback anterior para rollback.
+- `VITE_API_URL`, `GOOGLE_REDIRECT_URI` e `AUTH_COOKIE_SAME_SITE` alinhados com o domínio oficial, sem registrar valores secretos.
+- Frontend publicado na Vercel pelo commit `8d40638` e backend publicado pelo commit `5c1d31e`; readiness, CSRF, callback Google, persistência após recarga e logout foram verificados pela origem oficial.
+
+### Pendências
+- Confirmar um novo cadastro por e-mail e o recebimento da confirmação em uma caixa postal de homologação.
+- Acompanhar relatórios e entregabilidade antes de evoluir DMARC de `p=none` para `quarantine` ou `reject`.
+- Desativar o segredo Google anterior somente depois da homologação final, preservando rollback até lá.

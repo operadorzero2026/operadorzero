@@ -56,6 +56,7 @@ app:
     enabled: ${AUTH_ENABLED:false}
     frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:4174}
     issuer-name: ${AUTH_ISSUER_NAME:Operador Zero}
+    hash-key: ${AUTH_HASH_KEY:}
     session-duration: ${AUTH_SESSION_DURATION:7d}
     token-duration: ${AUTH_TOKEN_DURATION:30m}
     cookie:

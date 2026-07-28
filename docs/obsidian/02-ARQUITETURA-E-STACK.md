@@ -38,3 +38,7 @@ Identity & Access, Operators, Teams, Fields & Maps, Operations, Performance Vali
 Desenvolvimento, homologação temporária e produção usam bancos, URLs, buckets e segredos distintos. A preparação atual usa Vercel para a SPA e um Blueprint gratuito do Render somente para staging da API, PostgreSQL e estado efêmero. Produção, custos, backup e object storage ainda dependem de decisão explícita. Veja [[16-ARQUITETURA-DE-PRODUCAO]].
 
 Conecta-se a [[03-DOMINIO-E-REGRAS-DE-NEGOCIO]], [[05-SEGURANCA-E-PRIVACIDADE]] e `DEPLOYMENT-SECURITY.md`.
+
+## Identidade endurecida em 2026-07-27
+
+Tokens, sessoes e pseudonimos tecnicos usam HMAC-SHA-256 com `AUTH_HASH_KEY` exclusiva por ambiente. Google OIDC exige preparacao de uso unico via endpoint protegido antes do redirecionamento Spring, e intencoes expiradas ou consumidas possuem limpeza indexada. Rate limit combina IP e sujeito associado ao IP; o Redis usa `noeviction` para falhar fechado sem descartar silenciosamente estado vivo. Veja [[05-SEGURANCA-E-PRIVACIDADE]] e [[17-DIAGNOSTICO-E-PLANO-DE-PRODUCAO-2026-07-27]].

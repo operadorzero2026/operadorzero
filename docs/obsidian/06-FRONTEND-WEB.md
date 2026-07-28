@@ -1,5 +1,11 @@
 # Frontend web
 
+## Linguagem da interface — 2026-07-27
+
+A interface oficial não explica arquitetura, ambiente, banco, API, persistência, tokens ou decisões internas. Estados vazios informam somente a situação e a próxima orientação disponível. Avisos técnicos permanecem nos logs e na documentação; avisos jurídicos, erros de campo, sessão, acesso, moderação e staging continuam permitidos quando necessários.
+
+Foram removidos do bundle oficial rótulos como `CONTEÚDO REAL`, `CONTA REAL`, `Exibindo somente dados reais`, `Autenticada pela API` e explicações repetidas sobre dados fictícios ou persistência. A redação pública agora descreve a jornada do operador. O inventário completo e a ordem de integração estão em [[18-AUDITORIA-DE-TELAS-E-INTEGRACAO-2026-07-27]].
+
 ## Estado oficial sem conteúdo fictício
 
 Desde 2026-07-23, a build oficial não importa os protótipos demonstrativos de Operações, Equipes, Ranking, Classificados, Comunidade, Destaques ou Conquistas. A landing apresenta estados vazios e o painel autenticado usa somente a identidade retornada por `/api/auth/session`.
@@ -8,7 +14,7 @@ Enquanto um módulo não possuir persistência e autorização reais no backend,
 
 A restauração inicial de sessão possui limite de sete segundos. Se o serviço gratuito estiver despertando ou indisponível, a requisição é cancelada e a landing pública continua normalmente. A tela de validação também oferece `Continuar no site`; nenhuma identidade é simulada quando esse caminho é usado.
 
-As demais solicitações de autenticação, incluindo a preparação do cadastro pelo Google, possuem limite de quinze segundos. Se a API não responder nesse período, o botão é reativado e a interface orienta o usuário a aguardar alguns segundos e tentar novamente. O timeout não cria sessão e não contorna CSRF, termos ou validações do backend.
+As ações iniciadas pelo usuário verificam primeiro a readiness da API. No plano gratuito, o cliente repete tentativas limitadas por até três minutos, pois um cold start real levou aproximadamente 115 segundos. Depois da readiness, CSRF e a mutação mantêm timeouts curtos. O fluxo não cria sessão fictícia nem contorna CSRF, termos ou validações do backend.
 
 ## Localizacao brasileira dependente
 
@@ -46,7 +52,11 @@ Landing pública responsiva em `src/App.tsx`, com hero, agenda demonstrativa, m�
 
 O modal chama os contratos reais `/api/auth/login`, `/api/auth/register`, `/api/auth/password-recovery`, `/api/auth/password-reset`, `/api/auth/verify-email`, `/api/auth/session`, `/api/auth/logout` e o inicio OIDC na URL publica `VITE_API_URL`. Credenciais nao sao persistidas. Depois do login, a identidade exibida no cabecalho vem da sessao validada pela API.
 
-`VITE_AUTH_ENABLED=true` habilita a integracao somente quando a API do ambiente estiver configurada. Toda build otimizada e tratada como staging por seguranca, exceto quando `VITE_APP_ENV=production` for definido explicitamente; o banner de dados descartaveis e `noindex`, `nofollow` e `noarchive` continuam independentes da autenticacao. Segredos e tokens nunca pertencem a variaveis `VITE_`.
+`VITE_AUTH_ENABLED=true` habilita a integração somente quando a API do ambiente estiver configurada. `VITE_APP_ENV=production` remove o banner de ambiente descartável. O domínio oficial possui canonical, Open Graph, Twitter Card, JSON-LD, `robots.txt`, sitemap e manifest próprios; previews públicos devem usar proteção de acesso ou política `noindex` da plataforma de hospedagem. Segredos e tokens nunca pertencem a variáveis `VITE_`.
+
+Desde 2026-07-27, a restauração de sessão ocorre em segundo plano e nunca substitui a landing por uma tela bloqueante. O início Google informa o cold start, aguarda readiness com tentativas por até três minutos, impede clique duplo e recupera o botão em falha. O logout mantém a interface autenticada quando a API não consegue revogar a sessão, evitando confirmação de saída falsa em dispositivo compartilhado.
+
+A landing oficial usa o posicionamento “O airsoft brasileiro em um só lugar”, mantém conteúdo real e estados vazios, apresenta a ação de cadastro na primeira tela móvel e inclui uma seção institucional sobre gratuidade, privacidade, regras e segurança. A implementação e os riscos de produção estão registrados em [[17-DIAGNOSTICO-E-PLANO-DE-PRODUCAO-2026-07-27]].
 
 ## Experiência conectada demonstrativa
 
@@ -86,4 +96,14 @@ O assistente e os filtros distinguem `Modalidade da operação` de `Tipo de jogo
 
 [[10-MINHA-EQUIPE]] possui estados com/sem equipe, painel Valkyrie Ops, integrantes, convites, operações, estatísticas, campo e histórico. A criação usa três etapas e reutiliza modalidades de Operações. Busca e troca de equipe são demonstrações explícitas: nenhum convite é enviado, nenhuma saída ocorre e nenhuma permissão é concedida.
 
+## Operador e equipe funcionais em 2026-07-27
+
+`src/OperatorPage.tsx`, `src/OperatorSearch.tsx` e `src/TeamPage.tsx` substituem os estados demonstrativos de Meu Operador e Minha Equipe. Todos carregam dados do backend, exibem loading/erro/vazio, aguardam a resposta antes de confirmar sucesso e não usam `localStorage`, `sessionStorage` ou fixtures.
+
+A busca com debounce aparece na barra superior e no convite de equipe, retorna somente projeção pública autorizada e nunca e-mail. Os formulários reutilizam `BrazilLocationFields`, têm escala responsiva em `functional-modules.css` e mantêm foco, labels e áreas de toque adequadas. Veja [[13-MEU-OPERADOR]], [[10-MINHA-EQUIPE]] e [[18-AUDITORIA-DE-TELAS-E-INTEGRACAO-2026-07-27]].
+
 Veja [[01-ESTADO-ATUAL-DO-PROJETO]].
+
+## Autenticação same-origin - 2026-07-28
+
+`src/api.ts` usa a origem atual da página quando `VITE_API_URL` não é fornecida. Em produção, `vercel.json` encaminha as rotas de API, readiness e OAuth para o backend antes do fallback da SPA. O navegador não precisa aceitar cookies de terceiros para restaurar a sessão criada por e-mail/senha ou Google. Ambiente local continua podendo apontar diretamente para a API com `VITE_API_URL`.

@@ -81,3 +81,11 @@ Mudança de senha, e-mail, telefone, username, MFA, sessões, exportação e exc
 - Implementar rota real `/operador/:username` e estado 404 uniforme.
 - Persistir as alterações, aplicar a política no servidor e conectar mídia segura.
 - Fazer revisão jurídica e de proteção de dados antes da produção, conforme [[05-SEGURANCA-E-PRIVACIDADE]].
+
+## Estado funcional em 2026-07-27
+
+A primeira versão persistente foi implementada no backend Spring e no frontend oficial. A migration `V6__operator_profile_functionality.sql` adiciona posições, recrutamento, equipamentos, histórico de username, preferências de notificação e privacidade. A interface `src/OperatorPage.tsx` consulta e altera somente a API, sem Web Storage ou conteúdo demonstrativo.
+
+Contratos ativos e autenticados: `GET|PATCH /api/operators/me`, `PUT /api/operators/me/privacy`, `POST|DELETE /api/operators/me/equipment`, `GET /api/operators/search` e `GET /api/operators/{username}`. O backend aplica versão otimista, username único, nomes reservados, intervalo de 30 dias, limites de texto, visibilidade por campo, limite de equipamentos, rate limit de busca e auditoria.
+
+Continuam pendentes a rota navegável `/operador/:username`, criptografia e edição de nome real, preferências completas, sessões/MFA e upload seguro. Imagens não foram habilitadas porque o Render usa disco efêmero e ainda não existe storage com quarentena e varredura. A seleção de cidades usa o IBGE no frontend; antes do uso público amplo ainda deve ser acrescentada validação autoritativa de município/UF no backend.

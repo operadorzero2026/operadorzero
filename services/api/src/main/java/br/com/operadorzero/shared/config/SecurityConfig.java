@@ -72,6 +72,8 @@ public class SecurityConfig {
                     "/api/auth/session",
                     "/oauth2/**", "/login/oauth2/**").permitAll()
                 .requestMatchers("/api/auth/logout").authenticated()
+                .requestMatchers("/api/operators/**", "/api/teams/**", "/api/operations/**",
+                    "/api/fields/**", "/api/maps/**", "/api/rankings/**", "/api/performance/**").authenticated()
                 .anyRequest().denyAll())
             .httpBasic(httpBasic -> httpBasic.disable())
             .formLogin(form -> form.disable())
@@ -93,7 +95,8 @@ public class SecurityConfig {
                 new DefaultOAuth2AuthorizationRequestResolver(clientRegistrations, "/oauth2/authorization");
             resolver.setAuthorizationRequestCustomizer(OAuth2AuthorizationRequestCustomizers.withPkce());
             http.oauth2Login(oauth -> oauth
-                .authorizationEndpoint(endpoint -> endpoint.authorizationRequestResolver(resolver))
+                .authorizationEndpoint(endpoint -> endpoint.authorizationRequestResolver(
+                    new GatedOAuth2AuthorizationRequestResolver(resolver)))
                 .successHandler(googleHandler)
                 .failureHandler(googleHandler));
         }

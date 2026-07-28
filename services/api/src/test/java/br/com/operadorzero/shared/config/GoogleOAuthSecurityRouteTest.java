@@ -11,6 +11,7 @@ import br.com.operadorzero.identity.AuthController;
 import br.com.operadorzero.identity.AuthProperties;
 import br.com.operadorzero.identity.AuthService;
 import br.com.operadorzero.identity.GoogleAuthSuccessHandler;
+import br.com.operadorzero.identity.GoogleAuthorizationRequestGate;
 import br.com.operadorzero.identity.GoogleOidcConfig;
 import br.com.operadorzero.identity.SessionAuthenticationFilter;
 import jakarta.servlet.FilterChain;
@@ -26,6 +27,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(
@@ -34,6 +37,7 @@ import org.springframework.test.web.servlet.MockMvc;
         "app.auth.enabled=true",
         "app.auth.frontend-base-url=https://operadorzero.vercel.app",
         "app.auth.issuer-name=Operador Zero",
+        "app.auth.hash-key=google-oauth-security-route-test-key-32-bytes",
         "app.auth.session-duration=7d",
         "app.auth.token-duration=30m",
         "app.auth.cookie.name=OZ_SESSION",
@@ -60,13 +64,27 @@ class GoogleOAuthSecurityRouteTest {
     private GoogleAuthSuccessHandler googleAuthSuccessHandler;
 
     @Test
-    void googleAuthorizationRouteRedirectsWithOidcAndPkce() throws Exception {
+    void directGoogleAuthorizationRouteDoesNotAllocateAnOAuthRequest() throws Exception {
         mockMvc.perform(get("/oauth2/authorization/google"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void preparedGoogleAuthorizationRouteRedirectsOnceWithOidcAndPkce() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        MockHttpServletRequest preparation = new MockHttpServletRequest();
+        preparation.setSession(session);
+        GoogleAuthorizationRequestGate.allowNext(preparation);
+
+        mockMvc.perform(get("/oauth2/authorization/google").session(session))
             .andExpect(status().is3xxRedirection())
             .andExpect(header().string("Location", allOf(
                 startsWith("https://accounts.google.com/o/oauth2/v2/auth?"),
                 containsString("code_challenge="),
                 containsString("nonce="))));
+
+        mockMvc.perform(get("/oauth2/authorization/google").session(session))
+            .andExpect(status().isNotFound());
     }
 
     @Configuration(proxyBeanMethods = false)

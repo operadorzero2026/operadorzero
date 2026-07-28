@@ -20,7 +20,7 @@ class RenderDatabaseUrlEnvironmentPostProcessorTest {
         processor.postProcessEnvironment(environment, new SpringApplication(Object.class));
 
         assertThat(environment.getProperty("spring.datasource.url"))
-            .isEqualTo("jdbc:postgresql://database.internal:5432/operadorzero");
+            .isEqualTo("jdbc:postgresql://database.internal:5432/operadorzero?sslmode=require");
     }
 
     @Test
@@ -31,9 +31,20 @@ class RenderDatabaseUrlEnvironmentPostProcessorTest {
         processor.postProcessEnvironment(environment, new SpringApplication(Object.class));
 
         assertThat(environment.getProperty("spring.datasource.url"))
-            .isEqualTo("jdbc:postgresql://database.internal:5432/operadorzero");
+            .isEqualTo("jdbc:postgresql://database.internal:5432/operadorzero?sslmode=require");
         assertThat(environment.getProperty("spring.datasource.username")).isEqualTo("app");
         assertThat(environment.getProperty("spring.datasource.password")).isEqualTo("test");
+    }
+
+    @Test
+    void preservesOtherParametersAndOverridesWeakerSslMode() {
+        MockEnvironment environment = new MockEnvironment()
+            .withProperty("DATABASE_URL", "postgresql://database.internal/operadorzero?connectTimeout=10&sslmode=prefer");
+
+        processor.postProcessEnvironment(environment, new SpringApplication(Object.class));
+
+        assertThat(environment.getProperty("spring.datasource.url"))
+            .isEqualTo("jdbc:postgresql://database.internal:5432/operadorzero?connectTimeout=10&sslmode=require");
     }
 
     @Test

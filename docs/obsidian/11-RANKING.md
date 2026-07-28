@@ -1,5 +1,23 @@
 # Ranking Operador Zero
 
+## Fórmula oficial confirmada em 2026-07-28
+
+A regra anterior OZ-RANK 1.0 foi substituída por decisão explícita de produto. A fórmula oficial passa a considerar, por operação válida:
+
+- 10 pontos por participação confirmada;
+- 3 pontos por eliminação;
+- menos 1 ponto por morte;
+- 8 pontos por objetivo cumprido;
+- 15 pontos por vitória ou 5 pontos por empate;
+- bônus de 10% quando confirmado pelo organizador;
+- bônus de 5% quando confirmado pela equipe;
+- nenhum bônus quando somente autodeclarado;
+- desconto dos pontos de penalidade.
+
+O subtotal líquido é multiplicado pelo fator de experiência: 40% para 1–2 operações, 60% para 3–5, 80% para 6–10 e 100% acima de 10. O detalhamento deve expor pontuação bruta, bônus, penalidades, fator, pontuação final, posição, variação e operações consideradas. Pontos negativos são preservados; não há piso artificial por operação.
+
+Somente registros não rejeitados, não contestados e vinculados a participação confirmada entram no ranking. Registros contestados ficam suspensos até correção ou rejeição pelo organizador. A versão da regra deve ser persistida para permitir auditoria e recálculo.
+
 Relacionado a [[03-DOMINIO-E-REGRAS-DE-NEGOCIO]], [[04-MODULOS-E-FLUXOS]], [[05-SEGURANCA-E-PRIVACIDADE]], [[06-FRONTEND-WEB]] e [[99-HISTORICO-DE-ALTERACOES]].
 
 ## Diagnóstico em 2026-07-21

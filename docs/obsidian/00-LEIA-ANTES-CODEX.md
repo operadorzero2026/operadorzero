@@ -1,5 +1,7 @@
 # Operador Zero — leia antes
 
+Expansões funcionais solicitadas em 2026-07-28 estão mapeadas em [[19-EXPANSAO-FUNCIONAL-OPERADORZERO-2026-07-28]].
+
 Este vault é a memória oficial do Operador Zero. Antes de alterar código, leia esta nota e as áreas relacionadas.
 
 ## Mapa
@@ -20,6 +22,8 @@ Este vault é a memória oficial do Operador Zero. Antes de alterar código, lei
 - [[14-COMUNIDADE]]
 - [[15-DESTAQUES-DA-COMUNIDADE]]
 - [[16-ARQUITETURA-DE-PRODUCAO]]
+- [[17-DIAGNOSTICO-E-PLANO-DE-PRODUCAO-2026-07-27]]
+- [[18-AUDITORIA-DE-TELAS-E-INTEGRACAO-2026-07-27]]
 - [[TERMOS-PLATAFORMA-GRATUITA]]
 - [[99-HISTORICO-DE-ALTERACOES]]
 

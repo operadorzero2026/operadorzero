@@ -37,6 +37,19 @@ if (vercelConfig.framework !== 'vite' || vercelConfig.outputDirectory !== 'dist'
 if (!vercelConfig.rewrites?.some(rule => rule.destination === '/index.html')) {
   throw new Error('vercel.json deve preservar deep links da SPA.')
 }
+const spaFallbackIndex = vercelConfig.rewrites.findIndex(rule => rule.destination === '/index.html')
+for (const source of ['/api/:path*', '/actuator/:path*', '/oauth2/:path*', '/login/oauth2/:path*']) {
+  const proxyIndex = vercelConfig.rewrites.findIndex(rule => rule.source === source
+    && rule.destination?.startsWith('https://operadorzero-api-staging.onrender.com/'))
+  if (proxyIndex < 0 || proxyIndex > spaFallbackIndex) {
+    throw new Error(`Proxy same-origin ausente ou posterior ao fallback da SPA: ${source}.`)
+  }
+}
+const globalHeaders = vercelConfig.headers?.find(rule => rule.source === '/(.*)')?.headers ?? []
+const csp = globalHeaders.find(header => header.key === 'Content-Security-Policy')?.value ?? ''
+if (!csp.includes("connect-src 'self'") || csp.includes('connect-src \'self\' https://operadorzero-api-staging.onrender.com')) {
+  throw new Error('CSP deve obrigar o browser a acessar autenticacao pelo proxy same-origin.')
+}
 
 const workflowSource = await readFile('.github/workflows/ci.yml', 'utf8')
 for (const [index, line] of workflowSource.split(/\r?\n/).entries()) {

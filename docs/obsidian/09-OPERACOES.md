@@ -1,5 +1,11 @@
 # Operações
 
+## Base funcional iniciada em 2026-07-28
+
+A migration `V8__fields_maps_and_operations.sql` e os módulos `operation` e `venue` iniciam a implementação persistente descrita em [[19-EXPANSAO-FUNCIONAL-OPERADORZERO-2026-07-28]]. Campos, mapas, operações e participação deixam de depender de conteúdo demonstrativo.
+
+Valores e formas de pagamento são informações fornecidas pelo organizador. O OperadorZero não processa nem intermedeia pagamentos. Uploads continuam bloqueados até a implantação dos controles de [[05-SEGURANCA-E-PRIVACIDADE]].
+
 ## Localização no cadastro
 
 O cadastro de operação solicita Estado e Cidade, nessa ordem, usando a base brasileira compartilhada. CEP não é solicitado. Instruções de chegada e endereço preciso reservado permanecem separados e sujeitos a autorização por objeto.

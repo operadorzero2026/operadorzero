@@ -25,6 +25,11 @@ public class GlobalExceptionHandler {
         return response(exception.status(), exception.code(), exception.getMessage(), List.of());
     }
 
+    @ExceptionHandler(BusinessException.class)
+    ResponseEntity<ApiError> business(BusinessException exception) {
+        return response(exception.status(), exception.code(), exception.getMessage(), List.of());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ApiError> validation(MethodArgumentNotValidException exception) {
         List<ApiError.FieldError> fields = exception.getBindingResult().getFieldErrors().stream()

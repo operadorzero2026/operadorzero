@@ -43,6 +43,8 @@ services:
         value: "false"
       - key: AUTH_ENABLED
         sync: false
+      - key: AUTH_HASH_KEY
+        sync: false
       - key: FRONTEND_BASE_URL
         sync: false
       - key: AUTH_COOKIE_SECURE
@@ -67,7 +69,7 @@ services:
     plan: free
     region: virginia
     ipAllowList: []
-    maxmemoryPolicy: allkeys-lru
+    maxmemoryPolicy: noeviction
     persistenceMode: off
 
 databases:

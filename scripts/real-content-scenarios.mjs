@@ -23,11 +23,24 @@ for (const content of fictionalContent) {
 
 for (const required of [
   'Nenhuma operação publicada ainda',
-  'Exibindo somente dados reais',
-  'Nenhum dado demonstrativo ou gerado automaticamente é exibido.',
-  'Esta tela usa somente informações retornadas pela sessão autenticada.',
+  'Ainda não existem publicações nesta categoria',
+  'Você ainda não participa de uma equipe',
+  'Nenhum item encontrado',
 ]) {
-  assert.equal(app.includes(required), true, `Estado real ausente: ${required}`)
+  assert.equal(app.includes(required), true, `Estado vazio ausente: ${required}`)
+}
+
+for (const technicalNotice of [
+  'CONTEÚDO REAL',
+  'Exibindo somente dados reais',
+  'Este painel não utiliza dados fictícios',
+  'Nenhum dado demonstrativo',
+  'Autenticada pela API',
+  'persistidos e vinculados',
+  'persistência, autorização e auditoria no backend',
+  'VITE_API_URL',
+]) {
+  assert.equal(app.includes(technicalNotice), false, `Mensagem técnica exposta na interface: ${technicalNotice}`)
 }
 
 assert.equal(/const\s+(operations|ranking|classifiedListings|operationCatalog|teamMembers|rankingOperators)\s*=/.test(app), false)

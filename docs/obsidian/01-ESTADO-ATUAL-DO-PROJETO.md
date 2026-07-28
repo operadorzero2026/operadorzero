@@ -1,5 +1,18 @@
 # Estado atual do projeto
 
+## 2026-07-27
+
+- Concluída a auditoria inicial de todas as superfícies em [[18-AUDITORIA-DE-TELAS-E-INTEGRACAO-2026-07-27]]. Somente identidade possui integração real; os nove destinos autenticados continuam sem rotas e sem contratos de negócio.
+- A Etapa 1 removeu do bundle oficial mensagens sobre dados reais/fictícios, demonstração, backend, API, persistência, produção e segurança interna. Estados vazios agora usam linguagem curta e orientada ao usuário.
+- Os protótipos desconectados de Comunidade, Destaques e Conquistas permanecem fora do bundle e não foram reativados. Nenhum deploy, push ou merge foi realizado nesta etapa.
+- O cadastro Google no domínio oficial recebeu uma espera ativa de readiness por até três minutos depois que os logs demonstraram cold start de aproximadamente 115 segundos no Render Free. O frontend corrigido foi publicado diretamente na Vercel em produção e os aliases oficiais foram atualizados sem erro.
+- O bundle oficial foi verificado com a rota `/actuator/health/readiness`; domínio e API responderam `200`. Não houve erro Google nos logs do backend durante a reprodução.
+- O pacote local de endurecimento da autenticacao corrigiu enumeracao temporal, bloqueio global por e-mail, acesso direto ao inicio Google, limpeza de intencoes OAuth, hash deterministico e eviccao silenciosa do Redis.
+- Em 2026-07-28, o dominio oficial passou a encaminhar API e OAuth pela mesma origem; callback Google, persistencia apos recarga e logout foram validados E2E com cookies `Secure`/`SameSite=Lax`.
+- `AUTH_HASH_KEY` passou a ser obrigatoria no backend quando `AUTH_ENABLED=true`; deve ser configurada no Render antes de qualquer deploy e invalida sessoes/links antigos na primeira ativacao.
+- `mvn -B clean verify` passou com 40 testes e `npm run check` passou integralmente. Nenhum deploy remoto foi executado; a migration `V5` ainda requer validacao em PostgreSQL isolado porque Docker nao esta instalado nesta maquina.
+- Os modulos de negocio continuam demonstrativos e a infraestrutura gratuita continua inadequada para cadastros permanentes de usuarios reais. Ver [[16-ARQUITETURA-DE-PRODUCAO]].
+
 ## 2026-07-23
 
 - O dominio oficial `https://operadorzero.com.br` foi conectado ao frontend de staging na Vercel com DNS e HTTPS validos; `https://www.operadorzero.com.br` redireciona permanentemente para o dominio raiz.
@@ -48,3 +61,8 @@ Fase zero iniciada: arquitetura, regras, segurança e primeira experiência púb
 Próximo marco: fundação do backend modular, schema PostgreSQL, autenticação segura e primeira fatia vertical de operador + operação.
 
 Veja [[07-ROADMAP-MVP]] e [[99-HISTORICO-DE-ALTERACOES]].
+## Atualização funcional de 2026-07-27
+
+Meu Operador, busca de operadores e Minha Equipe possuem agora contratos reais no backend e telas conectadas sem conteúdo fictício. As migrations aditivas `V6` e `V7` cobrem perfil/equipamentos/privacidade e equipes/convites/histórico. A entrega está somente no worktree local: não foi aplicada no Render nem publicada na Vercel.
+
+Validação local: `npm run check` aprovado e `mvn -B clean verify` aprovado com 45 testes. Antes de qualquer publicação desta etapa ainda são necessários backup/preflight do PostgreSQL, aplicação controlada das migrations, smoke test autenticado e decisão explícita de deploy. Detalhes em [[18-AUDITORIA-DE-TELAS-E-INTEGRACAO-2026-07-27]], [[13-MEU-OPERADOR]] e [[10-MINHA-EQUIPE]].

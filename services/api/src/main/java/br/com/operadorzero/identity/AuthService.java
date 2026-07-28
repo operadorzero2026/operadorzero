@@ -28,6 +28,7 @@ public class AuthService {
     private final AuthRateLimiter rateLimiter;
     private final AuthCookieService cookies;
     private final ApplicationEventPublisher events;
+    private final String dummyPasswordHash;
 
     public AuthService(AuthProperties properties, IdentityRepository repository, PasswordEncoder passwordEncoder,
                        PasswordPolicy passwordPolicy, TokenSupport tokens, AuthRateLimiter rateLimiter,
@@ -40,6 +41,7 @@ public class AuthService {
         this.rateLimiter = rateLimiter;
         this.cookies = cookies;
         this.events = events;
+        this.dummyPasswordHash = passwordEncoder.encode(tokens.newToken());
     }
 
     @Transactional
@@ -51,6 +53,9 @@ public class AuthService {
         String normalizedEmail = normalizeEmail(email);
         rateLimiter.check("register", request, normalizedEmail, 5, Duration.ofHours(1));
 
+        passwordPolicy.validate(password, normalizedEmail);
+        String passwordHash = passwordEncoder.encode(password);
+
         Optional<UserAccount> existing = repository.findByEmail(normalizedEmail);
         if (existing.isPresent()) {
             if ("PENDING_EMAIL".equals(existing.get().status())) {
@@ -59,10 +64,9 @@ public class AuthService {
             return;
         }
 
-        passwordPolicy.validate(password, normalizedEmail);
         Instant now = Instant.now();
         String safeDisplayName = displayName.strip();
-        long userId = repository.createUser(normalizedEmail, uniqueUsername(safeDisplayName), passwordEncoder.encode(password),
+        long userId = repository.createUser(normalizedEmail, uniqueUsername(safeDisplayName), passwordHash,
             "PENDING_EMAIL", safeDisplayName, callsign(safeDisplayName), TERMS_VERSION, PRIVACY_VERSION, now);
         if (userId == 0L) {
             return;
@@ -88,8 +92,12 @@ public class AuthService {
         ensureEnabled();
         String normalizedEmail = normalizeEmail(email);
         rateLimiter.check("login", request, normalizedEmail, 10, Duration.ofMinutes(15));
-        UserAccount account = repository.findByEmail(normalizedEmail).orElseThrow(AuthException::invalidCredentials);
-        if (!account.active() || account.passwordHash() == null || !passwordEncoder.matches(password, account.passwordHash())) {
+        Optional<UserAccount> candidate = repository.findByEmail(normalizedEmail);
+        String passwordHash = candidate.map(UserAccount::passwordHash).orElse(null);
+        boolean passwordMatches = passwordEncoder.matches(password,
+            passwordHash == null ? dummyPasswordHash : passwordHash);
+        UserAccount account = candidate.orElse(null);
+        if (account == null || !account.active() || passwordHash == null || !passwordMatches) {
             throw AuthException.invalidCredentials();
         }
         return createSession(account, request, response, "AUTH_LOGIN_PASSWORD");
@@ -100,7 +108,9 @@ public class AuthService {
         ensureEnabled();
         String normalizedEmail = normalizeEmail(email);
         rateLimiter.check("recovery", request, normalizedEmail, 5, Duration.ofHours(1));
-        repository.findByEmail(normalizedEmail)
+        Optional<UserAccount> candidate = repository.findByEmail(normalizedEmail);
+        equalizeEmailActionTiming();
+        candidate
             .filter(UserAccount::active)
             .ifPresent(account -> issueToken(account, "RESET_PASSWORD"));
     }
@@ -110,7 +120,9 @@ public class AuthService {
         ensureEnabled();
         String normalizedEmail = normalizeEmail(email);
         rateLimiter.check("verification", request, normalizedEmail, 5, Duration.ofHours(1));
-        repository.findByEmail(normalizedEmail)
+        Optional<UserAccount> candidate = repository.findByEmail(normalizedEmail);
+        equalizeEmailActionTiming();
+        candidate
             .filter(account -> "PENDING_EMAIL".equals(account.status()))
             .ifPresent(account -> issueToken(account, "VERIFY_EMAIL"));
     }
@@ -152,12 +164,15 @@ public class AuthService {
         if (!termsAccepted) {
             // Existing linked users may start through the login button without creating an account.
             cookies.clearGoogleIntent(response);
+            GoogleAuthorizationRequestGate.allowNext(request);
             return "/oauth2/authorization/google";
         }
         String raw = tokens.newToken();
         Instant now = Instant.now();
+        repository.deleteStaleGoogleIntents(now);
         repository.saveGoogleIntent(tokens.hash(raw), TERMS_VERSION, PRIVACY_VERSION, now, now.plus(Duration.ofMinutes(10)));
         cookies.writeGoogleIntent(response, raw);
+        GoogleAuthorizationRequestGate.allowNext(request);
         return "/oauth2/authorization/google";
     }
 
@@ -213,6 +228,10 @@ public class AuthService {
         Instant now = Instant.now();
         repository.saveAuthToken(account.id(), purpose, tokens.hash(raw), now.plus(properties.tokenDuration()), now);
         events.publishEvent(new AuthMailRequested(account.email(), account.displayName(), purpose, raw));
+    }
+
+    private void equalizeEmailActionTiming() {
+        passwordEncoder.matches(tokens.newToken(), dummyPasswordHash);
     }
 
     private void audit(UserAccount account, String action, String sessionHash, String ipHash, Instant now) {
