@@ -20,10 +20,12 @@
 - Frontend público e documentação; autenticação, backend e banco não foram alterados.
 
 ### Testes
-- Cenário estático da hierarquia das ações, suíte frontend e build.
+- `npm run check`: lint, testes de autenticação, conteúdo real, SEO e etapa 2, build e validações de bundle/deploy aprovados.
+- Homologação no navegador da versão publicada: ordem das ações confirmada e modais de login e cadastro abertos corretamente.
+- Deploy Vercel de produção `dpl_AxPL9BWWHXMUDpKKnjQRmmniqjEP`, publicado em `https://operadorzero.com.br`.
 
 ### Pendências
-- Homologar visualmente em desktop e celular após publicação.
+- Nenhuma pendência identificada para esta alteração.
 
 ## 2026-07-28 - Localização GPS e endereço opcional nos campos
 
