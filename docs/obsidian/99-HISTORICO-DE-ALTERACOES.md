@@ -1,5 +1,33 @@
 # Histórico de alterações
 
+## 2026-07-28 - Localização GPS e endereço opcional nos campos
+
+### Arquivos alterados
+- `services/api/src/main/resources/db/migration/V10__field_optional_address_and_gps_link.sql`
+- `services/api/src/main/java/br/com/operadorzero/venue/VenueDtos.java`
+- `services/api/src/main/java/br/com/operadorzero/venue/VenueRepository.java`
+- `services/api/src/test/java/br/com/operadorzero/venue/VenueDtosTest.java`
+- `src/VenuesPage.tsx`, `src/api.ts`, `src/functional-modules.css`
+- [[09-OPERACOES]] e [[99-HISTORICO-DE-ALTERACOES]]
+
+### O que foi feito
+- O endereço textual deixou de ser obrigatório no cadastro de campo.
+- Adicionado link opcional de localização GPS, persistido e exibido como “Abrir localização”.
+- Permitidos somente links HTTPS de Google Maps, Waze, Apple Maps e OpenStreetMap.
+- O link externo usa nova aba com proteção `noopener noreferrer`.
+
+### Motivo
+- Permitir que o responsável informe a localização precisa mesmo quando não houver endereço postal aplicável.
+
+### Impacto
+- Frontend, backend, banco PostgreSQL e documentação.
+
+### Testes
+- Validação automatizada de endereço ausente, link Google Maps válido e URLs inseguras.
+
+### Pendências
+- Aplicar a migration `V10` e homologar o cadastro no ambiente publicado.
+
 ## 2026-07-28 - Injeção dos módulos funcionais em produção
 
 ### Arquivos alterados

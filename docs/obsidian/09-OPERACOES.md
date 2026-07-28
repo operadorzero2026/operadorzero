@@ -4,6 +4,8 @@
 
 A migration `V8__fields_maps_and_operations.sql` e os módulos `operation` e `venue` iniciam a implementação persistente descrita em [[19-EXPANSAO-FUNCIONAL-OPERADORZERO-2026-07-28]]. Campos, mapas, operações e participação deixam de depender de conteúdo demonstrativo.
 
+A migration `V10__field_optional_address_and_gps_link.sql` torna o endereço textual opcional e adiciona um link HTTPS de localização GPS. O link é validado para provedores de mapas conhecidos e, quando informado, aparece aos usuários como ação externa segura no cartão do campo.
+
 Valores e formas de pagamento são informações fornecidas pelo organizador. O OperadorZero não processa nem intermedeia pagamentos. Uploads continuam bloqueados até a implantação dos controles de [[05-SEGURANCA-E-PRIVACIDADE]].
 
 ## Localização no cadastro

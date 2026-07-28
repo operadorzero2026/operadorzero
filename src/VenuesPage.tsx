@@ -1,18 +1,404 @@
-import { Building2, Map, MapPin, Plus, Search } from 'lucide-react'
-import { FormEvent, useCallback, useEffect, useState } from 'react'
-import { createField, createVenueMap, getFields, getMaps, VenueField, VenueMap } from './api'
-import { BrazilLocationFields } from './BrazilLocationFields'
+import {
+  Building2,
+  ExternalLink,
+  Map,
+  MapPin,
+  Plus,
+  Search,
+} from "lucide-react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
+import {
+  createField,
+  createVenueMap,
+  getFields,
+  getMaps,
+  VenueField,
+  VenueMap,
+} from "./api";
+import { BrazilLocationFields } from "./BrazilLocationFields";
 
-const terrains:Record<string,string>={CQB:'CQB',URBAN:'Urbano',FOREST:'Mata',MIXED:'Misto',INDUSTRIAL:'Industrial',OPEN:'Aberto',NIGHT:'Noturno',INDOOR:'Indoor',OUTDOOR:'Outdoor'}
-export function VenuesPage({mode}:{mode:'fields'|'maps'}){
- const [fields,setFields]=useState<VenueField[]>([]),[maps,setMaps]=useState<VenueMap[]>([]),[query,setQuery]=useState(''),[showCreate,setShowCreate]=useState(false),[feedback,setFeedback]=useState(''),[pending,setPending]=useState(false)
- const load=useCallback(async(q='')=>{try{const fs=(await getFields(q)).items;setFields(fs);setMaps((await getMaps()).items)}catch{setFeedback('Não foi possível carregar os dados.')}},[])
- useEffect(()=>{void load()},[load])
- const submitField=async(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const d=new FormData(e.currentTarget);setPending(true);try{await createField({name:d.get('name'),description:d.get('description'),phone:d.get('phone'),contactEmail:d.get('contactEmail'),addressLine:d.get('addressLine'),addressNumber:d.get('addressNumber'),complement:d.get('complement'),district:d.get('district'),city:d.get('fieldCity'),stateCode:d.get('fieldState'),postalCode:d.get('postalCode'),region:d.get('region'),rules:d.get('rules'),openingHours:d.get('openingHours'),amenities:d.get('amenities'),maximumCapacity:d.get('maximumCapacity')?Number(d.get('maximumCapacity')):null,averagePrice:d.get('averagePrice')?Number(d.get('averagePrice')):null,paymentMethods:d.get('paymentMethods')});setFeedback('Campo cadastrado.');setShowCreate(false);await load('')}catch(err){setFeedback(err instanceof Error?err.message:'Não foi possível cadastrar o campo.')}finally{setPending(false)}}
- const submitMap=async(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const d=new FormData(e.currentTarget);setPending(true);try{await createVenueMap(String(d.get('fieldId')),{name:d.get('name'),terrainType:d.get('terrainType'),description:d.get('description'),approximateSize:d.get('approximateSize'),capacity:d.get('capacity')?Number(d.get('capacity')):null,respawnAreas:d.get('respawnAreas'),bases:d.get('bases'),objectives:d.get('objectives'),strategicPoints:d.get('strategicPoints'),neutralAreas:d.get('neutralAreas'),prohibitedAreas:d.get('prohibitedAreas'),routes:d.get('routes'),notes:d.get('notes'),specificRules:d.get('specificRules')});setFeedback('Mapa cadastrado.');setShowCreate(false);await load('')}catch(err){setFeedback(err instanceof Error?err.message:'Não foi possível cadastrar o mapa.')}finally{setPending(false)}}
- const isFields=mode==='fields',items=isFields?fields:maps
- return <main className="module-page"><header><p>LOCAIS DE JOGO</p><h1>{isFields?'Campos':'Mapas'}</h1><span>{isFields?'Encontre estruturas reais e consulte seus recursos.':'Consulte os ambientes vinculados aos campos.'}</span></header>{feedback&&<p className="module-feedback" role="status">{feedback}</p>}
- <section className="module-section"><div className="module-section-title"><div><small>CATÁLOGO</small><h2>{isFields?'Campos da comunidade':'Mapas cadastrados'}</h2></div><button className="module-primary" onClick={()=>setShowCreate(!showCreate)}><Plus/> Cadastrar {isFields?'campo':'mapa'}</button></div><form className="module-search" onSubmit={e=>{e.preventDefault();void load(query)}}><Search/><input value={query} onChange={e=>setQuery(e.target.value)} maxLength={80} placeholder={`Pesquisar ${isFields?'campo':'mapa'}`}/><button>Pesquisar</button></form></section>
- {showCreate&&<section className="module-section"><div className="module-section-title"><div><small>NOVO CADASTRO</small><h2>{isFields?'Dados do campo':'Dados do mapa'}</h2><p>Fotos e plantas serão habilitadas após a implantação do armazenamento seguro.</p></div>{isFields?<Building2/>:<Map/>}</div>{isFields?<form className="module-form" onSubmit={submitField}><div className="form-grid"><label><span>Nome</span><input name="name" maxLength={100} required/></label><BrazilLocationFields namePrefix="field"/><label><span>Endereço</span><input name="addressLine" maxLength={160} required/></label><label><span>Número</span><input name="addressNumber" maxLength={20}/></label><label><span>Bairro</span><input name="district" maxLength={80}/></label><label><span>Complemento</span><input name="complement" maxLength={80}/></label><label><span>CEP</span><input name="postalCode" maxLength={9}/></label><label><span>Região</span><input name="region" maxLength={40}/></label><label><span>Telefone</span><input name="phone" maxLength={24}/></label><label><span>E-mail</span><input type="email" name="contactEmail" maxLength={254}/></label><label><span>Capacidade</span><input type="number" name="maximumCapacity" min={1}/></label><label><span>Valor médio (R$)</span><input type="number" name="averagePrice" min={0} step="0.01"/></label></div><label><span>Descrição</span><textarea name="description" maxLength={1000}/></label><label><span>Horários</span><textarea name="openingHours" maxLength={1000}/></label><label><span>Estrutura disponível</span><textarea name="amenities" maxLength={1000}/></label><label><span>Regras</span><textarea name="rules" maxLength={4000}/></label><label><span>Formas de pagamento (informativo)</span><input name="paymentMethods" maxLength={500}/></label><button className="module-primary" disabled={pending}>Cadastrar campo</button></form>:<form className="module-form" onSubmit={submitMap}><div className="form-grid"><label><span>Campo</span><select name="fieldId" required><option value="">Selecione</option>{fields.filter(f=>f.managedByCurrentUser).map(f=><option value={f.id} key={f.id}>{f.name}</option>)}</select></label><label><span>Nome</span><input name="name" maxLength={100} required/></label><label><span>Terreno</span><select name="terrainType">{Object.entries(terrains).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select></label><label><span>Tamanho aproximado</span><input name="approximateSize" maxLength={80}/></label><label><span>Capacidade</span><input type="number" name="capacity" min={1}/></label></div><label><span>Descrição</span><textarea name="description" maxLength={1000}/></label>{[['respawnAreas','Áreas de respawn'],['bases','Bases'],['objectives','Objetivos'],['strategicPoints','Pontos estratégicos'],['neutralAreas','Áreas neutras'],['prohibitedAreas','Áreas proibidas'],['routes','Rotas'],['specificRules','Regras específicas'],['notes','Observações']].map(([name,label])=><label key={name}><span>{label}</span><textarea name={name} maxLength={name==='specificRules'?2000:1000}/></label>)}<button className="module-primary" disabled={pending}>Cadastrar mapa</button></form>}</section>}
- <section className="module-section"><div className="module-section-title"><div><small>RESULTADOS</small><h2>{items.length?`${items.length} encontrados`:`Nenhum ${isFields?'campo':'mapa'} encontrado`}</h2></div>{isFields?<Building2/>:<Map/>}</div>{items.length===0?<div className="module-state"><p>Nenhum registro corresponde aos filtros.</p></div>:<div className="venue-grid">{isFields?fields.map(f=><article key={f.id}><small>{f.managedByCurrentUser?'GERENCIADO POR VOCÊ':'CAMPO'}</small><h3>{f.name}</h3><p><MapPin/> {f.city}/{f.stateCode}</p><p>{f.description||'Sem descrição cadastrada.'}</p>{f.maximumCapacity&&<strong>Capacidade: {f.maximumCapacity}</strong>}</article>):maps.map(m=><article key={m.id}><small>{terrains[m.terrainType]||m.terrainType}</small><h3>{m.name}</h3><p><MapPin/> {m.fieldName} · {m.city}/{m.stateCode}</p><p>{m.description||'Sem descrição cadastrada.'}</p>{m.capacity&&<strong>Capacidade: {m.capacity}</strong>}</article>)}</div>}</section></main>
+const terrains: Record<string, string> = {
+  CQB: "CQB",
+  URBAN: "Urbano",
+  FOREST: "Mata",
+  MIXED: "Misto",
+  INDUSTRIAL: "Industrial",
+  OPEN: "Aberto",
+  NIGHT: "Noturno",
+  INDOOR: "Indoor",
+  OUTDOOR: "Outdoor",
+};
+export function VenuesPage({ mode }: { mode: "fields" | "maps" }) {
+  const [fields, setFields] = useState<VenueField[]>([]),
+    [maps, setMaps] = useState<VenueMap[]>([]),
+    [query, setQuery] = useState(""),
+    [showCreate, setShowCreate] = useState(false),
+    [feedback, setFeedback] = useState(""),
+    [pending, setPending] = useState(false);
+  const load = useCallback(async (q = "") => {
+    try {
+      const fs = (await getFields(q)).items;
+      setFields(fs);
+      setMaps((await getMaps()).items);
+    } catch {
+      setFeedback("Não foi possível carregar os dados.");
+    }
+  }, []);
+  useEffect(() => {
+    void load();
+  }, [load]);
+  const submitField = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const d = new FormData(e.currentTarget);
+    setPending(true);
+    try {
+      await createField({
+        name: d.get("name"),
+        description: d.get("description"),
+        phone: d.get("phone"),
+        contactEmail: d.get("contactEmail"),
+        addressLine: d.get("addressLine"),
+        addressNumber: d.get("addressNumber"),
+        complement: d.get("complement"),
+        district: d.get("district"),
+        city: d.get("fieldCity"),
+        stateCode: d.get("fieldState"),
+        postalCode: d.get("postalCode"),
+        region: d.get("region"),
+        locationUrl: d.get("locationUrl"),
+        rules: d.get("rules"),
+        openingHours: d.get("openingHours"),
+        amenities: d.get("amenities"),
+        maximumCapacity: d.get("maximumCapacity")
+          ? Number(d.get("maximumCapacity"))
+          : null,
+        averagePrice: d.get("averagePrice")
+          ? Number(d.get("averagePrice"))
+          : null,
+        paymentMethods: d.get("paymentMethods"),
+      });
+      setFeedback("Campo cadastrado.");
+      setShowCreate(false);
+      await load("");
+    } catch (err) {
+      setFeedback(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível cadastrar o campo.",
+      );
+    } finally {
+      setPending(false);
+    }
+  };
+  const submitMap = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const d = new FormData(e.currentTarget);
+    setPending(true);
+    try {
+      await createVenueMap(String(d.get("fieldId")), {
+        name: d.get("name"),
+        terrainType: d.get("terrainType"),
+        description: d.get("description"),
+        approximateSize: d.get("approximateSize"),
+        capacity: d.get("capacity") ? Number(d.get("capacity")) : null,
+        respawnAreas: d.get("respawnAreas"),
+        bases: d.get("bases"),
+        objectives: d.get("objectives"),
+        strategicPoints: d.get("strategicPoints"),
+        neutralAreas: d.get("neutralAreas"),
+        prohibitedAreas: d.get("prohibitedAreas"),
+        routes: d.get("routes"),
+        notes: d.get("notes"),
+        specificRules: d.get("specificRules"),
+      });
+      setFeedback("Mapa cadastrado.");
+      setShowCreate(false);
+      await load("");
+    } catch (err) {
+      setFeedback(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível cadastrar o mapa.",
+      );
+    } finally {
+      setPending(false);
+    }
+  };
+  const isFields = mode === "fields",
+    items = isFields ? fields : maps;
+  return (
+    <main className="module-page">
+      <header>
+        <p>LOCAIS DE JOGO</p>
+        <h1>{isFields ? "Campos" : "Mapas"}</h1>
+        <span>
+          {isFields
+            ? "Encontre estruturas reais e consulte seus recursos."
+            : "Consulte os ambientes vinculados aos campos."}
+        </span>
+      </header>
+      {feedback && (
+        <p className="module-feedback" role="status">
+          {feedback}
+        </p>
+      )}
+      <section className="module-section">
+        <div className="module-section-title">
+          <div>
+            <small>CATÁLOGO</small>
+            <h2>{isFields ? "Campos da comunidade" : "Mapas cadastrados"}</h2>
+          </div>
+          <button
+            className="module-primary"
+            onClick={() => setShowCreate(!showCreate)}
+          >
+            <Plus /> Cadastrar {isFields ? "campo" : "mapa"}
+          </button>
+        </div>
+        <form
+          className="module-search"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void load(query);
+          }}
+        >
+          <Search />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            maxLength={80}
+            placeholder={`Pesquisar ${isFields ? "campo" : "mapa"}`}
+          />
+          <button>Pesquisar</button>
+        </form>
+      </section>
+      {showCreate && (
+        <section className="module-section">
+          <div className="module-section-title">
+            <div>
+              <small>NOVO CADASTRO</small>
+              <h2>{isFields ? "Dados do campo" : "Dados do mapa"}</h2>
+              <p>
+                Fotos e plantas serão habilitadas após a implantação do
+                armazenamento seguro.
+              </p>
+            </div>
+            {isFields ? <Building2 /> : <Map />}
+          </div>
+          {isFields ? (
+            <form className="module-form" onSubmit={submitField}>
+              <div className="form-grid">
+                <label>
+                  <span>Nome</span>
+                  <input name="name" maxLength={100} required />
+                </label>
+                <BrazilLocationFields namePrefix="field" />
+                <label>
+                  <span>Endereço (opcional)</span>
+                  <input name="addressLine" maxLength={160} />
+                </label>
+                <label>
+                  <span>Número</span>
+                  <input name="addressNumber" maxLength={20} />
+                </label>
+                <label>
+                  <span>Bairro</span>
+                  <input name="district" maxLength={80} />
+                </label>
+                <label>
+                  <span>Complemento</span>
+                  <input name="complement" maxLength={80} />
+                </label>
+                <label>
+                  <span>CEP</span>
+                  <input name="postalCode" maxLength={9} />
+                </label>
+                <label>
+                  <span>Região</span>
+                  <input name="region" maxLength={40} />
+                </label>
+                <label className="form-wide">
+                  <span>Link da localização GPS (opcional)</span>
+                  <input
+                    type="url"
+                    name="locationUrl"
+                    maxLength={500}
+                    placeholder="https://maps.app.goo.gl/..."
+                  />
+                </label>
+                <label>
+                  <span>Telefone</span>
+                  <input name="phone" maxLength={24} />
+                </label>
+                <label>
+                  <span>E-mail</span>
+                  <input type="email" name="contactEmail" maxLength={254} />
+                </label>
+                <label>
+                  <span>Capacidade</span>
+                  <input type="number" name="maximumCapacity" min={1} />
+                </label>
+                <label>
+                  <span>Valor médio (R$)</span>
+                  <input
+                    type="number"
+                    name="averagePrice"
+                    min={0}
+                    step="0.01"
+                  />
+                </label>
+              </div>
+              <label>
+                <span>Descrição</span>
+                <textarea name="description" maxLength={1000} />
+              </label>
+              <label>
+                <span>Horários</span>
+                <textarea name="openingHours" maxLength={1000} />
+              </label>
+              <label>
+                <span>Estrutura disponível</span>
+                <textarea name="amenities" maxLength={1000} />
+              </label>
+              <label>
+                <span>Regras</span>
+                <textarea name="rules" maxLength={4000} />
+              </label>
+              <label>
+                <span>Formas de pagamento (informativo)</span>
+                <input name="paymentMethods" maxLength={500} />
+              </label>
+              <button className="module-primary" disabled={pending}>
+                Cadastrar campo
+              </button>
+            </form>
+          ) : (
+            <form className="module-form" onSubmit={submitMap}>
+              <div className="form-grid">
+                <label>
+                  <span>Campo</span>
+                  <select name="fieldId" required>
+                    <option value="">Selecione</option>
+                    {fields
+                      .filter((f) => f.managedByCurrentUser)
+                      .map((f) => (
+                        <option value={f.id} key={f.id}>
+                          {f.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <label>
+                  <span>Nome</span>
+                  <input name="name" maxLength={100} required />
+                </label>
+                <label>
+                  <span>Terreno</span>
+                  <select name="terrainType">
+                    {Object.entries(terrains).map(([v, l]) => (
+                      <option value={v} key={v}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>Tamanho aproximado</span>
+                  <input name="approximateSize" maxLength={80} />
+                </label>
+                <label>
+                  <span>Capacidade</span>
+                  <input type="number" name="capacity" min={1} />
+                </label>
+              </div>
+              <label>
+                <span>Descrição</span>
+                <textarea name="description" maxLength={1000} />
+              </label>
+              {[
+                ["respawnAreas", "Áreas de respawn"],
+                ["bases", "Bases"],
+                ["objectives", "Objetivos"],
+                ["strategicPoints", "Pontos estratégicos"],
+                ["neutralAreas", "Áreas neutras"],
+                ["prohibitedAreas", "Áreas proibidas"],
+                ["routes", "Rotas"],
+                ["specificRules", "Regras específicas"],
+                ["notes", "Observações"],
+              ].map(([name, label]) => (
+                <label key={name}>
+                  <span>{label}</span>
+                  <textarea
+                    name={name}
+                    maxLength={name === "specificRules" ? 2000 : 1000}
+                  />
+                </label>
+              ))}
+              <button className="module-primary" disabled={pending}>
+                Cadastrar mapa
+              </button>
+            </form>
+          )}
+        </section>
+      )}
+      <section className="module-section">
+        <div className="module-section-title">
+          <div>
+            <small>RESULTADOS</small>
+            <h2>
+              {items.length
+                ? `${items.length} encontrados`
+                : `Nenhum ${isFields ? "campo" : "mapa"} encontrado`}
+            </h2>
+          </div>
+          {isFields ? <Building2 /> : <Map />}
+        </div>
+        {items.length === 0 ? (
+          <div className="module-state">
+            <p>Nenhum registro corresponde aos filtros.</p>
+          </div>
+        ) : (
+          <div className="venue-grid">
+            {isFields
+              ? fields.map((f) => (
+                  <article key={f.id}>
+                    <small>
+                      {f.managedByCurrentUser ? "GERENCIADO POR VOCÊ" : "CAMPO"}
+                    </small>
+                    <h3>{f.name}</h3>
+                    <p>
+                      <MapPin /> {f.city}/{f.stateCode}
+                    </p>
+                    <p>{f.description || "Sem descrição cadastrada."}</p>
+                    {f.locationUrl && (
+                      <a
+                        className="venue-location-link"
+                        href={f.locationUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink /> Abrir localização
+                      </a>
+                    )}
+                    {f.maximumCapacity && (
+                      <strong>Capacidade: {f.maximumCapacity}</strong>
+                    )}
+                  </article>
+                ))
+              : maps.map((m) => (
+                  <article key={m.id}>
+                    <small>{terrains[m.terrainType] || m.terrainType}</small>
+                    <h3>{m.name}</h3>
+                    <p>
+                      <MapPin /> {m.fieldName} · {m.city}/{m.stateCode}
+                    </p>
+                    <p>{m.description || "Sem descrição cadastrada."}</p>
+                    {m.capacity && <strong>Capacidade: {m.capacity}</strong>}
+                  </article>
+                ))}
+          </div>
+        )}
+      </section>
+    </main>
+  );
 }

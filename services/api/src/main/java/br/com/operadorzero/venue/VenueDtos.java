@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
@@ -17,17 +18,18 @@ public final class VenueDtos {
     public record SaveFieldRequest(
         @NotBlank @Size(max=100) String name, @Size(max=1000) String description,
         @Size(max=24) String phone, @Email @Size(max=254) String contactEmail,
-        @NotBlank @Size(max=160) String addressLine, @Size(max=20) String addressNumber,
+        @Size(max=160) String addressLine, @Size(max=20) String addressNumber,
         @Size(max=80) String complement, @Size(max=80) String district,
         @NotBlank @Size(max=80) String city, @NotBlank @Size(min=2,max=2) String stateCode,
         @Size(max=9) String postalCode, @Size(max=40) String region,
+        @Size(max=500) @Pattern(regexp="(?i)^(?:|https://(?:(?:www\\.)?google\\.[a-z.]+/maps(?:[/?].*)?|maps\\.google\\.[a-z.]+(?:[/?].*)?|maps\\.app\\.goo\\.gl(?:[/?].*)?|goo\\.gl/maps(?:[/?].*)?|(?:www\\.)?waze\\.com/(?:.*)|maps\\.apple\\.com/(?:.*)|(?:www\\.)?openstreetmap\\.org/(?:.*)))$") String locationUrl,
         @Size(max=4000) String rules, @Size(max=1000) String openingHours,
         @Size(max=1000) String amenities, @Positive Integer maximumCapacity,
         @PositiveOrZero BigDecimal averagePrice, @Size(max=500) String paymentMethods
     ) {}
     public record FieldResponse(UUID id, String name, String description, String phone, String contactEmail,
         String addressLine, String addressNumber, String complement, String district, String city, String stateCode,
-        String postalCode, String region, String rules, String openingHours, String amenities, Integer maximumCapacity,
+        String postalCode, String region, String locationUrl, String rules, String openingHours, String amenities, Integer maximumCapacity,
         BigDecimal averagePrice, String paymentMethods, boolean managedByCurrentUser, long version) {}
     public record SaveMapRequest(@NotBlank @Size(max=100) String name, @NotBlank @Size(max=24) String terrainType,
         @Size(max=1000) String description, @Size(max=80) String approximateSize, @Positive Integer capacity,
