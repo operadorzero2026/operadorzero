@@ -1954,3 +1954,33 @@
 
 ### Pendências
 - Nenhuma pendência de código identificada.
+
+## 2026-07-28 - Comunidade funcional e rota pública
+
+### Arquivos alterados
+- `src/App.tsx`, `src/CommunityPage.tsx`, `src/api.ts`, `src/main.tsx`
+- `src/community-functional.css`
+- `services/api/src/main/java/br/com/operadorzero/community/*`
+- `services/api/src/main/java/br/com/operadorzero/shared/config/SecurityConfig.java`
+- `services/api/src/main/resources/db/migration/V16__community_posts_comments_and_moderation.sql`
+- testes, scripts e documentação [[14-COMUNIDADE]]
+
+### O que foi feito
+- O card Comunidade foi conectado a `/comunidade` sem receber métricas ou conteúdo fictício.
+- O protótipo local foi substituído por feed, detalhe, criação, imagens, comentários/respostas, votos, salvos, compartilhamento, denúncias e perfis reais.
+- Criado backend JDBC persistente, leitura pública, interações autenticadas, autorização por objeto, moderação RBAC e auditoria.
+- Criada migration aditiva com categorias, publicações, mídia, comentários, votos, salvos e denúncias.
+
+### Motivo
+- Tornar a Comunidade utilizável sobre autenticação e banco existentes, sem recriar o projeto.
+
+### Impacto
+- Frontend web, backend, PostgreSQL, segurança, moderação e documentação.
+
+### Testes
+- `npm run lint`, cenários frontend, build TypeScript/Vite e testes Java.
+- Migration ainda requer PostgreSQL isolado/backup antes de aplicação remota.
+
+### Pendências
+- Executar preflight/backup e aplicar `V16` de forma controlada antes de deploy.
+- Validar E2E autenticado em ambiente com PostgreSQL e usuários de teste.

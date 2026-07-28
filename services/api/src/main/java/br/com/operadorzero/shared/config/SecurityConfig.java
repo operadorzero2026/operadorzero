@@ -14,6 +14,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -72,6 +73,9 @@ public class SecurityConfig {
                     "/api/auth/session",
                     "/oauth2/**", "/login/oauth2/**").permitAll()
                 .requestMatchers("/api/auth/logout").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/community/**").permitAll()
+                .requestMatchers("/api/admin/community/**").hasAnyRole("ADMIN", "MODERATOR")
+                .requestMatchers("/api/community/**").authenticated()
                 .requestMatchers("/api/operators/**", "/api/teams/**", "/api/operations/**",
                     "/api/fields/**", "/api/maps/**", "/api/rankings/**", "/api/performance/**").authenticated()
                 .anyRequest().denyAll())

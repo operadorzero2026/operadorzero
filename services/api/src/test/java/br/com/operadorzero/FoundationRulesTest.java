@@ -3,6 +3,7 @@ package br.com.operadorzero;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import br.com.operadorzero.operation.OperationService;
+import br.com.operadorzero.community.CommunityService;
 import br.com.operadorzero.operator.OperatorService;
 import br.com.operadorzero.performance.PerformanceService;
 import br.com.operadorzero.team.TeamService;
@@ -17,7 +18,7 @@ class FoundationRulesTest {
     @Test
     void servicesWithTestClockConstructorsDeclareTheProductionInjectionPoint() {
         for (Class<?> service : new Class<?>[] {
-            OperationService.class, OperatorService.class, PerformanceService.class, TeamService.class, VenueService.class
+            CommunityService.class, OperationService.class, OperatorService.class, PerformanceService.class, TeamService.class, VenueService.class
         }) {
             assertThat(Arrays.stream(service.getDeclaredConstructors())
                 .filter(constructor -> constructor.isAnnotationPresent(Autowired.class)))
@@ -103,5 +104,23 @@ class FoundationRulesTest {
         assertThat(v7).contains("team_invitation", "team_membership_history",
             "uq_team_member_active_user", "uq_team_active_captain", "uq_team_invitation_pending");
         assertThat(v6 + v7).doesNotContain("DROP TABLE", "TRUNCATE", "DELETE FROM app_user");
+    }
+
+    @Test
+    void communityMigrationIsAdditiveAndEnforcesOwnershipAndUniqueInteractions() throws Exception {
+        String v16 = Files.readString(Path.of("src/main/resources/db/migration/V16__community_posts_comments_and_moderation.sql"));
+
+        assertThat(v16).contains(
+            "community_category",
+            "community_post",
+            "community_comment",
+            "community_vote",
+            "community_bookmark",
+            "community_report",
+            "uq_community_post_author_idempotency",
+            "PRIMARY KEY(post_id, user_id)",
+            "ck_community_report_target"
+        );
+        assertThat(v16).doesNotContain("DROP TABLE", "TRUNCATE", "DELETE FROM app_user");
     }
 }

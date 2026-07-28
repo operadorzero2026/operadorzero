@@ -66,3 +66,7 @@ Veja [[07-ROADMAP-MVP]] e [[99-HISTORICO-DE-ALTERACOES]].
 Meu Operador, busca de operadores e Minha Equipe possuem agora contratos reais no backend e telas conectadas sem conteúdo fictício. As migrations aditivas `V6` e `V7` cobrem perfil/equipamentos/privacidade e equipes/convites/histórico. A entrega está somente no worktree local: não foi aplicada no Render nem publicada na Vercel.
 
 Validação local: `npm run check` aprovado e `mvn -B clean verify` aprovado com 45 testes. Antes de qualquer publicação desta etapa ainda são necessários backup/preflight do PostgreSQL, aplicação controlada das migrations, smoke test autenticado e decisão explícita de deploy. Detalhes em [[18-AUDITORIA-DE-TELAS-E-INTEGRACAO-2026-07-27]], [[13-MEU-OPERADOR]] e [[10-MINHA-EQUIPE]].
+
+## Comunidade funcional em 2026-07-28
+
+[[14-COMUNIDADE]] deixou de usar o protótipo fictício e passou a possuir rota pública `/comunidade`, feed real, publicação individual, criação, comentários encadeados, votos, salvos, compartilhamento, denúncias, perfil do autor e moderação. A migration aditiva `V16` cria o domínio persistente sem remover dados anteriores. A entrega permanece local e exige backup/preflight antes de aplicar a migration remotamente.

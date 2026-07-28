@@ -138,3 +138,7 @@ Veja [[01-ESTADO-ATUAL-DO-PROJETO]].
 ## Visão geral com dados reais (2026-07-28)
 
 A Visão Geral autenticada consulta dados reais de [[09-OPERACOES]], [[10-MINHA-EQUIPE]] e [[11-RANKING]]. Exibe até três operações futuras, priorizando cidade e estado do operador e, em seguida, a data mais próxima; o total de equipes ativas; e os três primeiros operadores do ranking geral. O cartão Comunidade contém somente título e subtítulo, conforme [[14-COMUNIDADE]].
+
+## Rota funcional da Comunidade - 2026-07-28
+
+O cartão Comunidade mantém título e subtítulo e agora é um controle clicável que navega para `/comunidade`. A mesma rota está disponível na landing, menu e rodapé. O feed é público e responsivo; tentativas de publicar, comentar, responder, votar, salvar ou denunciar sem sessão abrem o login real. Rotas filhas cobrem nova publicação, detalhe e perfil comunitário do autor, conforme [[14-COMUNIDADE]].

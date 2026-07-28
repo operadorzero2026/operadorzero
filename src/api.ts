@@ -102,6 +102,44 @@ export type OperationParticipant = { operatorId:string; callsign:string; display
 export type OperationRoster = { teams:OperationTeam[]; participants:OperationParticipant[]; currentUserTeamId?:string|null }
 export type RankingEntry = { position:number; operatorId:string; username:string; displayName:string; callsign:string; city?:string|null; stateCode?:string|null; teamId?:string|null; teamName?:string|null; teamAcronym?:string|null; gross:number; factor:number; bonus:number; penalties:number; finalScore:number; positionVariation:number; operationsConsidered:number }
 export type PerformanceRecord = { id:string; operationId:string; operationName:string; operationDate:string; operatorId:string; operatorCallsign:string; representedTeamId?:string|null; representedTeamName?:string|null; eliminations:number; deaths:number; objectivesCompleted:number; roundWins:number; result:string; positionUsed?:string|null; notes?:string|null; highlightReceived?:string|null; penaltyPoints:number; abandoned:boolean; participationScope:string; status:string; organizerConfirmed:boolean; teamConfirmed:boolean; organizerNotes?:string|null; currentUserRecord:boolean; canReviewAsOrganizer:boolean; canReviewAsTeam:boolean; canContest:boolean; createdAt:string; updatedAt:string; version:number }
+export type CommunityCategory = { id:string; slug:string; name:string }
+export type CommunityAuthor = { id:string; username:string; displayName:string; callsign:string; city?:string|null; stateCode?:string|null; teamName?:string|null }
+export type CommunityPostSummary = {
+  id:string
+  author:CommunityAuthor
+  category:CommunityCategory
+  title:string
+  description:string
+  createdAt:string
+  voteCount:number
+  commentCount:number
+  votedByCurrentUser:boolean
+  savedByCurrentUser:boolean
+  canManage:boolean
+  commentsLocked:boolean
+  coverImageId?:string|null
+}
+export type CommunityPost = CommunityPostSummary & { updatedAt:string; imageIds:string[] }
+export type CommunityComment = {
+  id:string
+  postId:string
+  parentCommentId?:string|null
+  author:CommunityAuthor
+  description:string
+  createdAt:string
+  canManage:boolean
+}
+export type CommunityReport = {
+  id:string
+  targetType:'POST'|'COMMENT'
+  targetId:string
+  targetTitle:string
+  reporterUsername:string
+  reason:string
+  details?:string|null
+  status:string
+  createdAt:string
+}
 
 type ApiError = { code?: string; message?: string; correlationId?: string; fields?: Array<{ field: string; message: string }> }
 
@@ -342,3 +380,49 @@ export const getReviewablePerformance = () => apiRequest<{items:PerformanceRecor
 export const savePerformance = (operationId:string,record:Record<string,unknown>) => apiRequest<PerformanceRecord>(`/api/performance/operations/${encodeURIComponent(operationId)}`,json('POST',record))
 export const reviewPerformance = (id:string,review:Record<string,unknown>) => apiRequest<PerformanceRecord>(`/api/performance/${encodeURIComponent(id)}/review`,json('PATCH',review))
 export const contestPerformance = (id:string,reason:string) => apiRequest<{message:string}>(`/api/performance/${encodeURIComponent(id)}/contests`,json('POST',{reason}))
+
+export const getCommunityCategories = () => apiRequest<CommunityCategory[]>('/api/community/categories')
+export const getCommunityPosts = (filters:{query?:string;category?:string;sort?:string;page?:number;size?:number}={}) => {
+  const params = new URLSearchParams({
+    q: filters.query || '',
+    category: filters.category || '',
+    sort: filters.sort || 'RECENT',
+    page: String(filters.page || 0),
+    size: String(filters.size || 20),
+  })
+  return apiRequest<{items:CommunityPostSummary[];page:number;size:number;total:number}>(`/api/community/posts?${params}`)
+}
+export const getCommunityPost = (id:string) => apiRequest<CommunityPost>(`/api/community/posts/${encodeURIComponent(id)}`)
+export const getCommunityComments = (id:string) => apiRequest<{items:CommunityComment[]}>(`/api/community/posts/${encodeURIComponent(id)}/comments`)
+export const getCommunityAuthor = (username:string) => apiRequest<CommunityAuthor>(`/api/community/authors/${encodeURIComponent(username)}`)
+export const communityImageUrl = (id:string) => `${getApiBaseUrl()}/api/community/images/${encodeURIComponent(id)}`
+export const createCommunityPost = (post:{categorySlug:string;title:string;description:string;idempotencyKey:string}) =>
+  apiRequest<CommunityPost>('/api/community/posts',json('POST',post),30000)
+export const uploadCommunityImage = (postId:string,file:File) => {
+  const body = new FormData()
+  body.append('file',file)
+  return apiRequest<{message:string}>(`/api/community/posts/${encodeURIComponent(postId)}/images`,{method:'POST',body},30000)
+}
+export const createCommunityComment = (postId:string,comment:{parentCommentId?:string|null;description:string;idempotencyKey:string}) =>
+  apiRequest<{message:string}>(`/api/community/posts/${encodeURIComponent(postId)}/comments`,json('POST',comment))
+export const toggleCommunityVote = (postId:string) =>
+  apiRequest<{active:boolean;count:number}>(`/api/community/posts/${encodeURIComponent(postId)}/vote`,json('POST',{}))
+export const toggleCommunityBookmark = (postId:string) =>
+  apiRequest<{active:boolean;count:number}>(`/api/community/posts/${encodeURIComponent(postId)}/bookmark`,json('POST',{}))
+export const reportCommunityPost = (postId:string,report:{reason:string;details:string}) =>
+  apiRequest<{message:string}>(`/api/community/posts/${encodeURIComponent(postId)}/reports`,json('POST',report))
+export const reportCommunityComment = (commentId:string,report:{reason:string;details:string}) =>
+  apiRequest<{message:string}>(`/api/community/comments/${encodeURIComponent(commentId)}/reports`,json('POST',report))
+export const deleteCommunityPost = (postId:string) =>
+  apiRequest<{message:string}>(`/api/community/posts/${encodeURIComponent(postId)}`,json('DELETE'))
+export const deleteCommunityComment = (commentId:string) =>
+  apiRequest<{message:string}>(`/api/community/comments/${encodeURIComponent(commentId)}`,json('DELETE'))
+export const getCommunityReports = () => apiRequest<{items:CommunityReport[]}>('/api/admin/community/reports')
+export const moderateCommunityPost = (postId:string,status:'PUBLISHED'|'SUSPENDED'|'DELETED',reason:string) =>
+  apiRequest<{message:string}>(`/api/admin/community/posts/${encodeURIComponent(postId)}/status`,json('PATCH',{status,reason}))
+export const moderateCommunityComment = (commentId:string,status:'PUBLISHED'|'SUSPENDED'|'DELETED',reason:string) =>
+  apiRequest<{message:string}>(`/api/admin/community/comments/${encodeURIComponent(commentId)}/status`,json('PATCH',{status,reason}))
+export const setCommunityCommentsLocked = (postId:string,locked:boolean,reason:string) =>
+  apiRequest<{message:string}>(`/api/admin/community/posts/${encodeURIComponent(postId)}/comments-lock`,json('PATCH',{locked,reason}))
+export const resolveCommunityReport = (reportId:string,status:'REVIEWED'|'DISMISSED'|'ACTIONED',resolution:string) =>
+  apiRequest<{message:string}>(`/api/admin/community/reports/${encodeURIComponent(reportId)}`,json('PATCH',{status,resolution}))

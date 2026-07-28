@@ -49,6 +49,7 @@ import { OperationsPage } from './OperationsPage'
 import { VenuesPage } from './VenuesPage'
 import { RankingsPage } from './RankingsPage'
 import { PerformancePage } from './PerformancePage'
+import CommunityPage from './CommunityPage'
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return <a className={`brand ${compact ? 'brand--compact' : ''}`} href="#inicio" aria-label="Operador Zero, início"><span>Operador</span><strong>Zero</strong></a>
@@ -186,6 +187,7 @@ const dashboardNav = [
   { label: 'Operadores', icon: UserRound },
   { label: 'Desempenho', icon: ClipboardCheck },
   { label: 'Rankings', icon: Trophy },
+  { label: 'Comunidade', icon: Users },
   { label: 'Conquistas', icon: Medal },
   { label: 'Notificações', icon: Bell },
   { label: 'Meu Operador', icon: UserRound },
@@ -206,7 +208,7 @@ function EmptyWorkspace({ area, onHome }: { area: string; onHome: () => void }) 
   return <main className="real-empty-page"><h1>{area}</h1><section className="real-empty-state"><Search/><h2>{copy.title}</h2><p>{copy.description}</p><button onClick={onHome}>Voltar à visão geral <ArrowRight/></button></section></main>
 }
 
-function Dashboard({ onLogout, onUserUpdated, user }: { onLogout: () => Promise<boolean>; onUserUpdated: (user: SessionUser) => void; user: SessionUser }) {
+function Dashboard({ onLogout, onUserUpdated, onNavigateCommunity, user }: { onLogout: () => Promise<boolean>; onUserUpdated: (user: SessionUser) => void; onNavigateCommunity: () => void; user: SessionUser }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [activeView, setActiveView] = useState('Visão geral')
   const [logoutPending, setLogoutPending] = useState(false)
@@ -233,7 +235,7 @@ function Dashboard({ onLogout, onUserUpdated, user }: { onLogout: () => Promise<
   }, [])
   const operationDate = (value: string) => new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(`${value}T12:00:00`))
   return <div className="app-shell">
-    <aside className="app-sidebar"><Brand compact/><nav aria-label="Navegação do operador">{dashboardNav.map(({ label, icon: Icon }) => <button onClick={() => setActiveView(label)} className={activeView === label ? 'active' : ''} key={label}><Icon/><span>{label}</span>{activeView === label && <i/>}</button>)}</nav><div className="sidebar-footer"><p>Jogue. Registre.<br/><b>Evolua.</b></p></div></aside>
+    <aside className="app-sidebar"><Brand compact/><nav aria-label="Navegação do operador">{dashboardNav.map(({ label, icon: Icon }) => <button onClick={() => label === 'Comunidade' ? onNavigateCommunity() : setActiveView(label)} className={activeView === label ? 'active' : ''} key={label}><Icon/><span>{label}</span>{activeView === label && <i/>}</button>)}</nav><div className="sidebar-footer"><p>Jogue. Registre.<br/><b>Evolua.</b></p></div></aside>
     <div className="app-main">
       <header className="app-topbar"><OperatorSearch/><div className="profile-control"><button onClick={() => setProfileOpen(!profileOpen)} aria-expanded={profileOpen}><span className="profile-avatar">{initial}</span><span><b>{callsign}</b><small>@{user.username}</small></span><ChevronDown/></button>{profileOpen && <div className="profile-menu"><p>{user.email}</p><button disabled={logoutPending} onClick={async () => { setLogoutPending(true); setLogoutError(''); const completed = await onLogout(); setLogoutPending(false); if (!completed) setLogoutError('Não foi possível encerrar a sessão. Verifique sua conexão e tente novamente.') }}><LogOut/> {logoutPending ? 'Encerrando...' : 'Sair da conta'}</button>{logoutError && <small className="logout-error" role="alert">{logoutError}</small>}</div>}</div></header>
       {activeView === 'Meu Operador' ? <OperatorPage onUserUpdated={updated => onUserUpdated({ ...user, ...updated })}/> : activeView === 'Minha equipe' ? <TeamPage/> : activeView === 'Operações' ? <OperationsPage/> : activeView === 'Campos' ? <VenuesPage mode="fields"/> : activeView === 'Mapas' ? <VenuesPage mode="maps"/> : activeView === 'Desempenho' ? <PerformancePage/> : activeView === 'Rankings' ? <RankingsPage/> : activeView !== 'Visão geral' ? <EmptyWorkspace area={activeView} onHome={() => setActiveView('Visão geral')}/> : <main className="dashboard real-dashboard">
@@ -245,7 +247,7 @@ function Dashboard({ onLogout, onUserUpdated, user }: { onLogout: () => Promise<
           <section className="overview-card overview-operations"><header><div><small>PRÓXIMAS DATAS</small><h3>Operações</h3></div><button onClick={() => setActiveView('Operações')} aria-label="Ver todas as operações"><ArrowRight/></button></header>{overviewLoading ? <p className="overview-muted">Atualizando agenda...</p> : overview.operations.length ? <div className="overview-operation-list">{overview.operations.map(operation => <button key={operation.id} onClick={() => setActiveView('Operações')}><time>{operationDate(operation.operationDate)}</time><span><b>{operation.name}</b><small>{operation.city} · {operation.stateCode} · {operation.startTime.slice(0,5)}</small></span></button>)}</div> : <p className="overview-muted">Nenhuma operação disponível nas próximas datas.</p>}</section>
           <section className="overview-card overview-team"><header><div><small>COMUNIDADE ATIVA</small><h3>Equipes</h3></div><Users/></header><strong>{overviewLoading ? '—' : overview.teamTotal.toLocaleString('pt-BR')}</strong><p>equipes cadastradas no OperadorZero</p><button className="overview-link" onClick={() => setActiveView('Minha equipe')}>Acessar equipes <ArrowRight/></button></section>
           <section className="overview-card overview-ranking"><header><div><small>CLASSIFICAÇÃO GERAL</small><h3>Ranking</h3></div><Trophy/></header>{overviewLoading ? <p className="overview-muted">Atualizando ranking...</p> : overview.ranking.length ? <ol>{overview.ranking.map(entry => <li key={entry.operatorId}><em>{entry.position}</em><span><b>{entry.callsign || entry.displayName}</b><small>{entry.teamName || `${entry.city || 'Local não informado'} · ${entry.stateCode || 'BR'}`}</small></span><strong>{entry.finalScore.toLocaleString('pt-BR')} pts</strong></li>)}</ol> : <p className="overview-muted">O ranking ainda não possui resultados.</p>}<button className="overview-link" onClick={() => setActiveView('Rankings')}>Ver ranking completo <ArrowRight/></button></section>
-          <section className="overview-card overview-community"><h3>Comunidade</h3><p>O ponto de encontro de operadores, equipes e organizadores do airsoft.</p></section>
+          <button type="button" className="overview-card overview-community" onClick={onNavigateCommunity}><h3>Comunidade</h3><p>O ponto de encontro de operadores, equipes e organizadores do airsoft.</p></button>
         </div>
       </main>}
     </div>
@@ -260,11 +262,17 @@ export default function App() {
   const [sessionRestoring, setSessionRestoring] = useState(AUTH_ENABLED)
   const [authNotice, setAuthNotice] = useState('')
   const [resetTokenValue, setResetTokenValue] = useState('')
+  const [currentPath, setCurrentPath] = useState(window.location.pathname)
 
   useEffect(() => {
     const close = () => setMenuOpen(false)
     window.addEventListener('resize', close)
     return () => window.removeEventListener('resize', close)
+  }, [])
+  useEffect(() => {
+    const updatePath = () => setCurrentPath(window.location.pathname)
+    window.addEventListener('popstate', updatePath)
+    return () => window.removeEventListener('popstate', updatePath)
   }, [])
   useEffect(() => {
     if (!AUTH_ENABLED) return
@@ -308,7 +316,22 @@ export default function App() {
     return () => { active = false }
   }, [])
 
-  if (currentUser) return <Dashboard user={currentUser} onUserUpdated={setCurrentUser} onLogout={async () => {
+  const navigate = (path: string) => {
+    if (window.location.pathname !== path) window.history.pushState({}, '', path)
+    setCurrentPath(path)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  const authenticated = (user: SessionUser) => { setAuthMode(null); setAuthNotice(''); setCurrentUser(user) }
+  const authModal = authMode && <AuthModal mode={authMode} onClose={() => { setAuthMode(null); setAuthNotice('') }} onModeChange={setAuthMode} onAuthenticated={authenticated} resetToken={resetTokenValue} initialNotice={authNotice}/>
+
+  if (currentPath === '/comunidade' || currentPath.startsWith('/comunidade/')) {
+    return <>
+      <CommunityPage path={currentPath} user={currentUser} onNavigate={navigate} onRequireAuth={() => setAuthMode('login')}/>
+      {authModal}
+    </>
+  }
+
+  if (currentUser) return <Dashboard user={currentUser} onUserUpdated={setCurrentUser} onNavigateCommunity={() => navigate('/comunidade')} onLogout={async () => {
     try {
       await logout()
       setCurrentUser(null)
@@ -318,20 +341,19 @@ export default function App() {
     }
   }}/>
 
-  const authenticated = (user: SessionUser) => { setAuthMode(null); setAuthNotice(''); setCurrentUser(user) }
   const nav = ['Operações', 'Como funciona', 'Comunidade']
   return <div className={`site-shell ${IS_STAGING ? 'site-shell--staging' : ''}`}>
     {IS_STAGING && <div className="staging-banner" role="status"><ShieldAlert/> Ambiente de testes — não utilize informações pessoais reais.</div>}
-    <header className="topbar"><Brand compact/><nav className="desktop-nav" aria-label="Navegação principal">{nav.map(item => <a key={item} href={`#${item.toLowerCase().replaceAll(' ', '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`}>{item}</a>)}</nav><div className="header-actions">{sessionRestoring && <span className="session-status" role="status">Verificando acesso...</span>}<button className="button button--small" onClick={() => setAuthMode('login')}>Entrar</button><button className="text-button" onClick={() => setAuthMode('signup')}>Criar perfil gratuito</button></div><button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-label="Abrir menu">{menuOpen ? <X/> : <Menu/>}</button>{menuOpen && <div className="mobile-menu">{nav.map(item => <a key={item} onClick={() => setMenuOpen(false)} href={`#${item.toLowerCase().replaceAll(' ', '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`}>{item}</a>)}<button onClick={() => { setMenuOpen(false); setAuthMode('login') }}>Entrar</button><button onClick={() => { setMenuOpen(false); setAuthMode('signup') }}>Criar perfil gratuito</button></div>}</header>
+    <header className="topbar"><Brand compact/><nav className="desktop-nav" aria-label="Navegação principal">{nav.map(item => item === 'Comunidade' ? <a key={item} href="/comunidade" onClick={event => { event.preventDefault(); navigate('/comunidade') }}>{item}</a> : <a key={item} href={`#${item.toLowerCase().replaceAll(' ', '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`}>{item}</a>)}</nav><div className="header-actions">{sessionRestoring && <span className="session-status" role="status">Verificando acesso...</span>}<button className="button button--small" onClick={() => setAuthMode('login')}>Entrar</button><button className="text-button" onClick={() => setAuthMode('signup')}>Criar perfil gratuito</button></div><button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-label="Abrir menu">{menuOpen ? <X/> : <Menu/>}</button>{menuOpen && <div className="mobile-menu">{nav.map(item => item === 'Comunidade' ? <a key={item} href="/comunidade" onClick={event => { event.preventDefault(); setMenuOpen(false); navigate('/comunidade') }}>{item}</a> : <a key={item} onClick={() => setMenuOpen(false)} href={`#${item.toLowerCase().replaceAll(' ', '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`}>{item}</a>)}<button onClick={() => { setMenuOpen(false); setAuthMode('login') }}>Entrar</button><button onClick={() => { setMenuOpen(false); setAuthMode('signup') }}>Criar perfil gratuito</button></div>}</header>
     <main>
       <section className="hero" id="inicio"><div className="hero-art" aria-hidden="true"><img src="/operador-zero-identity.jpeg" alt=""/></div><div className="hero-shade"/><div className="hero-content"><p className="eyebrow reveal reveal--1"><span/> A plataforma do airsoft brasileiro</p><h1 className="reveal reveal--2">O airsoft brasileiro<br/><em>em um só lugar.</em></h1><p className="hero-copy reveal reveal--3">Encontre eventos, equipes, campos e operadores de todo o Brasil. Crie seu perfil e participe da comunidade.</p><div className="hero-actions reveal reveal--4"><button className="button" onClick={() => setAuthMode('login')}>Entrar <ArrowRight size={18}/></button><button className="text-button link-button" onClick={() => setAuthMode('signup')}>Criar perfil gratuito</button></div></div><div className="hero-index"><span>01</span><i/><small>AIRSOFT BRASIL</small></div></section>
       <section className="operations section" id="operacoes"><div className="section-heading"><div><p className="eyebrow"><span/> Agenda pública</p><h2>Operações publicadas</h2></div></div><div className="public-empty-state"><CalendarDays/><h3>Nenhuma operação publicada ainda</h3><p>As próximas operações da comunidade aparecerão aqui.</p></div></section>
       <section className="manifesto" id="como-funciona"><div className="manifesto-copy"><p className="eyebrow"><span/> Sua jornada</p><h2>Jogue. Registre.<br/><em>Evolua.</em></h2><p>Crie sua identidade, encontre a comunidade da sua região e construa seu histórico no airsoft.</p></div><div className="steps"><div><UserRound/><span>01</span><div className="step-content"><h3>Cadastre-se</h3><p>Entre com Google ou use seu e-mail e senha.</p></div></div><div><CalendarDays/><span>02</span><div className="step-content"><h3>Participe</h3><p>Encontre equipes e operações perto de você.</p></div></div><div><Trophy/><span>03</span><div className="step-content"><h3>Evolua</h3><p>Acompanhe sua trajetória e suas conquistas.</p></div></div></div></section>
-      <section className="community" id="comunidade"><div><Users/><p className="eyebrow">Comunidade Operador Zero</p><h2>Conecte-se com quem vive o esporte.</h2><p>Compartilhe experiências, encontre equipes e acompanhe o airsoft da sua região.</p></div></section>
+      <section className="community community--link" id="comunidade" role="link" tabIndex={0} onClick={() => navigate('/comunidade')} onKeyDown={event => (event.key === 'Enter' || event.key === ' ') && navigate('/comunidade')}><div><Users/><p className="eyebrow">Comunidade Operador Zero</p><h2>Conecte-se com quem vive o esporte.</h2><p>Compartilhe experiências, encontre equipes e acompanhe o airsoft da sua região.</p><span className="button">Abrir comunidade <ArrowRight size={18}/></span></div></section>
       <section className="trust-section" id="sobre"><div><p className="eyebrow"><span/> Plataforma gratuita</p><h2>Organize sua jornada no airsoft.</h2><p>Crie seu perfil, encontre operações, forme equipes e participe da comunidade sem cobrança pela plataforma.</p></div><div className="trust-grid"><article id="termos"><h3>Termos de Uso</h3><p>Ao criar uma conta, você concorda em usar a plataforma com respeito, legalidade e informações verdadeiras.</p></article><article id="privacidade"><h3>Privacidade</h3><p>Você controla as informações que compartilha com outros operadores e equipes.</p></article><article id="regras"><h3>Regras da Comunidade</h3><p>Fair play, convivência respeitosa, segurança e procedência legal dos equipamentos são obrigatórios.</p></article><article id="seguranca"><h3>Segurança e denúncias</h3><p>Suspeitas de abuso ou falha podem ser comunicadas pelo canal oficial de atendimento.</p><a href="mailto:operadorzerosac@gmail.com">operadorzerosac@gmail.com</a></article></div></section>
       <section className="cta" id="convite"><p className="eyebrow"><span/> Sua identidade</p><h2>Comece pelo<br/>seu cadastro.</h2><p>Entre com Google ou crie uma conta com e-mail e senha.</p><button className="button" onClick={() => setAuthMode('signup')}>Criar minha conta <ArrowRight size={18}/></button></section>
     </main>
-    <footer><Brand compact/><p>Airsoft é esporte. Respeito, segurança e fair play sempre.</p><div><a href="#sobre">Sobre</a><a href="#operacoes">Eventos</a><a href="#comunidade">Comunidade</a><a href="#termos">Termos</a><a href="#privacidade">Privacidade</a><a href="#seguranca">Segurança</a><a href="mailto:operadorzerosac@gmail.com">Contato</a><button onClick={() => setAuthMode('login')}>Entrar</button><button onClick={() => setAuthMode('signup')}>Criar conta</button></div><small>© 2026 OPERADOR ZERO</small></footer>
-    {authMode && <AuthModal mode={authMode} onClose={() => { setAuthMode(null); setAuthNotice('') }} onModeChange={setAuthMode} onAuthenticated={authenticated} resetToken={resetTokenValue} initialNotice={authNotice}/>}
+    <footer><Brand compact/><p>Airsoft é esporte. Respeito, segurança e fair play sempre.</p><div><a href="#sobre">Sobre</a><a href="#operacoes">Eventos</a><a href="/comunidade" onClick={event => { event.preventDefault(); navigate('/comunidade') }}>Comunidade</a><a href="#termos">Termos</a><a href="#privacidade">Privacidade</a><a href="#seguranca">Segurança</a><a href="mailto:operadorzerosac@gmail.com">Contato</a><button onClick={() => setAuthMode('login')}>Entrar</button><button onClick={() => setAuthMode('signup')}>Criar conta</button></div><small>© 2026 OPERADOR ZERO</small></footer>
+    {authModal}
   </div>
 }

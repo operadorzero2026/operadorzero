@@ -108,3 +108,7 @@ Hashes de tokens, sessões, endereços e identificadores de auditoria usam HMAC-
 O frontend oficial usa proxy same-origin da Vercel para `/api`, `/actuator`, `/oauth2` e `/login/oauth2`. Login por senha, CSRF, callback Google e restauração de sessão passam por `operadorzero.com.br`, evitando dependência de cookies de terceiros no domínio `onrender.com`. Cookies continuam `HttpOnly` quando aplicável, `Secure`, com CSRF dedicado; segredos Google e Resend permanecem somente no backend. Veja `AUTHENTICATION.md` e [[06-FRONTEND-WEB]].
 
 Requisições mutáveis renovam o token CSRF e repetem a chamada uma única vez quando o servidor retorna `403 ACCESS_DENIED`. Isso recupera com segurança divergências entre o token mantido em memória e o cookie renovado por login, restauração de sessão ou outra aba, sem desabilitar CSRF nem ampliar permissões.
+
+## Comunidade - 2026-07-28
+
+[[14-COMUNIDADE]] usa leitura pública com projeção mínima e mutações autenticadas por sessão/CSRF. Autorizações de exclusão e moderação são verificadas no backend. Votos, salvos e chaves idempotentes possuem unicidade no PostgreSQL; SQL usa parâmetros e ordenações fixas. Conteúdo suspenso/excluído não entra no feed público. Imagens são limitadas a quatro por publicação, PNG/JPEG reais de até 2 MB, reencodificadas e armazenadas sem nome original ou metadados. Foto privada do perfil não é exposta: a interface usa avatar textual até existir consentimento específico.

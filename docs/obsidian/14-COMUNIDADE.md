@@ -1,82 +1,70 @@
 # Comunidade
 
-Fórum comunitário do Operador Zero, conectado a [[13-MEU-OPERADOR]], [[10-MINHA-EQUIPE]], [[09-OPERACOES]], [[08-CLASSIFICADOS]] e [[12-CONQUISTAS-E-MEDALHAS]]. O protótipo atual é somente frontend e usa dados fictícios.
+Fórum funcional do Operador Zero para conteúdo exclusivamente relacionado ao airsoft. Conecta-se a [[13-MEU-OPERADOR]], [[10-MINHA-EQUIPE]], [[09-OPERACOES]], [[08-CLASSIFICADOS]], [[05-SEGURANCA-E-PRIVACIDADE]] e [[06-FRONTEND-WEB]].
 
-## Interface entregue
+## Estado funcional em 2026-07-28
 
-- Menu Comunidade, busca, 19 categorias iniciais, 13 filtros e feed responsivo.
-- Publicações oficiais, comuns e sensíveis; votos apenas positivos; salvar, comentar, responder e denunciar.
-- Aceite específico antes da primeira publicação, editor de Markdown representativo, prévia e análise demonstrativa de dados pessoais/linguagem inadequada.
-- Regras da Comunidade, Minha atividade e painel de moderação marcado como demonstração RBAC/MFA.
-- Busca global passa a incluir publicações da Comunidade.
-- No mobile, categorias e metadados secundários deixam o feed principal; os cards exibem somente contexto essencial e ações secundárias ficam no detalhe.
+- A rota pública `/comunidade` lista somente publicações persistidas no PostgreSQL; não há fixtures ou conteúdo fictício.
+- Visitantes podem consultar feed, categorias, busca, ordenação, publicação individual, comentários e perfil comunitário mínimo do autor.
+- Sessão real é obrigatória para criar publicação, enviar imagem, comentar, responder, votar, salvar, denunciar ou excluir conteúdo próprio.
+- O frontend encaminha tentativas de interação sem sessão para o login já existente.
+- Publicações possuem autor, avatar textual de fallback, título, descrição, categoria, data, votos, comentários, imagens opcionais, salvar, compartilhar e denunciar.
+- A criação usa título, categoria, descrição, até quatro imagens e chave idempotente; o botão fica bloqueado durante o envio.
+- Comentários são retornados em árvore por `parent_comment_id`, rejeitam texto vazio e respeitam o bloqueio da conversa.
+- Voto e item salvo possuem unicidade `(post_id, user_id)` no banco.
+- Autor e administradores/moderadores podem excluir conteúdo conforme autorização por objeto no backend.
+- `ADMIN` e `MODERATOR` podem consultar denúncias, suspender/excluir publicações e comentários, bloquear comentários e resolver a fila.
 
-## Modelo e migrations propostos
+## Banco e migration
 
-Entidades: `CommunityCategory`, `CommunityPost`, `CommunityPostRevision`, `CommunityComment`, `CommunityCommentRevision`, `CommunityVote`, `CommunityBookmark`, `CommunityFollow`, `CommunityMention`, `CommunityReport`, `CommunityModerationCase`, `CommunityModerationDecision`, `CommunityModerationAppeal`, `CommunityWordFilter`, `CommunityFilterVariation`, `CommunityAutomatedAnalysis`, `CommunityUserRestriction`, `CommunityUserWarning`, `CommunityUserBlock`, `CommunityUserMute`, `CommunityMedia`, `CommunityLinkAnalysis`, `CommunityTermsAcceptance` e `CommunityAuditLog`.
+`V16__community_posts_comments_and_moderation.sql` é aditiva e cria `community_category`, `community_post`, `community_post_media`, `community_comment`, `community_vote`, `community_bookmark` e `community_report`.
 
-Migrations planejadas:
+As categorias iniciais ficam no banco. Constraints cobrem título, descrição, status, alvo de denúncia, motivo, voto único, salvo único e idempotência de publicação/comentário. Nenhuma tabela ou identidade anterior é removida.
 
-1. `V025__community_categories_posts_comments.sql`
-2. `V026__community_votes_follows_mentions.sql`
-3. `V027__community_reports_moderation_appeals.sql`
-4. `V028__community_filters_automated_analysis.sql`
-5. `V029__community_restrictions_blocks_mutes.sql`
-6. `V030__community_media_links_terms_audit.sql`
+## API
 
-Categorias e limites são administráveis no banco; não ficam exclusivamente no frontend. Constraints impedem voto duplicado e preservam revisão/decisão original. Auditoria é append-only.
+Leitura pública:
 
-## Endpoints propostos
+- `GET /api/community/categories`
+- `GET /api/community/posts`
+- `GET /api/community/posts/{postId}`
+- `GET /api/community/posts/{postId}/comments`
+- `GET /api/community/authors/{username}`
+- `GET /api/community/images/{imageId}`
 
-- `GET|POST /api/v1/community/posts` e `GET|PATCH|DELETE /api/v1/community/posts/{id}`
-- `POST /api/v1/community/posts/{id}/comments`, `/votes`, `/bookmarks`, `/reports`
-- `PATCH|DELETE /api/v1/community/comments/{id}` e endpoints de resposta/voto/denúncia
-- `GET /api/v1/community/categories`, `/feed`, `/search`, `/activity/me`
-- `POST|DELETE /api/v1/community/users/{id}/block` e `/mute`
-- `GET|POST /api/v1/community/appeals`
-- `/api/v1/admin/community/*` para fila, decisão, filtros, restrições, evidências e métricas.
+Interações autenticadas:
 
-Todos exigem autenticação adequada, autorização por objeto, paginação, limites, idempotência, validação e auditoria. O frontend nunca define permissão ou selo oficial.
+- `POST /api/community/posts`
+- `POST /api/community/posts/{postId}/images`
+- `POST /api/community/posts/{postId}/comments`
+- `POST /api/community/posts/{postId}/vote`
+- `POST /api/community/posts/{postId}/bookmark`
+- `POST /api/community/posts/{postId}/reports`
+- `POST /api/community/comments/{commentId}/reports`
+- `DELETE /api/community/posts/{postId}`
+- `DELETE /api/community/comments/{commentId}`
 
-## Moderação
+Moderação:
 
-Pipeline: normalização segura -> detecção de dados/links/arquivos -> regras administráveis -> análise contextual -> decisão preventiva -> revisão humana -> decisão motivada -> recurso. Resultado automático é indício, não prova definitiva. Casos graves ficam bloqueados e priorizados; casos ambíguos permitem edição e revisão.
-
-Escala: orientação, advertência, restrição temporária, suspensão e banimento. Ocorrências leves decaem; decisões anuladas não geram efeito. Pontuação de risco é privada e não altera ranking esportivo ou reputação pública.
+- `GET /api/admin/community/reports`
+- `PATCH /api/admin/community/posts/{postId}/status`
+- `PATCH /api/admin/community/comments/{commentId}/status`
+- `PATCH /api/admin/community/posts/{postId}/comments-lock`
+- `PATCH /api/admin/community/reports/{reportId}`
 
 ## Segurança e privacidade
 
-- Denunciante permanece confidencial; acesso administrativo é restrito e auditado.
-- Conteúdo em análise/removido e usuários suspensos não entram no feed ou busca.
-- Markdown sanitizado; sem HTML arbitrário, script, iframe ou conteúdo oculto.
-- Upload somente JPEG/PNG/WebP validado, com limite, remoção EXIF, quarentena e varredura; vídeo apenas por domínios permitidos.
-- Links normalizados e analisados; domínio é mostrado antes da saída.
-- Bloqueio impede interação direta; silenciamento afeta somente quem silenciou.
-- Limites iniciais: 5 posts/h, 30 comentários/h, 10 menções/comentário, 5 links/post, 10 imagens/post e 5 denúncias/h, todos configuráveis e adaptáveis ao risco.
-- Proteção de menores permanece bloqueador jurídico antes da abertura para esse público.
+- Mutação usa sessão HttpOnly, CSRF, validação Bean Validation, SQL parametrizado e auditoria.
+- Ordenação SQL é escolhida somente entre expressões fixas no service.
+- O backend não confia no autor, papel ou proprietário enviados pelo navegador.
+- Imagens aceitam apenas PNG/JPEG reais de até 2 MB, são decodificadas/reencodificadas e persistidas sem nome original.
+- Publicações suportam até quatro imagens. Conteúdo é renderizado como texto, sem HTML arbitrário.
+- Feed e busca excluem conteúdo suspenso/excluído e contas inativas.
+- Denunciante não aparece no feed nem para o autor.
+- O avatar comunitário usa a inicial do callsign/nome enquanto não existir consentimento específico para tornar a foto de perfil pública.
 
-## Separação esportiva
+## Verificação e implantação
 
-Votos, advertências e participação comunitária não alteram K/D, ranking, resultado de operação ou reputação esportiva. Conquistas comunitárias futuras não concedem pontos esportivos.
+Testes cobrem serviço, migration, contratos frontend, rota, ausência de fixtures, voto único, idempotência e RBAC de moderação. Antes de publicar esta migration fora de ambiente descartável, executar backup/preflight do PostgreSQL e smoke test autenticado. A alteração local não implica deploy automático.
 
-## Documentos conectados
-
-- [[COMMUNITY-GUIDELINES]]
-- [[COMMUNITY-MODERATION-POLICY]]
-- [[COMMUNITY-APPEALS]]
-- [[COMMUNITY-PROHIBITED-CONTENT]]
-- [[COMMUNITY-AUTOMATED-MODERATION]]
-- [[COMMUNITY-DATA-RETENTION]]
-- [[COMMUNITY-INCIDENT-RESPONSE]]
-- [[COMMUNITY-PRIVACY]]
-- [[COMMUNITY-MODERATOR-GUIDE]]
-
-## Pendências antes de produção
-
-- Criar backend, migrations, storage, filas e testes de integração/segurança.
-- Contratar/revisar ferramenta contextual e de mídia sem enviar dados além da finalidade.
-- Fazer revisão jurídica brasileira, LGPD, Marco Civil, direitos autorais, proteção de menores e procedimento com autoridades.
-- Revisar os termos com jurídico; os textos atuais são rascunhos, não parecer legal.
-## Apresentação na Visão Geral (2026-07-28)
-
-Na [[06-FRONTEND-WEB|Visão Geral]], Comunidade é uma apresentação mínima: somente o título e um pequeno subtítulo descritivo, sem métricas, listas ou chamadas adicionais.
+Veja [[99-HISTORICO-DE-ALTERACOES]].

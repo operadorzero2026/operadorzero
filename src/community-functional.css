@@ -1,0 +1,157 @@
+.oz-community-shell{min-height:100svh;background:#0a0c09;color:#f2f1e9}
+.oz-community-topbar{position:sticky;top:0;z-index:60;height:72px;display:flex;align-items:center;gap:36px;padding:0 clamp(20px,4vw,60px);border-bottom:1px solid var(--line);background:rgba(8,10,8,.94);backdrop-filter:blur(16px)}
+.oz-community-brand{border:0;background:transparent;display:inline-flex;gap:5px;padding:0;color:#f6f6ef;font:800 25px 'Barlow Condensed';text-transform:uppercase;cursor:pointer}
+.oz-community-brand strong{color:var(--olive)}
+.oz-community-topbar nav{display:flex;align-items:center;gap:25px;margin:auto}
+.oz-community-topbar nav button,.oz-community-login{border:0;background:transparent;color:#a8aca1;min-height:44px;padding:0;font-size:12px;cursor:pointer}
+.oz-community-topbar nav button:hover,.oz-community-login:hover{color:var(--lime)}
+.oz-community-account{display:flex;align-items:center;gap:9px;border:0;background:transparent;color:#dfe1d8;font-size:12px;cursor:pointer}
+.oz-community-account span{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#292d23;border:1px solid #555b40;color:var(--lime);font:700 15px 'Barlow Condensed'}
+.oz-community-page{width:min(1440px,100%);margin:auto;padding:54px clamp(20px,4vw,60px) 90px}
+.oz-community-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:35px;padding:25px 0 45px;border-bottom:1px solid var(--line)}
+.oz-community-kicker{margin:0;color:var(--lime);font-size:10px;font-weight:700;letter-spacing:.17em;text-transform:uppercase}
+.oz-community-hero h1,.oz-community-editor-page>header h1,.oz-community-moderation>header h1,.oz-community-author-header h1{font:800 clamp(54px,6vw,88px)/.82 'Barlow Condensed';letter-spacing:-.035em;margin:19px 0}
+.oz-community-hero h1 em{font-style:italic;color:var(--olive)}
+.oz-community-hero>div>span,.oz-community-editor-page>header>p,.oz-community-moderation>header>p{display:block;max-width:610px;color:#a6aa9f;font-size:14px;line-height:1.65}
+.oz-community-primary{min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;background:var(--lime);color:#11130e;padding:0 18px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;cursor:pointer}
+.oz-community-primary:hover{background:#eff0cc}
+.oz-community-primary:disabled{opacity:.48;cursor:not-allowed}
+.oz-community-primary svg{width:17px}
+.oz-community-toolbar{display:grid;grid-template-columns:minmax(280px,1fr) 210px;gap:12px;padding:22px 0}
+.oz-community-toolbar label{height:48px;display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:#0d100c;padding:0 14px}
+.oz-community-toolbar label:focus-within{border-color:var(--olive)}
+.oz-community-toolbar svg{width:18px;color:#747a6e}
+.oz-community-toolbar input{width:100%;border:0;outline:0;background:transparent;color:#eef0e7;font-size:13px}
+.oz-community-toolbar select,.oz-community-editor select,.oz-community-dialog select{border:1px solid var(--line);background:#0d100c;color:#e3e5dc;padding:0 13px;min-height:46px;font-size:13px}
+.oz-community-workspace{display:grid;grid-template-columns:230px minmax(0,1fr);gap:38px}
+.oz-community-categories{position:sticky;top:94px;align-self:start;max-height:calc(100svh - 118px);overflow:auto;display:flex;flex-direction:column;border-right:1px solid var(--line);padding-right:22px}
+.oz-community-categories .oz-community-kicker{padding:8px 10px 14px}
+.oz-community-categories button{min-height:44px;border:0;border-left:2px solid transparent;background:transparent;color:#858b80;padding:10px;text-align:left;font-size:12px;line-height:1.35;cursor:pointer}
+.oz-community-categories button:hover{color:#d9dcd1}
+.oz-community-categories button.active{border-left-color:var(--lime);background:rgba(201,203,115,.055);color:#eef0e7}
+.oz-community-feed>header{display:flex;justify-content:space-between;align-items:flex-end;gap:15px;padding:7px 0 20px}
+.oz-community-feed>header h2{font:700 34px 'Barlow Condensed';text-transform:uppercase;margin:6px 0 0}
+.oz-community-feed>header>span{color:#72786e;font-size:11px}
+.oz-community-post{position:relative;display:grid;grid-template-columns:70px minmax(0,1fr);border-top:1px solid var(--line);background:#0d100c;cursor:pointer;transition:background .2s,transform .2s}
+.oz-community-post:last-of-type{border-bottom:1px solid var(--line)}
+.oz-community-post:hover{background:#11140f;transform:translateX(3px)}
+.oz-community-post-vote{display:flex;justify-content:center;padding-top:24px;border-right:1px solid var(--line)}
+.oz-community-post-vote button{height:58px;min-width:44px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:4px;color:#777d72;cursor:pointer}
+.oz-community-post-vote button.active{color:var(--lime)}
+.oz-community-post-vote svg{width:17px}.oz-community-post-vote strong{font:700 16px 'Barlow Condensed'}
+.oz-community-post-content{min-width:0;padding:21px 24px 15px}
+.oz-community-post-meta{display:flex;align-items:center;gap:10px;color:#777d72;font-size:11px}
+.oz-community-post-meta>button{border:0;background:transparent;display:flex;align-items:center;gap:8px;color:#d8dbd0;padding:0;cursor:pointer}
+.oz-community-post-meta>button:hover b{color:var(--lime)}
+.oz-community-post-meta>span{border-left:1px solid var(--line);padding-left:10px;color:#a8ad75}
+.oz-community-avatar{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;background:#292d23;border:1px solid #51563d;color:var(--lime);font:700 14px 'Barlow Condensed'}
+.oz-community-avatar.large{width:84px;height:84px;font-size:36px}
+.oz-community-post h3{font:700 clamp(24px,2.5vw,34px)/1 'Barlow Condensed';text-transform:uppercase;letter-spacing:-.01em;margin:15px 0 9px}
+.oz-community-post-content>p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;color:#9da297;font-size:13px;line-height:1.65;white-space:pre-wrap}
+.oz-community-post-content>img{width:min(560px,100%);max-height:320px;object-fit:cover;margin:8px 0 14px;border:1px solid var(--line)}
+.oz-community-post-content>footer{display:flex;align-items:center;gap:4px;padding:12px 0 0;border-top:1px solid rgba(255,255,255,.07)}
+.oz-community-post-content>footer button,.oz-community-actions button,.oz-community-comment footer button{min-height:40px;border:0;background:transparent;display:flex;align-items:center;gap:6px;color:#858b80;padding:0 11px;font-size:11px;cursor:pointer}
+.oz-community-post-content>footer button:hover,.oz-community-actions button:hover,.oz-community-comment footer button:hover{color:#e2e4db}
+.oz-community-post-content>footer button.active,.oz-community-actions button.active{color:var(--lime)}
+.oz-community-post-content>footer svg,.oz-community-actions svg,.oz-community-comment footer svg{width:15px}
+.oz-community-alert,.oz-community-toast{border-left:3px solid #c98b73;background:rgba(201,139,115,.08);color:#d9b6a8;padding:13px 15px;font-size:12px;line-height:1.5}
+.oz-community-toast{border-left-color:var(--lime);color:#ced1a2}
+.oz-community-loading{min-height:250px;display:flex;align-items:center;justify-content:center;gap:8px}
+.oz-community-loading span{width:8px;height:8px;border-radius:50%;background:var(--olive);animation:ozCommunityPulse 1s infinite alternate}
+.oz-community-loading span:nth-child(2){animation-delay:.2s}.oz-community-loading span:nth-child(3){animation-delay:.4s}
+.oz-community-empty,.oz-community-auth-required{min-height:340px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-block:1px solid var(--line);padding:40px 20px}
+.oz-community-empty>svg,.oz-community-auth-required>svg{width:42px;height:42px;color:var(--olive)}
+.oz-community-empty h1,.oz-community-auth-required h1{font:700 45px 'Barlow Condensed';margin:20px 0 8px;text-transform:uppercase}
+.oz-community-empty h3{font:700 28px 'Barlow Condensed';margin:20px 0 7px;text-transform:uppercase}
+.oz-community-empty p,.oz-community-auth-required p{max-width:520px;color:#8d9388;font-size:13px;line-height:1.6}
+.oz-community-empty button,.oz-community-auth-required>button:not(.oz-community-primary){min-height:44px;border:1px solid var(--line);background:transparent;color:#e4e6dc;padding:0 15px;cursor:pointer}
+.oz-community-fab{display:none}
+.oz-community-back{min-height:44px;display:flex;align-items:center;gap:8px;border:0;background:transparent;color:#a8ada2;padding:0;cursor:pointer;font-size:12px}
+.oz-community-back:hover{color:var(--lime)}.oz-community-back svg{width:17px}
+.oz-community-editor-page>header,.oz-community-moderation>header{padding:35px 0 30px}
+.oz-community-editor-page>header h1,.oz-community-moderation>header h1{margin-bottom:16px}
+.oz-community-editor{display:grid;grid-template-columns:1.3fr .7fr;gap:18px;border-top:1px solid var(--line);padding-top:28px}
+.oz-community-editor label,.oz-community-dialog label{display:flex;flex-direction:column;gap:8px}
+.oz-community-editor label>span,.oz-community-dialog label>span{color:#b8bcb1;font-size:11px;font-weight:600}
+.oz-community-editor input,.oz-community-editor textarea,.oz-community-dialog textarea{width:100%;border:1px solid var(--line);background:#0d100c;color:#eef0e7;padding:13px;font-size:13px;outline:0}
+.oz-community-editor input{min-height:48px}.oz-community-editor textarea{min-height:270px;resize:vertical;line-height:1.65}
+.oz-community-editor input:focus,.oz-community-editor textarea:focus,.oz-community-editor select:focus{border-color:var(--olive)}
+.oz-community-editor .wide{grid-column:1/-1}
+.oz-community-upload{border:1px dashed rgba(201,203,115,.32);padding:18px}
+.oz-community-upload>span{display:flex;align-items:center;gap:8px;color:#d9dcb8!important}.oz-community-upload svg{width:18px}
+.oz-community-upload input{border:0;background:transparent;padding:7px 0;min-height:auto}
+.oz-community-upload small{color:#7f857a;font-size:11px;line-height:1.5}.oz-community-upload b{color:var(--lime);font-size:11px}
+.oz-community-safety{display:grid;grid-template-columns:25px 1fr;gap:10px;border-left:3px solid var(--lime);background:rgba(201,203,115,.05);padding:15px;color:#a4a99e}
+.oz-community-safety svg{width:19px;color:var(--lime)}.oz-community-safety p{font-size:12px;line-height:1.6;margin:0}
+.oz-community-editor>footer{display:flex;justify-content:flex-end;gap:10px}
+.oz-community-editor>footer>button:first-child{min-height:46px;border:1px solid var(--line);background:transparent;color:#ced1c7;padding:0 18px;cursor:pointer}
+.oz-community-detail-page{width:min(1080px,100%)}
+.oz-community-detail{margin-top:26px;border-top:1px solid var(--line);padding:31px 0}
+.oz-community-detail>header{display:flex;align-items:center;gap:12px;color:#7c8277;font-size:11px}
+.oz-community-detail>header>span{color:var(--lime);font-weight:700;text-transform:uppercase;letter-spacing:.07em}
+.oz-community-detail>header>button{display:flex;align-items:center;gap:8px;border:0;background:transparent;color:#d9dcd2;cursor:pointer}
+.oz-community-detail h1{font:800 clamp(45px,6vw,76px)/.92 'Barlow Condensed';letter-spacing:-.025em;margin:27px 0;text-transform:uppercase}
+.oz-community-detail-body{color:#b4b8ae;font-size:15px;line-height:1.8;white-space:pre-wrap}
+.oz-community-gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:30px 0}
+.oz-community-gallery img{width:100%;height:min(420px,45vw);object-fit:cover;border:1px solid var(--line)}
+.oz-community-actions{display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-block:1px solid var(--line);padding:8px 0;margin-top:30px}
+.oz-community-actions button:nth-last-child(-n+2){color:#c49a8b}
+.oz-community-comments{margin-top:34px}
+.oz-community-comments>header{display:flex;align-items:flex-end;justify-content:space-between;gap:15px;margin-bottom:18px}
+.oz-community-comments>header h2{font:700 34px 'Barlow Condensed';text-transform:uppercase;margin:5px 0 0}
+.oz-community-comments>header>span{display:flex;align-items:center;gap:6px;color:#a7aa7e;font-size:11px}.oz-community-comments>header svg{width:15px}
+.oz-community-comments>form{display:grid;grid-template-columns:1fr auto;gap:9px;padding:18px 0;border-block:1px solid var(--line)}
+.oz-community-comments>form>p{grid-column:1/-1;display:flex;align-items:center;gap:5px;color:#90968b;font-size:11px;margin:0}.oz-community-comments>form>p button{border:0;background:transparent}.oz-community-comments>form>p svg{width:14px}
+.oz-community-comments textarea{min-height:86px;border:1px solid var(--line);background:#0d100c;color:#eef0e7;padding:13px;resize:vertical;font-size:13px;line-height:1.55}
+.oz-community-comment-list{border-bottom:1px solid var(--line)}
+.oz-community-comment{display:grid;grid-template-columns:36px 1fr;gap:12px;border-top:1px solid var(--line);padding:21px 0}
+.oz-community-comment>div>header{display:flex;align-items:center;gap:9px}.oz-community-comment>div>header button{border:0;background:transparent;color:#e1e3da;font-weight:700;padding:0;cursor:pointer}.oz-community-comment time{color:#73796e;font-size:10px}
+.oz-community-comment>div>p{color:#adb2a7;font-size:13px;line-height:1.65;white-space:pre-wrap;margin:8px 0}
+.oz-community-comment footer{display:flex;gap:2px}.oz-community-comment footer button{padding:0 8px}
+.oz-community-replies{border-left:1px solid rgba(201,203,115,.22);margin:12px 0 0 4px;padding-left:18px}
+.oz-community-dialog-backdrop{position:fixed;inset:0;z-index:100;background:rgba(3,5,3,.84);backdrop-filter:blur(10px);display:grid;place-items:center;padding:20px}
+.oz-community-dialog{width:min(560px,100%);max-height:calc(100svh - 40px);overflow:auto;position:relative;background:#11140f;border:1px solid var(--line);padding:32px}
+.oz-community-dialog-close{position:absolute;right:15px;top:15px;width:40px;height:40px;border:1px solid var(--line);background:transparent;display:grid;place-items:center;cursor:pointer}.oz-community-dialog-close svg{width:18px}
+.oz-community-dialog h2{font:700 43px 'Barlow Condensed';text-transform:uppercase;margin:11px 45px 22px 0}
+.oz-community-dialog form{display:grid;gap:17px}.oz-community-dialog textarea{min-height:120px;resize:vertical}
+.oz-community-dialog form>p{display:flex;align-items:center;gap:8px;color:#8e9489;font-size:11px;line-height:1.5}.oz-community-dialog form>p svg{width:16px;color:var(--lime)}
+.oz-community-dialog footer{display:flex;justify-content:flex-end;gap:9px;padding:4px 0 0;background:transparent;border:0}
+.oz-community-dialog footer>button:first-child,.oz-community-dialog-result button{min-height:44px;border:1px solid var(--line);background:transparent;color:#dde0d6;padding:0 15px;cursor:pointer}
+.oz-community-dialog-result{display:flex;flex-direction:column;align-items:center;text-align:center;gap:13px;color:#b4b9ae}.oz-community-dialog-result svg{width:42px;color:var(--lime)}
+.oz-community-author-page{width:min(980px,100%)}
+.oz-community-author-header{display:flex;align-items:center;gap:25px;padding:42px 0;border-bottom:1px solid var(--line)}
+.oz-community-author-header h1{margin:10px 0}.oz-community-author-header span{color:#8e9489;font-size:12px}
+.oz-community-author-posts{margin-top:30px}.oz-community-author-posts>header{display:flex;justify-content:space-between;border-bottom:1px solid var(--line)}.oz-community-author-posts h2{font:700 30px 'Barlow Condensed';text-transform:uppercase}.oz-community-author-posts>header span{color:var(--lime)}
+.oz-community-author-posts>button{width:100%;min-height:80px;display:grid;grid-template-columns:180px 1fr 25px;gap:20px;align-items:center;border:0;border-bottom:1px solid var(--line);background:transparent;color:#e7e9e0;text-align:left;cursor:pointer}.oz-community-author-posts>button span{color:#92986c;font-size:11px}.oz-community-author-posts>button b{font-size:13px}.oz-community-author-posts>button svg{width:17px;color:#70766b}
+.oz-community-author-posts>p{color:#858b80;font-size:13px}
+.oz-community-moderation>section{margin-top:25px}.oz-community-moderation>section>header{display:flex;justify-content:space-between;border-bottom:1px solid var(--line)}.oz-community-moderation>section h2{font:700 32px 'Barlow Condensed';text-transform:uppercase}.oz-community-moderation>section>header span{color:var(--lime);font-size:12px}
+.oz-community-moderation>section>article{display:grid;grid-template-columns:100px 1fr auto;gap:20px;align-items:center;border-bottom:1px solid var(--line);padding:20px 0}.oz-community-moderation>section>article>span{color:#c5a274;font-size:10px;font-weight:800}.oz-community-moderation article small{color:#777d72}.oz-community-moderation article h3{font:700 23px 'Barlow Condensed';text-transform:uppercase;margin:7px 0}.oz-community-moderation article p{color:#92988d;font-size:12px}
+.oz-community-moderation article footer{display:flex;gap:5px}.oz-community-moderation article footer button{min-height:40px;border:1px solid var(--line);background:transparent;color:#d5d8ce;padding:0 10px;font-size:11px;cursor:pointer}.oz-community-moderation article footer button.danger{border-color:#7f5549;color:#d6a797}
+@keyframes ozCommunityPulse{to{opacity:.25;transform:translateY(-4px)}}
+@media(max-width:900px){
+  .oz-community-topbar nav{display:none}.oz-community-workspace{grid-template-columns:1fr}.oz-community-categories{position:static;max-height:none;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:0 0 10px}.oz-community-categories .oz-community-kicker{display:none}.oz-community-categories button{flex:0 0 auto;border-left:0;border-bottom:2px solid transparent}.oz-community-categories button.active{border-bottom-color:var(--lime)}
+  .oz-community-moderation>section>article{grid-template-columns:85px 1fr}.oz-community-moderation article footer{grid-column:2;flex-wrap:wrap}
+}
+@media(max-width:640px){
+  .oz-community-topbar{height:62px;padding:0 16px}.oz-community-brand{font-size:22px}.oz-community-account{font-size:0}.oz-community-account span{font-size:14px}.oz-community-login{font-size:11px}.oz-community-page{padding:28px 16px 88px}
+  .oz-community-hero{display:block;padding:10px 0 28px}.oz-community-hero h1{font-size:52px}.oz-community-hero>div>span{font-size:13px}.oz-community-hero>.oz-community-primary{display:none}
+  .oz-community-toolbar{grid-template-columns:1fr;padding:16px 0}.oz-community-toolbar label{height:48px}
+  .oz-community-workspace{gap:13px}.oz-community-categories{width:calc(100% + 32px);margin-left:-16px;padding-inline:16px}
+  .oz-community-feed>header h2{font-size:28px}.oz-community-feed>header>span{font-size:10px}
+  .oz-community-post{display:block}.oz-community-post:hover{transform:none}.oz-community-post-vote{position:absolute;right:8px;top:15px;z-index:2;border:0;padding:0}.oz-community-post-vote button{height:50px}
+  .oz-community-post-content{padding:18px 53px 10px 0}.oz-community-post-meta{flex-wrap:wrap;gap:7px}.oz-community-post-meta>span{display:none}.oz-community-post h3{font-size:25px;margin-top:13px}.oz-community-post-content>p{-webkit-line-clamp:2;font-size:12px}.oz-community-post-content>img{max-height:230px}
+  .oz-community-post-content>footer{width:calc(100% + 53px);overflow-x:auto;gap:5px}.oz-community-post-content>footer button{flex:0 0 auto;padding-inline:5px;font-size:10px}.oz-community-post-content>footer button:nth-child(3),.oz-community-post-content>footer button:nth-child(4){display:none}
+  .oz-community-fab{position:fixed;right:16px;bottom:18px;z-index:55;width:52px;height:52px;border:0;border-radius:50%;display:grid;place-items:center;background:var(--lime);color:#111;box-shadow:0 10px 30px #000}.oz-community-fab svg{width:20px}
+  .oz-community-editor-page>header h1,.oz-community-moderation>header h1{font-size:52px}.oz-community-editor{grid-template-columns:1fr}.oz-community-editor .wide{grid-column:auto}.oz-community-editor>footer{position:sticky;bottom:0;background:#0a0c09;padding:12px 0}
+  .oz-community-detail h1{font-size:43px}.oz-community-detail>header{flex-wrap:wrap}.oz-community-detail-body{font-size:14px}.oz-community-gallery{grid-template-columns:1fr}.oz-community-gallery img{height:auto;max-height:460px}
+  .oz-community-actions{overflow-x:auto;flex-wrap:nowrap}.oz-community-actions button{flex:0 0 auto;padding-inline:8px}
+  .oz-community-comments>form{grid-template-columns:1fr}.oz-community-comment{grid-template-columns:32px 1fr}.oz-community-comment>div>p{font-size:12px}.oz-community-comment footer{overflow-x:auto}.oz-community-comment footer button{flex:0 0 auto;font-size:10px}
+  .oz-community-dialog-backdrop{padding:0}.oz-community-dialog{width:100%;height:100svh;max-height:none;border:0;padding:26px 18px 90px}.oz-community-dialog h2{font-size:37px}
+  .oz-community-author-header{align-items:flex-start}.oz-community-avatar.large{width:64px;height:64px;font-size:28px}.oz-community-author-header h1{font-size:43px}.oz-community-author-posts>button{grid-template-columns:1fr 22px;gap:8px;padding:15px 0}.oz-community-author-posts>button span{grid-column:1}.oz-community-author-posts>button b{grid-column:1}.oz-community-author-posts>button svg{grid-column:2;grid-row:1/3}
+  .oz-community-moderation>section>article{grid-template-columns:1fr;gap:8px}.oz-community-moderation article footer{grid-column:1}.oz-community-moderation>section>article>span{justify-self:start}
+}
+@media(prefers-reduced-motion:reduce){.oz-community-post{transition:none}.oz-community-loading span{animation:none}}
+.overview-card.overview-community{border:0;text-align:left;cursor:pointer;color:inherit}
+.overview-card.overview-community:hover{background:#11140f}
+.community--link{cursor:pointer}
+.community--link .button{margin-top:14px;border:0}

@@ -33,3 +33,7 @@ Convites, decisões de inscrição, mudanças/cancelamentos, lembretes, validaç
 ## Fora do primeiro MVP
 
 Chat privado geral, mapa interativo, automação completa de chaves e cadastro de menores com consentimento. O chat estritamente vinculado a anúncio pertence aos Classificados e exige os controles de abuso de [[08-CLASSIFICADOS]].
+
+## Comunidade implementada em 2026-07-28
+
+O fluxo 12 possui implementação persistente inicial em [[14-COMUNIDADE]]: leitura pública; criação/interações somente com sessão; chave idempotente; imagens controladas; comentários e respostas; voto único; salvos; denúncia confidencial; exclusão por autor ou moderação; suspensão, bloqueio de comentários e resolução administrativa auditada.
