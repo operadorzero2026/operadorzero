@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +29,8 @@ public class OperatorRepository {
         try {
             return Optional.ofNullable(jdbc.queryForObject("""
                 SELECT p.id AS profile_id, p.public_id, u.email, u.username, p.display_name, p.callsign,
-                       p.bio, p.city, p.state_code, p.preferred_position, p.recruitment_status, p.version
+                       p.bio, p.city, p.state_code, p.preferred_position, p.recruitment_status,
+                       p.airsoft_started_at, p.version
                 FROM operator_profile p
                 JOIN app_user u ON u.id = p.user_id
                 WHERE p.user_id = :userId AND u.status = 'ACTIVE'
@@ -83,17 +85,20 @@ public class OperatorRepository {
     }
 
     public int updateProfile(long userId, long expectedVersion, String displayName, String callsign, String bio,
-                             String city, String stateCode, String preferredPosition, String recruitmentStatus, Instant now) {
+                             String city, String stateCode, String preferredPosition, String recruitmentStatus,
+                             LocalDate airsoftStartedAt, Instant now) {
         return jdbc.update("""
             UPDATE operator_profile
             SET display_name = :displayName, callsign = :callsign, bio = :bio, city = :city,
                 state_code = :stateCode, preferred_position = :preferredPosition,
-                recruitment_status = :recruitmentStatus, updated_at = :now, version = version + 1
+                recruitment_status = :recruitmentStatus, airsoft_started_at = :airsoftStartedAt,
+                updated_at = :now, version = version + 1
             WHERE user_id = :userId AND version = :expectedVersion
             """, new MapSqlParameterSource()
                 .addValue("displayName", displayName).addValue("callsign", callsign).addValue("bio", bio)
                 .addValue("city", city).addValue("stateCode", stateCode).addValue("preferredPosition", preferredPosition)
-                .addValue("recruitmentStatus", recruitmentStatus).addValue("now", Timestamp.from(now))
+                .addValue("recruitmentStatus", recruitmentStatus).addValue("airsoftStartedAt", airsoftStartedAt)
+                .addValue("now", Timestamp.from(now))
                 .addValue("userId", userId).addValue("expectedVersion", expectedVersion));
     }
 
@@ -188,9 +193,12 @@ public class OperatorRepository {
             SELECT p.public_id, u.username, p.display_name, p.callsign,
                    CASE WHEN loc.visibility IN ('AUTHENTICATED','PUBLIC') THEN p.city END AS city,
                    CASE WHEN loc.visibility IN ('AUTHENTICATED','PUBLIC') THEN p.state_code END AS state_code,
-                    CASE WHEN team_status.visibility IN ('AUTHENTICATED','PUBLIC') THEN p.recruitment_status END AS recruitment_status
+                    CASE WHEN team_status.visibility IN ('AUTHENTICATED','PUBLIC') THEN p.recruitment_status END AS recruitment_status,
+                   t.name AS team_name, p.airsoft_started_at
             FROM operator_profile p
             JOIN app_user u ON u.id = p.user_id
+            LEFT JOIN team_member tm ON tm.user_id = u.id AND tm.left_at IS NULL
+            LEFT JOIN team t ON t.id = tm.team_id AND t.status = 'ACTIVE'
             LEFT JOIN operator_privacy_setting loc ON loc.operator_profile_id = p.id AND loc.field_code = 'LOCATION'
             LEFT JOIN operator_privacy_setting team_status ON team_status.operator_profile_id = p.id AND team_status.field_code = 'TEAM_STATUS'
             WHERE u.status = 'ACTIVE' AND u.id <> :viewerUserId
@@ -211,9 +219,12 @@ public class OperatorRepository {
                 SELECT p.public_id, u.username, p.display_name, p.callsign,
                        CASE WHEN u.id = :viewerUserId OR loc.visibility IN ('AUTHENTICATED','PUBLIC') THEN p.city END AS city,
                        CASE WHEN u.id = :viewerUserId OR loc.visibility IN ('AUTHENTICATED','PUBLIC') THEN p.state_code END AS state_code,
-                        CASE WHEN u.id = :viewerUserId OR team_status.visibility IN ('AUTHENTICATED','PUBLIC') THEN p.recruitment_status END AS recruitment_status
+                        CASE WHEN u.id = :viewerUserId OR team_status.visibility IN ('AUTHENTICATED','PUBLIC') THEN p.recruitment_status END AS recruitment_status,
+                       t.name AS team_name, p.airsoft_started_at
                 FROM operator_profile p
                 JOIN app_user u ON u.id = p.user_id
+                LEFT JOIN team_member tm ON tm.user_id = u.id AND tm.left_at IS NULL
+                LEFT JOIN team t ON t.id = tm.team_id AND t.status = 'ACTIVE'
                 LEFT JOIN operator_privacy_setting loc ON loc.operator_profile_id = p.id AND loc.field_code = 'LOCATION'
                 LEFT JOIN operator_privacy_setting team_status ON team_status.operator_profile_id = p.id AND team_status.field_code = 'TEAM_STATUS'
                 WHERE lower(u.username) = lower(:username) AND u.status = 'ACTIVE'
@@ -227,17 +238,18 @@ public class OperatorRepository {
         return new ProfileRow(row.getLong("profile_id"), row.getObject("public_id", UUID.class), row.getString("email"),
             row.getString("username"), row.getString("display_name"), row.getString("callsign"), row.getString("bio"),
             row.getString("city"), row.getString("state_code"), row.getString("preferred_position"),
-            row.getString("recruitment_status"), row.getLong("version"));
+            row.getString("recruitment_status"), row.getObject("airsoft_started_at", LocalDate.class), row.getLong("version"));
     }
 
     private OperatorSummary mapSummary(ResultSet row, int index) throws SQLException {
         return new OperatorSummary(row.getObject("public_id", UUID.class), row.getString("username"),
             row.getString("display_name"), row.getString("callsign"), row.getString("city"),
-            row.getString("state_code"), row.getString("recruitment_status"));
+            row.getString("state_code"), row.getString("recruitment_status"), row.getString("team_name"),
+            row.getObject("airsoft_started_at", LocalDate.class), null);
     }
 
     public record ProfileRow(long profileId, UUID publicId, String email, String username, String displayName,
                              String callsign, String bio, String city, String stateCode, String preferredPosition,
-                             String recruitmentStatus, long version) {}
+                             String recruitmentStatus, LocalDate airsoftStartedAt, long version) {}
     public record PhotoRow(String contentType, byte[] data) {}
 }

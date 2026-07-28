@@ -2,7 +2,10 @@ import { Search, UserRound, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { getOperatorPublicProfile, type OperatorSummary, searchOperators } from './api'
 
-type OperatorSearchProps = { onSelect?: (operator: OperatorSummary) => void; compact?: boolean }
+type OperatorSearchProps = {
+  onSelect?: (operator: OperatorSummary) => void
+  compact?: boolean
+}
 
 export function OperatorSearch({ onSelect, compact = false }: OperatorSearchProps) {
   const [query, setQuery] = useState('')
@@ -48,17 +51,65 @@ export function OperatorSearch({ onSelect, compact = false }: OperatorSearchProp
     }
   }
 
-  return <div className={`operator-search ${compact ? 'operator-search--compact' : ''}`}>
-    <label><Search/><input aria-label="Buscar operadores" value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar operador por nick ou usuário" maxLength={80}/>{query && <button type="button" onClick={() => setQuery('')} aria-label="Limpar busca"><X/></button>}</label>
-    {query.trim().length >= 2 && <div className="operator-search-results">
-      <small>OPERADORES</small>
-      {status === 'loading' && <p>Buscando operadores…</p>}
-      {status === 'error' && <p>Não foi possível realizar a busca agora.</p>}
-      {status === 'ready' && items.length === 0 && <p>Nenhum operador encontrado.</p>}
-      {items.map(operator => <button type="button" key={operator.id} onClick={() => void select(operator)}><span><UserRound/></span><div><b>{operator.callsign}</b><small>@{operator.username}{operator.city ? ` · ${operator.city}/${operator.stateCode}` : ''}</small></div></button>)}
-    </div>}
-    {selected && <div className="operator-profile-dialog" role="dialog" aria-modal="true" aria-label="Perfil do operador"><button className="dialog-close" onClick={() => setSelected(null)} aria-label="Fechar"><X/></button><span className="operator-avatar">{selected.callsign.charAt(0).toUpperCase()}</span><small>OPERADOR</small><h2>{selected.callsign}</h2><p>{selected.displayName} · @{selected.username}</p>{selected.city && <p>{selected.city}/{selected.stateCode}</p>}<strong>{recruitmentLabel(selected.recruitmentStatus)}</strong></div>}
-  </div>
+  return (
+    <div className={`operator-search ${compact ? 'operator-search--compact' : ''}`}>
+      <label>
+        <Search />
+        <input aria-label="Buscar operadores" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar operador por nick ou usuário" maxLength={80} />
+        {query && (
+          <button type="button" onClick={() => setQuery('')} aria-label="Limpar busca">
+            <X />
+          </button>
+        )}
+      </label>
+      {query.trim().length >= 2 && (
+        <div className="operator-search-results">
+          <small>OPERADORES</small>
+          {status === 'loading' && <p>Buscando operadores…</p>}
+          {status === 'error' && <p>Não foi possível realizar a busca agora.</p>}
+          {status === 'ready' && items.length === 0 && <p>Nenhum operador encontrado.</p>}
+          {items.map((operator) => (
+            <button type="button" key={operator.id} onClick={() => void select(operator)}>
+              <span>
+                <UserRound />
+              </span>
+              <div>
+                <b>
+                  {operator.callsign} — {operator.teamName || 'Sem equipe'} — {operator.airsoftExperience ? `${operator.airsoftExperience} no airsoft` : 'tempo não informado'}
+                </b>
+                <small>
+                  @{operator.username}
+                  {operator.city ? ` · ${operator.city}/${operator.stateCode}` : ''}
+                </small>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+      {selected && (
+        <div className="operator-profile-dialog" role="dialog" aria-modal="true" aria-label="Perfil do operador">
+          <button className="dialog-close" onClick={() => setSelected(null)} aria-label="Fechar">
+            <X />
+          </button>
+          <span className="operator-avatar">{selected.callsign.charAt(0).toUpperCase()}</span>
+          <small>OPERADOR</small>
+          <h2>{selected.callsign}</h2>
+          <p>
+            {selected.displayName} · @{selected.username}
+          </p>
+          <p>
+            {selected.teamName || 'Sem equipe'} · {selected.airsoftExperience ? `${selected.airsoftExperience} no airsoft` : 'Tempo no airsoft não informado'}
+          </p>
+          {selected.city && (
+            <p>
+              {selected.city}/{selected.stateCode}
+            </p>
+          )}
+          <strong>{recruitmentLabel(selected.recruitmentStatus)}</strong>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function recruitmentLabel(value?: string | null) {

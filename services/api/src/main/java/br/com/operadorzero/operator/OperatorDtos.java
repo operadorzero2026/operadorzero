@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -28,6 +29,8 @@ public final class OperatorDtos {
         Map<String, String> privacy,
         List<EquipmentResponse> equipment,
         boolean hasPhoto,
+        LocalDate airsoftStartedAt,
+        String airsoftExperience,
         long version
     ) {}
 
@@ -41,6 +44,7 @@ public final class OperatorDtos {
         @Size(max = 48) String preferredPosition,
         @Size(max = 5) List<@Size(max = 48) String> secondaryPositions,
         @NotBlank @Size(max = 32) String recruitmentStatus,
+        LocalDate airsoftStartedAt,
         @NotNull @PositiveOrZero Long version
     ) {}
 
@@ -73,7 +77,10 @@ public final class OperatorDtos {
         String callsign,
         String city,
         String stateCode,
-        String recruitmentStatus
+        String recruitmentStatus,
+        String teamName,
+        LocalDate airsoftStartedAt,
+        String airsoftExperience
     ) {}
 }
 

@@ -1,5 +1,9 @@
 # Minha Equipe
 
+## Identificação na busca — 2026-07-28
+
+A busca de operadores usa exclusivamente o vínculo ativo de `team_member` com equipe `ACTIVE` para exibir o nome da equipe ao lado do callsign. Equipe antiga, arquivada ou vínculo encerrado não aparece como equipe atual. Veja [[13-MEU-OPERADOR]].
+
 O módulo amplia o agregado `Team` de [[03-DOMINIO-E-REGRAS-DE-NEGOCIO]] e o fluxo de [[04-MODULOS-E-FLUXOS]]. A implementação atual é frontend demonstrativo: não cria equipe, não envia convite, não altera vínculo e não concede permissão.
 
 ## Interface atual

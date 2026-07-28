@@ -1,5 +1,33 @@
 # Histórico de alterações
 
+## 2026-07-28 - Tempo de atividade no airsoft e equipe na busca
+
+### Arquivos alterados
+- `src/OperatorPage.tsx`, `src/OperatorSearch.tsx`, `src/api.ts`
+- `services/api/src/main/java/br/com/operadorzero/operator/OperatorDtos.java`
+- `services/api/src/main/java/br/com/operadorzero/operator/OperatorRepository.java`
+- `services/api/src/main/java/br/com/operadorzero/operator/OperatorService.java`
+- `services/api/src/main/resources/db/migration/V13__operator_airsoft_start_date.sql`
+- `services/api/src/test/java/br/com/operadorzero/operator/OperatorServiceTest.java`
+- [[06-FRONTEND-WEB]], [[10-MINHA-EQUIPE]], [[13-MEU-OPERADOR]] e [[99-HISTORICO-DE-ALTERACOES]]
+
+### O que foi feito
+- Adicionado cadastro da data de início no airsoft e resumo calculado em anos e meses.
+- Busca enriquecida com callsign, nome da equipe ativa e tempo no esporte.
+- Tratamento explícito para operador sem equipe ou sem data informada.
+
+### Motivo
+- Apresentar experiência e vínculo atual do operador diretamente nos resultados de busca.
+
+### Impacto
+- Frontend, backend e banco de dados; migration aditiva e campo opcional.
+
+### Testes
+- `npm run check` e `mvn test`, incluindo rejeição de data futura.
+
+### Pendências
+- Nenhuma para o escopo solicitado.
+
 ## 2026-07-28 - Foto de perfil do operador
 
 ### Arquivos alterados

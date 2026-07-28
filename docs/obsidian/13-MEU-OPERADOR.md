@@ -1,5 +1,9 @@
 # Meu Operador
 
+## Tempo no airsoft e busca enriquecida — 2026-07-28
+
+O perfil aceita a data opcional de início no airsoft. O backend rejeita datas futuras, persiste `airsoft_started_at` e calcula o resumo em anos e meses com base no relógio do servidor. A busca autenticada combina o callsign, a equipe ativa real e o tempo calculado no formato `OPERADOR — EQUIPE — TEMPO NO AIRSOFT`; ausência de equipe ou data é informada sem excluir o operador dos resultados. O vínculo vem de [[10-MINHA-EQUIPE]] e não de texto livre informado pelo usuário.
+
 ## Foto de perfil funcional em 2026-07-28
 
 O operador autenticado pode cadastrar e substituir sua foto em `Meu Operador`. `POST /api/operators/me/photo` aceita somente PNG/JPEG de até 2 MB e 2048 × 2048 pixels; o backend identifica o formato pelo conteúdo, decodifica, reencoda e persiste na tabela `operator_profile_photo`. `GET /api/operators/me/photo` entrega a imagem apenas na sessão do próprio operador, sem cache. O fluxo segue [[05-SEGURANCA-E-PRIVACIDADE]], [[06-FRONTEND-WEB]] e a política raiz `FILE-UPLOAD-POLICY.md`.

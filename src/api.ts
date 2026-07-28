@@ -37,6 +37,8 @@ export type OperatorProfile = {
   privacy: Record<string, string>
   equipment: OperatorEquipment[]
   hasPhoto: boolean
+  airsoftStartedAt?: string | null
+  airsoftExperience?: string | null
   version: number
 }
 
@@ -48,6 +50,9 @@ export type OperatorSummary = {
   city?: string | null
   stateCode?: string | null
   recruitmentStatus?: string | null
+  teamName?: string | null
+  airsoftStartedAt?: string | null
+  airsoftExperience?: string | null
 }
 
 export type TeamMember = {

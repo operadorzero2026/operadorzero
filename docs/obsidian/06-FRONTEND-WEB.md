@@ -1,5 +1,9 @@
 # Frontend web
 
+## Experiência do operador — 2026-07-28
+
+`Meu Operador` possui campo de data para início no airsoft e apresenta o tempo ativo resumido. `OperatorSearch` exibe callsign, equipe ativa e experiência na mesma linha, preservando estados explícitos para perfil sem equipe ou sem data. O cálculo é recebido da API, conforme [[13-MEU-OPERADOR]].
+
 ## Foto do operador — 2026-07-28
 
 `src/OperatorPage.tsx` permite cadastrar e trocar a foto do perfil. A interface aceita PNG/JPEG, informa limites, exibe retorno amigável e atualiza a imagem com versão para evitar cache antigo. A validação autoritativa e a transformação do arquivo permanecem no backend, conforme [[13-MEU-OPERADOR]] e [[05-SEGURANCA-E-PRIVACIDADE]].

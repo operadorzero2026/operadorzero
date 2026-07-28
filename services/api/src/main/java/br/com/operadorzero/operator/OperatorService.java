@@ -19,6 +19,8 @@ import java.time.Clock;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -105,9 +107,14 @@ public class OperatorService {
         if (!RECRUITMENT.contains(recruitment)) {
             throw BusinessException.badRequest("INVALID_RECRUITMENT_STATUS", "Selecione um status de equipe válido.");
         }
+        LocalDate airsoftStartedAt = request.airsoftStartedAt();
+        if (airsoftStartedAt != null && airsoftStartedAt.isAfter(LocalDate.now(clock))) {
+            throw BusinessException.badRequest("INVALID_AIRSOFT_START_DATE", "A data de início no airsoft não pode estar no futuro.");
+        }
         Instant now = clock.instant();
         int updated = repository.updateProfile(user.internalId(), request.version(), normalize(request.displayName()),
-            normalize(request.callsign()), nullable(request.bio()), location.city(), location.stateCode(), primary, recruitment, now);
+            normalize(request.callsign()), nullable(request.bio()), location.city(), location.stateCode(), primary,
+            recruitment, airsoftStartedAt, now);
         if (updated != 1) {
             throw BusinessException.conflict("PROFILE_CHANGED", "Seu perfil foi atualizado em outro acesso. Recarregue e tente novamente.");
         }
@@ -162,12 +169,13 @@ public class OperatorService {
         String normalized = normalize(query);
         if (normalized.length() < 2) return new SearchResponse(List.of());
         rateLimiter.check("operator-search", request, normalized, 30, Duration.ofMinutes(1));
-        return new SearchResponse(repository.search(user.internalId(), normalized, Math.max(1, Math.min(limit, 20))));
+        return new SearchResponse(repository.search(user.internalId(), normalized, Math.max(1, Math.min(limit, 20)))
+            .stream().map(this::withExperience).toList());
     }
 
     @Transactional(readOnly = true)
     public OperatorSummary publicProfile(AuthenticatedUser user, String username) {
-        return repository.findPublicProfile(user.internalId(), username)
+        return repository.findPublicProfile(user.internalId(), username).map(this::withExperience)
             .orElseThrow(() -> BusinessException.notFound("Operador não encontrado."));
     }
 
@@ -175,7 +183,25 @@ public class OperatorService {
         List<EquipmentResponse> equipment = repository.equipment(row.profileId());
         return new ProfileResponse(row.publicId(), row.email(), row.username(), row.displayName(), row.callsign(), row.bio(),
             row.city(), row.stateCode(), row.preferredPosition(), repository.secondaryPositions(row.profileId()),
-            row.recruitmentStatus(), repository.privacy(row.profileId()), equipment, repository.hasPhoto(row.profileId()), row.version());
+            row.recruitmentStatus(), repository.privacy(row.profileId()), equipment, repository.hasPhoto(row.profileId()),
+            row.airsoftStartedAt(), experience(row.airsoftStartedAt()), row.version());
+    }
+
+    private OperatorSummary withExperience(OperatorSummary row) {
+        return new OperatorSummary(row.id(), row.username(), row.displayName(), row.callsign(), row.city(), row.stateCode(),
+            row.recruitmentStatus(), row.teamName(), row.airsoftStartedAt(), experience(row.airsoftStartedAt()));
+    }
+
+    private String experience(LocalDate startedAt) {
+        if (startedAt == null) return null;
+        Period period = Period.between(startedAt, LocalDate.now(clock));
+        if (period.getYears() > 0) {
+            String years = period.getYears() + (period.getYears() == 1 ? " ano" : " anos");
+            if (period.getMonths() == 0) return years;
+            return years + " e " + period.getMonths() + (period.getMonths() == 1 ? " mês" : " meses");
+        }
+        if (period.getMonths() > 0) return period.getMonths() + (period.getMonths() == 1 ? " mês" : " meses");
+        return "menos de 1 mês";
     }
 
     private ProfileRow profile(long userId) {
