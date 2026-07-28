@@ -1,5 +1,9 @@
 # Operações
 
+## Imagem de capa persistente — 2026-07-28
+
+O cadastro permite anexar uma capa PNG ou JPEG opcional. O frontend cria primeiro a operação, envia a imagem para `POST /api/operations/{id}/cover` e somente depois publica, quando essa foi a ação escolhida. O backend valida propriedade da operação, conteúdo real, tamanho e dimensões, reencoda a imagem e persiste os bytes na tabela `operation_cover`, criada pela migration `V15__operation_cover_images.sql`. A capa aparece na agenda e no detalhe; rascunhos e suas imagens permanecem restritos ao organizador.
+
 ## Participantes e escolha de time — 2026-07-28
 
 Ao selecionar uma operação, o usuário acessa o detalhe com times, capacidade e lista real de participantes. A migration `V14__operation_teams_and_participant_roster.sql` cria `operation_team`, vincula `operation_participant.operation_team_id`, gera dois times por padrão ou respeita o limite configurado e distribui inscrições anteriores sem apagá-las. A inscrição exige `operationTeamId` pertencente à operação; o backend valida publicação, organizador, capacidade e lista de espera em uma única operação SQL. Rascunhos permanecem visíveis apenas ao organizador.

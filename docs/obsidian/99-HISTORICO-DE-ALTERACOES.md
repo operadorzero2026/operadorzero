@@ -1,5 +1,42 @@
 # Histórico de alterações
 
+## 2026-07-28 - Imagem de capa persistente para operações
+
+### Arquivos alterados
+- `services/api/src/main/resources/db/migration/V15__operation_cover_images.sql`
+- `services/api/src/main/java/br/com/operadorzero/operation/OperationController.java`
+- `services/api/src/main/java/br/com/operadorzero/operation/OperationDtos.java`
+- `services/api/src/main/java/br/com/operadorzero/operation/OperationRepository.java`
+- `services/api/src/main/java/br/com/operadorzero/operation/OperationService.java`
+- `services/api/src/test/java/br/com/operadorzero/operation/OperationServiceTest.java`
+- `src/api.ts`
+- `src/OperationsPage.tsx`
+- `src/styles.css`
+- `docs/obsidian/05-SEGURANCA-E-PRIVACIDADE.md`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/09-OPERACOES.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Incluído upload opcional de capa no cadastro da operação.
+- Criado armazenamento persistente com versão para invalidação de cache.
+- Incluídos endpoint protegido de gravação e endpoint de leitura com visibilidade por objeto.
+- Exibida a capa nos cartões e no detalhe responsivo da operação.
+
+### Motivo
+- Permitir que organizadores identifiquem visualmente suas operações e que operadores reconheçam o evento na agenda.
+
+### Impacto
+- Backend, frontend, banco PostgreSQL e documentação.
+
+### Testes
+- `npm run check`.
+- `mvn test`.
+- Migração e health check de produção devem ser confirmados após o deploy.
+
+### Pendências
+- Nenhuma pendência de código para o upload inicial de capa.
+
 ## 2026-07-28 - Participantes e escolha de time nas operações
 
 ### Arquivos alterados

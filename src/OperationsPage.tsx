@@ -9,8 +9,10 @@ import {
   getOperations,
   Operation,
   OperationRoster,
+  operationCoverUrl,
   publishOperation,
   requestOperationParticipation,
+  uploadOperationCover,
   VenueField,
   VenueMap,
 } from './api'
@@ -69,6 +71,7 @@ export function OperationsPage() {
     const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null
     const publishNow = submitter?.value === 'publish'
     const d = new FormData(e.currentTarget)
+    const cover = d.get('cover')
     setPending('create')
     setFeedback('')
     try {
@@ -95,6 +98,7 @@ export function OperationsPage() {
         approvalRequired: d.get('approvalRequired') === 'on',
         waitingListEnabled: d.get('waitingListEnabled') === 'on',
       })
+      if (cover instanceof File && cover.size > 0) await uploadOperationCover(created.id, cover)
       if (publishNow) await publishOperation(created.id)
       setFeedback(publishNow ? 'Operação publicada com inscrições abertas.' : 'Operação salva como rascunho.')
       setShowCreate(false)
@@ -203,14 +207,16 @@ export function OperationsPage() {
             <div>
               <small>NOVA OPERAÇÃO</small>
               <h2>Informações essenciais</h2>
-              <p>
-                Imagens serão habilitadas quando o armazenamento seguro estiver
-                disponível.
-              </p>
+              <p>A capa aparecerá na agenda e no detalhe da operação.</p>
             </div>
             <Target />
           </div>
           <form className="module-form" onSubmit={submit}>
+            <label className="operation-cover-field">
+              <span>Imagem de capa</span>
+              <input name="cover" type="file" accept="image/png,image/jpeg" />
+              <small>PNG ou JPEG, até 2 MB e 2048 × 2048 pixels.</small>
+            </label>
             <div className="form-grid">
               <label>
                 <span>Nome</span>
@@ -367,6 +373,7 @@ export function OperationsPage() {
           <div className="operation-list">
             {items.map((item) => (
               <article key={item.id} onClick={() => void openOperation(item)} role="button" tabIndex={0}>
+                {item.hasCover && <img className="operation-card-cover" src={operationCoverUrl(item.id,item.coverVersion)} alt={`Capa de ${item.name}`} />}
                 <div>
                   <small>{statusLabels[item.status] || item.status}</small>
                   <h3>{item.name}</h3>
@@ -429,6 +436,7 @@ export function OperationsPage() {
         <div className="classified-modal-backdrop" role="presentation" onClick={() => setSelected(null)}>
           <section className="classified-modal operation-detail-modal" role="dialog" aria-modal="true" aria-label={`Detalhes de ${selected.name}`} onClick={(event) => event.stopPropagation()}>
             <button type="button" className="classified-modal-close" aria-label="Fechar" onClick={() => setSelected(null)}><X /></button>
+            {selected.hasCover && <img className="operation-detail-cover" src={operationCoverUrl(selected.id,selected.coverVersion)} alt={`Capa de ${selected.name}`} />}
             <small>{statusLabels[selected.status] || selected.status}</small>
             <h2>{selected.name}</h2>
             <p>{selected.description}</p>

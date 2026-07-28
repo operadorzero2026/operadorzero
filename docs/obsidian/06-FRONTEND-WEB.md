@@ -1,5 +1,9 @@
 # Frontend web
 
+## Capa das operações — 2026-07-28
+
+O formulário existente de criação aceita uma capa opcional e informa limites antes do envio. Capas persistidas aparecem com recorte responsivo na agenda e como imagem principal no modal de detalhe. Operações sem capa preservam o layout textual existente, sem imagem simulada.
+
 ## Detalhe e times da operação — 2026-07-28
 
 Os cartões de operações abrem um detalhe com campo, vagas, times e participantes. O operador escolhe um time por controle explícito antes de solicitar inscrição; depois de inscrito, a tela informa o time atual. A interface não calcula vagas nem altera composição localmente: recarrega o roster da API conforme [[09-OPERACOES]].

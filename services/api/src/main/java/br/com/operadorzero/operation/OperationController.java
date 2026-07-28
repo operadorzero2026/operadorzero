@@ -16,6 +16,9 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @Validated
 @RestController
@@ -53,4 +57,12 @@ public class OperationController {
     @PostMapping("/{id}/publish") OperationResponse publish(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) { return service.publish(user, id); }
     @PostMapping("/{id}/participation") @ResponseStatus(HttpStatus.CREATED) MessageResponse participate(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id, @Valid @RequestBody ParticipationRequest request) { return service.requestParticipation(user, id, request); }
     @PostMapping("/{id}/participation/cancel") MessageResponse cancel(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) { return service.cancelParticipation(user, id); }
+    @PostMapping(value = "/{id}/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    OperationResponse cover(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id,
+                            @RequestParam("file") MultipartFile file) { return service.saveCover(user, id, file); }
+    @GetMapping("/{id}/cover") ResponseEntity<byte[]> cover(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) {
+        var cover = service.cover(user, id);
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(cover.contentType()))
+            .cacheControl(CacheControl.noStore()).body(cover.data());
+    }
 }

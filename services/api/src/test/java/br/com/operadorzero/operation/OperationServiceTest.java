@@ -13,9 +13,29 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
+import java.util.Base64;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockMultipartFile;
 
 class OperationServiceTest {
+    @Test
+    void coverUploadRejectsAnOperationNotOwnedByTheUser() {
+        OperationRepository repository = mock(OperationRepository.class);
+        AuthenticatedUser user = new AuthenticatedUser(10L, UUID.randomUUID(), "operator@example.test", "operator",
+            "Operator", "Zero", List.of("OPERATOR"));
+        UUID operationId = UUID.randomUUID();
+        Instant now = Instant.parse("2026-07-28T12:00:00Z");
+        byte[] png = Base64.getDecoder().decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=");
+        var file = new MockMultipartFile("file", "cover.png", "image/png", png);
+        OperationService service = new OperationService(repository, mock(AuditEventRepository.class),
+            Clock.fixed(now, ZoneOffset.UTC));
+
+        assertThatThrownBy(() -> service.saveCover(user, operationId, file))
+            .isInstanceOfSatisfying(BusinessException.class,
+                exception -> assertThat(exception.code()).isEqualTo("NOT_FOUND"));
+    }
+
     @Test
     void participationUsesTheSelectedOperationTeam() {
         OperationRepository repository = mock(OperationRepository.class);

@@ -12,6 +12,7 @@ import br.com.operadorzero.operation.OperationDtos.OperationRosterResponse;
 import br.com.operadorzero.operation.OperationRepository.FieldRef;
 import br.com.operadorzero.shared.audit.AuditEventRepository;
 import br.com.operadorzero.shared.web.BusinessException;
+import br.com.operadorzero.shared.image.SafeRasterImageProcessor;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Locale;
@@ -20,6 +21,7 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class OperationService {
@@ -110,6 +112,23 @@ public class OperationService {
         }
         audit.record(user.internalId(), "OPERATION_PARTICIPATION_CANCELLED", "OPERATION", id, null, now);
         return new MessageResponse("Participação cancelada.");
+    }
+
+    @Transactional
+    public OperationResponse saveCover(AuthenticatedUser user, UUID id, MultipartFile file) {
+        var image = SafeRasterImageProcessor.process(file);
+        Instant now = clock.instant();
+        if (repository.saveCover(id, user.internalId(), image.contentType(), image.data(), now) != 1) {
+            throw BusinessException.notFound("OperaÃ§Ã£o nÃ£o encontrada.");
+        }
+        audit.record(user.internalId(), "OPERATION_COVER_UPDATED", "OPERATION", id, null, now);
+        return detail(user, id);
+    }
+
+    @Transactional(readOnly = true)
+    public OperationRepository.CoverRow cover(AuthenticatedUser user, UUID id) {
+        return repository.cover(id, user.internalId())
+            .orElseThrow(() -> BusinessException.notFound("Imagem de capa nÃ£o encontrada."));
     }
 
     private void validateTimes(SaveOperationRequest request) {

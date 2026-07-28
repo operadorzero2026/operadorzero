@@ -64,7 +64,8 @@ public final class OperationDtos {
         UUID id, String name, String description, UUID fieldId, String fieldName, UUID mapId, String mapName,
         String city, String stateCode, LocalDate operationDate, LocalTime presentationTime, LocalTime startTime,
         LocalTime endTime, String modality, String status, int participantLimit, long participantCount,
-        BigDecimal registrationPrice, String participantStatus, boolean managedByCurrentUser
+        BigDecimal registrationPrice, String participantStatus, boolean managedByCurrentUser,
+        boolean hasCover, long coverVersion
     ) {}
 
     public record OperationResponse(
@@ -74,7 +75,8 @@ public final class OperationDtos {
         String modality, String customModality, String rules, int participantLimit, Integer teamLimit,
         BigDecimal registrationPrice, String paymentMethods, int minimumAge, String requiredEquipment,
         Integer fpsLimit, String entryMode, boolean approvalRequired, boolean waitingListEnabled,
-        String status, long participantCount, String participantStatus, boolean managedByCurrentUser, long version
+        String status, long participantCount, String participantStatus, boolean managedByCurrentUser, long version,
+        boolean hasCover, long coverVersion
     ) {}
 
     public record OperationListResponse(List<OperationSummary> items) {}

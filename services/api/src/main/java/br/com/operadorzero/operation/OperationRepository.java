@@ -31,10 +31,12 @@ public class OperationRepository {
                    m.public_id map_public_id, m.name map_name, o.city, o.state_code, o.operation_date,
                    o.presentation_time, o.start_time, o.end_time, o.modality, o.status, o.participant_limit,
                    o.registration_price, COALESCE(pc.total, 0) participant_count, mine.status participant_status,
-                   o.organizer_user_id = :userId managed_by_current_user
+                   o.organizer_user_id = :userId managed_by_current_user,
+                   oc.operation_id IS NOT NULL has_cover, COALESCE(oc.version, 0) cover_version
             FROM airsoft_operation o
             JOIN airsoft_field f ON f.id = o.field_id
             LEFT JOIN field_map m ON m.id = o.map_id
+            LEFT JOIN operation_cover oc ON oc.operation_id = o.id
             LEFT JOIN operation_participant mine ON mine.operation_id = o.id AND mine.user_id = :userId
             LEFT JOIN (SELECT operation_id, count(*) total FROM operation_participant
                        WHERE status IN ('APPROVED','CONFIRMED','CHECKED_IN') GROUP BY operation_id) pc ON pc.operation_id = o.id
@@ -56,7 +58,7 @@ public class OperationRepository {
                 row.getTime("end_time").toLocalTime(), row.getString("modality"), row.getString("status"),
                 row.getInt("participant_limit"), row.getLong("participant_count"),
                 row.getBigDecimal("registration_price"), row.getString("participant_status"),
-                row.getBoolean("managed_by_current_user")));
+                row.getBoolean("managed_by_current_user"), row.getBoolean("has_cover"), row.getLong("cover_version")));
     }
 
     public Optional<OperationResponse> find(UUID operationId, long userId) {
@@ -64,10 +66,12 @@ public class OperationRepository {
             return Optional.ofNullable(jdbc.queryForObject("""
                 SELECT o.*, organizer.public_id organizer_id, profile.callsign organizer_callsign,
                        f.public_id field_public_id, f.name field_name, m.public_id map_public_id, m.name map_name,
-                       COALESCE(pc.total, 0) participant_count, mine.status participant_status
+                       COALESCE(pc.total, 0) participant_count, mine.status participant_status,
+                       oc.operation_id IS NOT NULL has_cover, COALESCE(oc.version, 0) cover_version
                 FROM airsoft_operation o JOIN app_user organizer ON organizer.id = o.organizer_user_id
                 JOIN operator_profile profile ON profile.user_id = organizer.id
                 JOIN airsoft_field f ON f.id = o.field_id LEFT JOIN field_map m ON m.id = o.map_id
+                LEFT JOIN operation_cover oc ON oc.operation_id = o.id
                 LEFT JOIN operation_participant mine ON mine.operation_id = o.id AND mine.user_id = :userId
                 LEFT JOIN (SELECT operation_id, count(*) total FROM operation_participant
                            WHERE status IN ('APPROVED','CONFIRMED','CHECKED_IN') GROUP BY operation_id) pc ON pc.operation_id = o.id
@@ -201,6 +205,29 @@ public class OperationRepository {
             """, Map.of("id", operationId, "userId", userId, "now", Timestamp.from(now)));
     }
 
+    public int saveCover(UUID operationId, long userId, String contentType, byte[] data, Instant now) {
+        return jdbc.update("""
+            INSERT INTO operation_cover(operation_id, content_type, image_data, updated_by, updated_at)
+            SELECT o.id, :contentType, :data, :userId, :now
+            FROM airsoft_operation o
+            WHERE o.public_id = :operationId AND o.organizer_user_id = :userId
+            ON CONFLICT (operation_id) DO UPDATE SET
+              content_type = EXCLUDED.content_type, image_data = EXCLUDED.image_data,
+              version = operation_cover.version + 1, updated_by = EXCLUDED.updated_by, updated_at = EXCLUDED.updated_at
+            """, new MapSqlParameterSource().addValue("operationId", operationId).addValue("userId", userId)
+                .addValue("contentType", contentType).addValue("data", data).addValue("now", Timestamp.from(now)));
+    }
+
+    public Optional<CoverRow> cover(UUID operationId, long userId) {
+        return jdbc.query("""
+            SELECT c.content_type, c.image_data
+            FROM operation_cover c JOIN airsoft_operation o ON o.id = c.operation_id
+            WHERE o.public_id = :operationId AND (o.status <> 'DRAFT' OR o.organizer_user_id = :userId)
+            """, Map.of("operationId", operationId, "userId", userId),
+            (r, i) -> new CoverRow(r.getString("content_type"), r.getBytes("image_data")))
+            .stream().findFirst();
+    }
+
     private MapSqlParameterSource params(long userId, OperationFilter f) {
         String q = normalize(f.q());
         return new MapSqlParameterSource().addValue("userId", userId).addValue("q", q)
@@ -234,9 +261,11 @@ public class OperationRepository {
             r.getBigDecimal("registration_price"), r.getString("payment_methods"), r.getInt("minimum_age"),
             r.getString("required_equipment"), (Integer) r.getObject("fps_limit"), r.getString("entry_mode"),
             r.getBoolean("approval_required"), r.getBoolean("waiting_list_enabled"), r.getString("status"),
-            r.getLong("participant_count"), r.getString("participant_status"), r.getLong("organizer_user_id") == userId, r.getLong("version"));
+            r.getLong("participant_count"), r.getString("participant_status"), r.getLong("organizer_user_id") == userId, r.getLong("version"),
+            r.getBoolean("has_cover"), r.getLong("cover_version"));
     }
     private String normalize(String value) { return value == null ? "" : value.trim().replaceAll("\\s+", " "); }
     private String nullable(String value) { String normalized = normalize(value); return normalized.isEmpty() ? null : normalized; }
     public record FieldRef(long id, UUID publicId, String name, String city, String stateCode) {}
+    public record CoverRow(String contentType, byte[] data) {}
 }

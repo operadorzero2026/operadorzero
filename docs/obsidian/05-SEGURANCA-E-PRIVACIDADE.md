@@ -1,5 +1,9 @@
 # Segurança e privacidade
 
+## Capas de operações — 2026-07-28
+
+Somente o organizador autenticado pode inserir ou substituir a capa da própria operação. O servidor aceita exclusivamente PNG/JPEG reais de até 2 MB e 2048 × 2048 pixels, remove metadados pela reencodificação e armazena bytes no PostgreSQL, sem nome original ou disco efêmero. A leitura aplica a mesma visibilidade da operação: capa de rascunho é privada do organizador; capa de operação publicada pode ser lida por usuários autenticados. Veja [[09-OPERACOES]].
+
 ## Times e participantes de operações — 2026-07-28
 
 O roster exige sessão e respeita a visibilidade do detalhe da operação. A inscrição aceita somente UUID de time pertencente à mesma operação, impede inscrição do organizador, aplica capacidade/lista de espera no banco e mantém unicidade por operação/usuário. Callsign e nome de exibição são a projeção mínima exibida; e-mail e demais dados privados não entram na resposta. Veja [[09-OPERACOES]].
