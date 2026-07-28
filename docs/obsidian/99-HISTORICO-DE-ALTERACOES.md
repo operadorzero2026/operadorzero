@@ -23,10 +23,13 @@
 - Frontend, backend e documentação; nenhuma migration é necessária porque a coluna existente já comporta 12 caracteres.
 
 ### Testes
-- Testes frontend e backend, build e validações de produção.
+- `npm run check`: lint, testes de autenticação, conteúdo real, SEO e etapa 2, build e validações de bundle/deploy aprovados.
+- `mvn test` em `services/api`: 55 testes aprovados, incluindo aceitação de `A.T.A.C.` e rejeição de sigla somente com pontuação.
+- Backend Render confirmado `live` no commit `b3fc12d`; readiness oficial respondeu `UP`.
+- Frontend Vercel publicado no deploy `dpl_7YReY7M7kFdFSiZPoZBCVz98czxu` e associado a `https://operadorzero.com.br`.
 
 ### Pendências
-- Publicar frontend e backend e repetir o cadastro real.
+- Repetir o cadastro com a conta real e os dados apresentados pelo usuário; nenhum cadastro artificial foi criado em produção.
 
 ## 2026-07-28 - Correção de acesso negado ao criar equipe
 
