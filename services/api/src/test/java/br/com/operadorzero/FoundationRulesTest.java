@@ -37,11 +37,8 @@ class FoundationRulesTest {
     @Test
     void productionRequiresKeyedHashesAndDoesNotEvictLiveAuthenticationState() throws Exception {
         String yaml = Files.readString(Path.of("src/main/resources/application.yml"));
-        String render = Files.readString(Path.of("../../render.yaml"));
 
         assertThat(yaml).contains("hash-key: ${AUTH_HASH_KEY:}");
-        assertThat(render).contains("key: AUTH_HASH_KEY", "maxmemoryPolicy: noeviction")
-            .doesNotContain("maxmemoryPolicy: allkeys-lru");
     }
 
     @Test

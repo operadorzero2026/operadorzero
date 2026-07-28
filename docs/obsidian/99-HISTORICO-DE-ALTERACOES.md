@@ -1,5 +1,29 @@
 # Histórico de alterações
 
+## 2026-07-28 - Correção da validação dentro da imagem Docker
+
+### Arquivos alterados
+- `services/api/src/test/java/br/com/operadorzero/FoundationRulesTest.java`
+- `scripts/validate-deployment-config.mjs`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Removida do teste interno da API a dependência de `../../render.yaml`, arquivo que não pertence ao contexto Docker de `services/api`.
+- Mantida a validação de `AUTH_HASH_KEY` e da política `noeviction` no validador de infraestrutura executado a partir da raiz.
+
+### Motivo
+- A aplicação e os 50 testes Java passavam, mas a repetição dos testes dentro da imagem falhava ao tentar acessar um arquivo fora do contexto Docker.
+
+### Impacto
+- CI e empacotamento da API; nenhuma regra de negócio, migration, dado ou segredo foi alterado.
+
+### Testes
+- `mvn -B clean verify`: 50 testes aprovados.
+- `npm run validate:deploy`: aprovado.
+
+### Pendências
+- Aguardar o novo CI e o deploy real para registrar a homologação externa.
+
 ## 2026-07-28 - Reenvio da confirmação e diagnóstico de entregabilidade
 
 ### Arquivos alterados

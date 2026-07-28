@@ -19,6 +19,9 @@ if (!renderConfig.databases?.length) {
 }
 const apiService = renderConfig.services.find(service => service.type === 'web')
 const apiEnvironmentKeys = new Set(apiService?.envVars?.map(variable => variable.key) ?? [])
+if (!apiEnvironmentKeys.has('AUTH_HASH_KEY') || !renderSource.includes('maxmemoryPolicy: noeviction') || renderSource.includes('maxmemoryPolicy: allkeys-lru')) {
+  throw new Error('render.yaml deve exigir hash autenticado e preservar o estado de autenticacao no Redis.')
+}
 for (const required of ['MAIL_ENABLED', 'MAIL_FROM', 'RESEND_API_KEY']) {
   if (!apiEnvironmentKeys.has(required)) {
     throw new Error(`render.yaml deve declarar ${required} somente no backend.`)
