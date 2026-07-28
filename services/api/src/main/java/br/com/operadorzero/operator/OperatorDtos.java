@@ -27,6 +27,7 @@ public final class OperatorDtos {
         String recruitmentStatus,
         Map<String, String> privacy,
         List<EquipmentResponse> equipment,
+        boolean hasPhoto,
         long version
     ) {}
 

@@ -1,5 +1,9 @@
 # File Upload Policy
 
+## Fotos de operador
+
+Fotos de perfil usam a mesma exceção controlada das logos: PNG/JPEG de até 2 MB e 2048 × 2048 são identificados pelo conteúdo, decodificados e reencodados no backend, sem preservar nome ou metadados, e persistidos em tabela PostgreSQL separada. Somente o próprio operador autenticado pode alterar ou ler a foto. SVG, GIF, WebP, conteúdo ilegítimo e limites excedidos são recusados.
+
 Somente imagens necessárias; limite inicial 8 MB e dimensões máximas definidas. Validar extensão, MIME declarado e assinatura real; rejeitar SVG e conteúdo ativo no MVP; decodificar e reencodar; remover metadados; gerar nome aleatório; armazenar em bucket privado/quarentena fora do domínio de sessão; servir miniaturas por URL assinada ou host estático sem cookies; antivírus quando disponível. Limites por usuário, logs de decisão e exclusão de órfãos. Nunca confiar no nome original nem executar o arquivo.
 
 Exceção controlada para logos de equipe: enquanto não há bucket privado, PNG/JPEG de até 2 MB e 2048 × 2048 são decodificados e reencodados no backend e persistidos como bytes em tabela PostgreSQL separada. O nome, MIME declarado e metadados originais não são preservados. Alteração exige vínculo de capitão/gestor; leitura exige sessão. SVG, WebP, GIF, conteúdo ilegível, dimensões e tamanho excedidos são recusados. A migração futura para object storage deve manter o mesmo contrato de autorização e validação.

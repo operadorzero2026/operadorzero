@@ -36,6 +36,7 @@ export type OperatorProfile = {
   recruitmentStatus: string
   privacy: Record<string, string>
   equipment: OperatorEquipment[]
+  hasPhoto: boolean
   version: number
 }
 
@@ -271,8 +272,14 @@ export async function logout() {
 }
 
 export const getOperatorProfile = () => apiRequest<OperatorProfile>('/api/operators/me')
-export const updateOperatorProfile = (profile: Omit<OperatorProfile, 'id' | 'email' | 'privacy' | 'equipment'>) =>
+export const updateOperatorProfile = (profile: Omit<OperatorProfile, 'id' | 'email' | 'privacy' | 'equipment' | 'hasPhoto'>) =>
   apiRequest<OperatorProfile>('/api/operators/me', json('PATCH', profile))
+export const uploadOperatorPhoto = (file: File) => {
+  const body = new FormData()
+  body.append('file', file)
+  return apiRequest<OperatorProfile>('/api/operators/me/photo', { method: 'POST', body })
+}
+export const operatorPhotoUrl = (version: number) => `${getApiBaseUrl()}/api/operators/me/photo?v=${version}`
 export const updateOperatorPrivacy = (fields: Record<string, string>) =>
   apiRequest<OperatorProfile>('/api/operators/me/privacy', json('PUT', { fields }))
 export const addOperatorEquipment = (equipment: { category: string; name: string; details: string; condition: string; visibility: string }) =>

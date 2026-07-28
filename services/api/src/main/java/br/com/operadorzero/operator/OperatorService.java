@@ -12,6 +12,7 @@ import br.com.operadorzero.operator.OperatorDtos.SearchResponse;
 import br.com.operadorzero.operator.OperatorDtos.UpdateProfileRequest;
 import br.com.operadorzero.operator.OperatorRepository.ProfileRow;
 import br.com.operadorzero.shared.audit.AuditEventRepository;
+import br.com.operadorzero.shared.image.SafeRasterImageProcessor;
 import br.com.operadorzero.shared.web.BusinessException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Clock;
@@ -26,6 +27,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class OperatorService {
@@ -62,6 +64,22 @@ public class OperatorService {
     @Transactional(readOnly = true)
     public ProfileResponse me(AuthenticatedUser user) {
         return response(profile(user.internalId()));
+    }
+
+    @Transactional
+    public ProfileResponse savePhoto(AuthenticatedUser user, MultipartFile file) {
+        ProfileRow current = profile(user.internalId());
+        var image = SafeRasterImageProcessor.process(file);
+        Instant now = clock.instant();
+        repository.savePhoto(current.profileId(), image.contentType(), image.data(), now);
+        audit.record(user.internalId(), "OPERATOR_PHOTO_UPDATED", "OPERATOR_PROFILE", current.publicId(), null, now);
+        return response(profile(user.internalId()));
+    }
+
+    @Transactional(readOnly = true)
+    public OperatorRepository.PhotoRow photo(AuthenticatedUser user) {
+        return repository.findPhoto(user.internalId())
+            .orElseThrow(() -> BusinessException.notFound("Foto do operador não encontrada."));
     }
 
     @Transactional
@@ -157,7 +175,7 @@ public class OperatorService {
         List<EquipmentResponse> equipment = repository.equipment(row.profileId());
         return new ProfileResponse(row.publicId(), row.email(), row.username(), row.displayName(), row.callsign(), row.bio(),
             row.city(), row.stateCode(), row.preferredPosition(), repository.secondaryPositions(row.profileId()),
-            row.recruitmentStatus(), repository.privacy(row.profileId()), equipment, row.version());
+            row.recruitmentStatus(), repository.privacy(row.profileId()), equipment, repository.hasPhoto(row.profileId()), row.version());
     }
 
     private ProfileRow profile(long userId) {

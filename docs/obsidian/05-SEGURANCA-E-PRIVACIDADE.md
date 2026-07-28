@@ -1,5 +1,9 @@
 # Segurança e privacidade
 
+## Mídia controlada — 2026-07-28
+
+Fotos de operador seguem a mesma fronteira segura das logos: apenas o proprietário autenticado altera e lê a própria foto; o backend valida conteúdo real, tamanho e dimensões, reencoda PNG/JPEG e persiste bytes em tabela isolada. Não são armazenados nome original nem metadados, e o disco efêmero do Render não é utilizado. O contrato está documentado em [[13-MEU-OPERADOR]] e `FILE-UPLOAD-POLICY.md`.
+
 O contrato de visibilidade por campo, busca não enumerável, username público, reautenticação, MFA e conta está detalhado em [[13-MEU-OPERADOR]]. A interface atual apenas demonstra esses controles; filtragem, autorização e auditoria continuam pendentes no backend.
 
 ## Ranking

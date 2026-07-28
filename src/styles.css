@@ -177,3 +177,4 @@ footer>div{flex-wrap:wrap}footer button{border:0;background:transparent;color:#7
 footer a:hover,footer button:hover{color:var(--lime)}
 @media(max-width:900px){.trust-section{grid-template-columns:1fr;gap:40px}.session-status{display:none}}
 @media(max-width:600px){.hero{min-height:700px;padding-top:84px}.hero-content h1{font-size:clamp(48px,15vw,62px);line-height:.83;margin:18px 0}.hero-copy{max-width:32rem}.hero-actions{margin-top:24px;gap:16px}.hero-actions .button{width:100%;min-height:50px}.trust-section{padding:78px 20px}.trust-grid{grid-template-columns:1fr}.trust-grid article{min-height:auto;padding:24px}footer>div{gap:14px 18px}}
+.operator-profile-photo{width:76px;height:76px;border-radius:50%;border:2px solid var(--lime);object-fit:cover;background:#11140f}.operator-photo-form{margin-bottom:24px;align-items:end}

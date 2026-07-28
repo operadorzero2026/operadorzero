@@ -1,5 +1,9 @@
 # Frontend web
 
+## Foto do operador — 2026-07-28
+
+`src/OperatorPage.tsx` permite cadastrar e trocar a foto do perfil. A interface aceita PNG/JPEG, informa limites, exibe retorno amigável e atualiza a imagem com versão para evitar cache antigo. A validação autoritativa e a transformação do arquivo permanecem no backend, conforme [[13-MEU-OPERADOR]] e [[05-SEGURANCA-E-PRIVACIDADE]].
+
 ## Linguagem da interface — 2026-07-27
 
 A interface oficial não explica arquitetura, ambiente, banco, API, persistência, tokens ou decisões internas. Estados vazios informam somente a situação e a próxima orientação disponível. Avisos técnicos permanecem nos logs e na documentação; avisos jurídicos, erros de campo, sessão, acesso, moderação e staging continuam permitidos quando necessários.

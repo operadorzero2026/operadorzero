@@ -1,6 +1,6 @@
 import { Plus, RefreshCw, Save, ShieldCheck, Trash2 } from 'lucide-react'
 import { FormEvent, useEffect, useState } from 'react'
-import { addOperatorEquipment, getOperatorProfile, removeOperatorEquipment, type OperatorProfile, updateOperatorPrivacy, updateOperatorProfile } from './api'
+import { addOperatorEquipment, getOperatorProfile, operatorPhotoUrl, removeOperatorEquipment, type OperatorProfile, updateOperatorPrivacy, updateOperatorProfile, uploadOperatorPhoto } from './api'
 import { BrazilLocationFields } from './BrazilLocationFields'
 
 const positions = ['ASSAULT', 'SUPPORT', 'MEDIC', 'SNIPER', 'RECON', 'COMMAND', 'DEFENSE', 'OTHER']
@@ -48,6 +48,17 @@ export function OperatorPage({ onUserUpdated }: { onUserUpdated: (user: { userna
     finally { setPending('') }
   }
 
+  const savePhoto = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); setPending('photo'); setError(''); setNotice('')
+    const form = event.currentTarget
+    const file = new FormData(form).get('photo')
+    if (!(file instanceof File) || file.size === 0) { setError('Selecione uma foto.'); setPending(''); return }
+    try {
+      setProfile(await uploadOperatorPhoto(file)); form.reset(); setNotice('Foto de perfil atualizada.')
+    } catch (caught) { setError(caught instanceof Error ? caught.message : 'Não foi possível atualizar a foto.') }
+    finally { setPending('') }
+  }
+
   const addEquipment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); setPending('equipment'); setError(''); setNotice('')
     const form = event.currentTarget; const data = new FormData(form)
@@ -59,7 +70,8 @@ export function OperatorPage({ onUserUpdated }: { onUserUpdated: (user: { userna
   }
 
   return <main className="module-page"><header><p>IDENTIDADE</p><h1>Meu Operador</h1><span>Controle sua apresentação e o que outros operadores podem consultar.</span></header>{(error || notice) && <p className={error ? 'module-feedback module-feedback--error' : 'module-feedback'} role="status">{error || notice}</p>}
-    <section className="module-section"><div className="module-section-title"><div><small>PERFIL PÚBLICO</small><h2>{profile.callsign}</h2></div><span className="operator-avatar">{profile.callsign.charAt(0).toUpperCase()}</span></div>
+    <section className="module-section"><div className="module-section-title"><div><small>PERFIL PÚBLICO</small><h2>{profile.callsign}</h2></div>{profile.hasPhoto ? <img className="operator-profile-photo" src={operatorPhotoUrl(profile.version)} alt={`Foto de ${profile.callsign}`}/> : <span className="operator-avatar">{profile.callsign.charAt(0).toUpperCase()}</span>}</div>
+      <form className="module-form module-form--inline operator-photo-form" onSubmit={savePhoto}><label><span>Foto do operador</span><input name="photo" type="file" accept="image/png,image/jpeg" required/><small>PNG ou JPEG, até 2 MB e 2048 × 2048 pixels.</small></label><button className="module-secondary" disabled={pending === 'photo'}>{pending === 'photo' ? 'Enviando…' : profile.hasPhoto ? 'Trocar foto' : 'Cadastrar foto'}</button></form>
       <form className="module-form" onSubmit={saveProfile} key={`profile-${profile.version}`}><div className="form-grid"><label><span>Nome de exibição</span><input name="displayName" defaultValue={profile.displayName} minLength={2} maxLength={80} required/></label><label><span>Nick / callsign</span><input name="callsign" defaultValue={profile.callsign} minLength={2} maxLength={40} required/></label><label><span>Nome de usuário</span><input name="username" defaultValue={profile.username} pattern="[A-Za-z0-9._-]{3,30}" required/></label><label><span>Status</span><select name="recruitmentStatus" defaultValue={profile.recruitmentStatus}><option value="LONE_WOLF">Operador independente</option><option value="LOOKING_FOR_TEAM">Procurando equipe</option><option value="NOT_LOOKING">Não procuro equipe</option></select></label><BrazilLocationFields defaultState={profile.stateCode || ''} defaultCity={profile.city || ''} required={false} namePrefix="profile"/><label><span>Posição principal</span><select name="preferredPosition" defaultValue={profile.preferredPosition || ''}><option value="">Não informar</option>{positions.map(value => <option value={value} key={value}>{positionLabels[value]}</option>)}</select></label><label><span>Posições secundárias</span><select name="secondaryPositions" defaultValue={profile.secondaryPositions} multiple size={4}>{positions.map(value => <option value={value} key={value}>{positionLabels[value]}</option>)}</select></label></div><label><span>Biografia</span><textarea name="bio" defaultValue={profile.bio || ''} maxLength={500}/></label><button className="module-primary" disabled={pending === 'profile'}><Save/> {pending === 'profile' ? 'Salvando…' : 'Salvar perfil'}</button></form>
     </section>
     <section className="module-section"><div className="module-section-title"><div><small>CONTROLE</small><h2>Privacidade</h2></div><ShieldCheck/></div><form className="module-form" onSubmit={savePrivacy}><div className="form-grid">{[['LOCATION','Localização'],['EQUIPMENT','Equipamentos'],['TEAM_STATUS','Status de equipe']].map(([field,label]) => <label key={field}><span>{label}</span><select name={field} defaultValue={profile.privacy[field] || 'AUTHENTICATED'}>{Object.entries(visibilityLabels).map(([value,text]) => <option value={value} key={value}>{text}</option>)}</select></label>)}</div><button className="module-primary" disabled={pending === 'privacy'}><Save/> Salvar privacidade</button></form></section>

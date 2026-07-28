@@ -15,6 +15,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @Validated
 @RestController
@@ -42,6 +46,21 @@ public class OperatorController {
     @GetMapping("/me")
     ProfileResponse me(@AuthenticationPrincipal AuthenticatedUser user) {
         return service.me(user);
+    }
+
+    @PostMapping(value = "/me/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ProfileResponse savePhoto(@AuthenticationPrincipal AuthenticatedUser user,
+                              @RequestParam("file") MultipartFile file) {
+        return service.savePhoto(user, file);
+    }
+
+    @GetMapping("/me/photo")
+    ResponseEntity<byte[]> photo(@AuthenticationPrincipal AuthenticatedUser user) {
+        var photo = service.photo(user);
+        return ResponseEntity.ok()
+            .cacheControl(CacheControl.noStore())
+            .contentType(MediaType.parseMediaType(photo.contentType()))
+            .body(photo.data());
     }
 
     @PatchMapping("/me")

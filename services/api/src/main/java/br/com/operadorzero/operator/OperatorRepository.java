@@ -150,6 +150,38 @@ public class OperatorRepository {
             """, Map.of("userId", userId, "equipmentId", equipmentId));
     }
 
+    public void savePhoto(long profileId, String contentType, byte[] imageData, Instant now) {
+        jdbc.update("""
+            INSERT INTO operator_profile_photo(operator_profile_id, content_type, image_data, updated_at)
+            VALUES (:profileId, :contentType, :imageData, :now)
+            ON CONFLICT (operator_profile_id) DO UPDATE
+            SET content_type = EXCLUDED.content_type, image_data = EXCLUDED.image_data, updated_at = EXCLUDED.updated_at
+            """, new MapSqlParameterSource().addValue("profileId", profileId).addValue("contentType", contentType)
+            .addValue("imageData", imageData).addValue("now", Timestamp.from(now)));
+        jdbc.update("UPDATE operator_profile SET version = version + 1, updated_at = :now WHERE id = :profileId",
+            Map.of("profileId", profileId, "now", Timestamp.from(now)));
+    }
+
+    public boolean hasPhoto(long profileId) {
+        Boolean exists = jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM operator_profile_photo WHERE operator_profile_id = :profileId)",
+            Map.of("profileId", profileId), Boolean.class);
+        return Boolean.TRUE.equals(exists);
+    }
+
+    public Optional<PhotoRow> findPhoto(long userId) {
+        try {
+            return Optional.ofNullable(jdbc.queryForObject("""
+                SELECT f.content_type, f.image_data FROM operator_profile_photo f
+                JOIN operator_profile p ON p.id = f.operator_profile_id
+                JOIN app_user u ON u.id = p.user_id
+                WHERE p.user_id = :userId AND u.status = 'ACTIVE'
+                """, Map.of("userId", userId), (row, index) -> new PhotoRow(
+                    row.getString("content_type"), row.getBytes("image_data"))));
+        } catch (EmptyResultDataAccessException exception) {
+            return Optional.empty();
+        }
+    }
+
     public List<OperatorSummary> search(long viewerUserId, String query, int limit) {
         String escaped = query.toLowerCase().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
         return jdbc.query("""
@@ -207,4 +239,5 @@ public class OperatorRepository {
     public record ProfileRow(long profileId, UUID publicId, String email, String username, String displayName,
                              String callsign, String bio, String city, String stateCode, String preferredPosition,
                              String recruitmentStatus, long version) {}
+    public record PhotoRow(String contentType, byte[] data) {}
 }

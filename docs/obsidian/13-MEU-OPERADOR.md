@@ -1,5 +1,9 @@
 # Meu Operador
 
+## Foto de perfil funcional em 2026-07-28
+
+O operador autenticado pode cadastrar e substituir sua foto em `Meu Operador`. `POST /api/operators/me/photo` aceita somente PNG/JPEG de até 2 MB e 2048 × 2048 pixels; o backend identifica o formato pelo conteúdo, decodifica, reencoda e persiste na tabela `operator_profile_photo`. `GET /api/operators/me/photo` entrega a imagem apenas na sessão do próprio operador, sem cache. O fluxo segue [[05-SEGURANCA-E-PRIVACIDADE]], [[06-FRONTEND-WEB]] e a política raiz `FILE-UPLOAD-POLICY.md`.
+
 ## Localizacao
 
 Na edicao do perfil, Estado precede Cidade. Todos os estados brasileiros estao disponiveis e a cidade e carregada conforme a UF selecionada pela fonte oficial do IBGE. A localizacao publica continua limitada a municipio e estado; o backend devera validar os codigos oficiais e a combinacao informada.

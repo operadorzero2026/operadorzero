@@ -1,5 +1,35 @@
 # Histórico de alterações
 
+## 2026-07-28 - Foto de perfil do operador
+
+### Arquivos alterados
+- `src/OperatorPage.tsx`, `src/api.ts`, `src/styles.css`
+- `services/api/src/main/java/br/com/operadorzero/operator/OperatorController.java`
+- `services/api/src/main/java/br/com/operadorzero/operator/OperatorService.java`
+- `services/api/src/main/java/br/com/operadorzero/operator/OperatorRepository.java`
+- `services/api/src/main/java/br/com/operadorzero/operator/OperatorDtos.java`
+- `services/api/src/main/java/br/com/operadorzero/shared/image/SafeRasterImageProcessor.java`
+- `services/api/src/main/resources/db/migration/V12__operator_profile_photos.sql`
+- `services/api/src/test/java/br/com/operadorzero/shared/image/SafeRasterImageProcessorTest.java`
+- `FILE-UPLOAD-POLICY.md`, [[05-SEGURANCA-E-PRIVACIDADE]], [[06-FRONTEND-WEB]], [[13-MEU-OPERADOR]] e [[99-HISTORICO-DE-ALTERACOES]]
+
+### O que foi feito
+- Cadastro e substituição da foto no Meu Operador, com atualização sem cache antigo.
+- Upload e leitura autenticados, persistência PostgreSQL separada, auditoria e incremento de versão do perfil.
+- Validação do conteúdo real, limite de 2 MB/2048 px e reprocessamento de PNG/JPEG.
+
+### Motivo
+- Permitir identidade visual persistente do operador sem usar o disco efêmero do Render.
+
+### Impacto
+- Frontend, backend e banco de dados; sem alteração nos demais cadastros.
+
+### Testes
+- `npm run check` e `mvn test`.
+
+### Pendências
+- Migrar a mídia para object storage privado quando o serviço estiver disponível.
+
 ## 2026-07-28 - Upload seguro de logo da equipe
 
 ### Arquivos alterados
