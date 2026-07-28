@@ -408,8 +408,6 @@ export function OperationsPage() {
                     <button className="module-primary" disabled={pending === item.id} onClick={(event) => { event.stopPropagation(); void publish(item) }}>
                       {pending === item.id ? 'Publicando…' : 'Publicar operação'}
                     </button>
-                  ) : item.managedByCurrentUser ? (
-                    <span>Você organiza esta operação</span>
                   ) : item.participantStatus &&
                   item.participantStatus !== 'CANCELLED' ? (
                     <button
@@ -449,7 +447,7 @@ export function OperationsPage() {
                 </article>)}
               </div>
               {roster.participants.length === 0 && <p className="module-empty">Ainda não há participantes inscritos.</p>}
-              {!selected.managedByCurrentUser && !roster.currentUserTeamId && <button className="module-primary" disabled={!selectedTeam || pending === selected.id} onClick={() => void participate(selected, false, selectedTeam)}>{pending === selected.id ? 'Inscrevendo…' : 'Inscrever-se no time escolhido'}</button>}
+              {!roster.currentUserTeamId && <button className="module-primary" disabled={!selectedTeam || pending === selected.id} onClick={() => void participate(selected, false, selectedTeam)}>{pending === selected.id ? 'Inscrevendo…' : 'Inscrever-se no time escolhido'}</button>}
               {roster.currentUserTeamId && <p className="module-feedback">Você já está inscrito em {roster.teams.find(team => team.id === roster.currentUserTeamId)?.name || 'um time'}.</p>}
             </>}
           </section>

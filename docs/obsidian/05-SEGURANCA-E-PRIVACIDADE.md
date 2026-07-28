@@ -1,5 +1,9 @@
 # Segurança e privacidade
 
+## Organizador participante — 2026-07-28
+
+O papel de organizador não concede uma segunda identidade nem contorna as regras de inscrição. Quando participa da própria operação, o mesmo usuário autenticado ocupa uma única vaga em um time válido, respeita capacidade e lista de espera e pode cancelar a própria participação. A aprovação automática limita-se ao organizador vinculado pelo backend àquela operação.
+
 ## Capas de operações — 2026-07-28
 
 Somente o organizador autenticado pode inserir ou substituir a capa da própria operação. O servidor aceita exclusivamente PNG/JPEG reais de até 2 MB e 2048 × 2048 pixels, remove metadados pela reencodificação e armazena bytes no PostgreSQL, sem nome original ou disco efêmero. A leitura aplica a mesma visibilidade da operação: capa de rascunho é privada do organizador; capa de operação publicada pode ser lida por usuários autenticados. Veja [[09-OPERACOES]].

@@ -1,5 +1,31 @@
 # Histórico de alterações
 
+## 2026-07-28 - Organizador pode participar da própria operação
+
+### Arquivos alterados
+- `services/api/src/main/java/br/com/operadorzero/operation/OperationRepository.java`
+- `src/OperationsPage.tsx`
+- `docs/obsidian/05-SEGURANCA-E-PRIVACIDADE.md`
+- `docs/obsidian/09-OPERACOES.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Removido o bloqueio que impedia o organizador de se inscrever.
+- Liberada a escolha de time no detalhe da própria operação publicada.
+- Definida aprovação automática apenas para o organizador da operação.
+
+### Motivo
+- Permitir que quem organiza também participe como jogador no mesmo evento.
+
+### Impacto
+- Backend, frontend e documentação.
+
+### Testes
+- Build, testes automatizados e deploy de produção.
+
+### Pendências
+- Nenhuma.
+
 ## 2026-07-28 - Imagem de capa persistente para operações
 
 ### Arquivos alterados

@@ -179,6 +179,7 @@ public class OperationRepository {
             INSERT INTO operation_participant(operation_id,user_id,status,operation_team_id,requested_at,updated_at)
             SELECT o.id,:userId,
               CASE WHEN tc.total >= ot.capacity OR oc.total >= o.participant_limit THEN 'WAITING_LIST'
+                   WHEN o.organizer_user_id = :userId THEN 'APPROVED'
                    WHEN o.approval_required THEN 'REQUESTED' ELSE 'APPROVED' END,
               ot.id,:now,:now
             FROM airsoft_operation o
@@ -188,7 +189,6 @@ public class OperationRepository {
             CROSS JOIN LATERAL (SELECT count(*) total FROM operation_participant p
               WHERE p.operation_id = o.id AND p.status IN ('REQUESTED','APPROVED','CONFIRMED','CHECKED_IN')) oc
             WHERE o.public_id=:id AND o.status IN ('PUBLISHED','REGISTRATION_OPEN','FULL')
-              AND o.organizer_user_id <> :userId
               AND ((tc.total < ot.capacity AND oc.total < o.participant_limit) OR o.waiting_list_enabled)
             ON CONFLICT (operation_id,user_id) DO UPDATE
               SET status=EXCLUDED.status, operation_team_id=EXCLUDED.operation_team_id,
