@@ -24,9 +24,14 @@
 
 ### Testes
 - Validação automatizada de endereço ausente, link Google Maps válido e URLs inseguras.
+- `npm run check`: aprovado.
+- `mvn -B clean verify`: 53 testes aprovados, zero falhas.
+- Render: migration `V10` aplicada e serviço `5a24224` em estado live.
+- Vercel: deployment `dpl_A7P7FPmHdyeY6XkdeYHryoKKgFPV` em estado `READY` e associado ao domínio oficial.
+- Navegador real: formulário exibiu endereço opcional e campo de link GPS com exemplo do Google Maps.
 
 ### Pendências
-- Aplicar a migration `V10` e homologar o cadastro no ambiente publicado.
+- Nenhuma pendência de código identificada para esta alteração.
 
 ## 2026-07-28 - Injeção dos módulos funcionais em produção
 
