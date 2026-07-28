@@ -1,5 +1,29 @@
 # Histórico de alterações
 
+## 2026-07-28 - Reenvio da confirmação e diagnóstico de entregabilidade
+
+### Arquivos alterados
+- `src/App.tsx`
+- `scripts/auth-flow-scenarios.mjs`
+- `AUTHENTICATION.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- Adicionado reenvio neutro da confirmação após o cadastro e orientação para consultar Lixo Eletrônico.
+- Confirmado no Resend que a mensagem recente foi aceita pelo servidor destinatário.
+
+### Motivo
+- A API já possuía reenvio seguro, mas a interface não o expunha; o domínio também não possui DMARC e o provedor aponta risco de entregabilidade.
+
+### Impacto
+- Frontend e documentação; sem alteração de token, banco, chave ou regra anti-enumeração.
+
+### Testes
+- Suíte frontend, build e contrato estático de reenvio.
+
+### Pendências
+- Publicar TXT DMARC inicial no DNS administrado pelo Registro.br e acompanhar a entrega antes de endurecer a política.
+
 ## 2026-07-28 - Recuperação da tela após cancelar o Google
 
 ### Arquivos alterados

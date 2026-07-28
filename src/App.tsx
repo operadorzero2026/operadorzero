@@ -30,6 +30,7 @@ import {
   logout,
   prepareGoogleLogin,
   register,
+  resendVerification,
   requestPasswordRecovery,
   resetPassword,
   SessionUser,
@@ -60,12 +61,13 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
   const [notice, setNotice] = useState(initialNotice)
   const [pendingAction, setPendingAction] = useState<'form' | 'google' | null>(null)
   const [termsAccepted, setTermsAccepted] = useState(false)
+  const [verificationEmail, setVerificationEmail] = useState('')
   const isRecovery = mode === 'recovery'
   const isReset = mode === 'reset'
   const title = mode === 'login' ? 'Entre no Operador Zero' : mode === 'signup' ? 'Crie sua conta' : isReset ? 'Defina uma nova senha' : 'Recupere seu acesso'
   const description = mode === 'login' ? 'Acesse sua conta com segurança.' : mode === 'signup' ? 'Crie sua identidade de operador em poucos passos.' : isReset ? 'O link será invalidado após a troca da senha.' : 'Informe seu e-mail para receber as instruções.'
 
-  useEffect(() => { setNotice(initialNotice); setShowPassword(false); setTermsAccepted(false) }, [mode, initialNotice])
+  useEffect(() => { setNotice(initialNotice); setShowPassword(false); setTermsAccepted(false); setVerificationEmail('') }, [mode, initialNotice])
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && onClose()
     document.body.classList.add('modal-open')
@@ -100,12 +102,26 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
         setNotice('Senha alterada. Volte para entrar com a nova senha.')
       } else if (mode === 'signup') {
         await register(String(data.get('displayName') ?? '').trim(), email, password, termsAccepted)
-        setNotice('Cadastro recebido. Verifique seu e-mail para continuar.')
+        setVerificationEmail(email)
+        setNotice('Cadastro recebido. Confira também o Lixo Eletrônico. Se a mensagem não aparecer, use Reenviar confirmação.')
       } else {
         onAuthenticated(await login(email, password))
       }
     } catch (error) {
       setNotice(isRecovery ? 'Se o e-mail estiver cadastrado, você receberá as instruções de recuperação.' : error instanceof Error ? error.message : 'Não foi possível concluir a solicitação.')
+    } finally {
+      setPendingAction(null)
+    }
+  }
+
+  const resendConfirmation = async () => {
+    if (!verificationEmail) return
+    setPendingAction('form')
+    try {
+      await resendVerification(verificationEmail)
+      setNotice('Se o endereço puder receber a confirmação, uma nova mensagem foi enviada. Confira também o Lixo Eletrônico.')
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Não foi possível solicitar um novo envio.')
     } finally {
       setPendingAction(null)
     }
@@ -141,6 +157,7 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
           <button className="button auth-submit" type="submit" disabled={pendingAction !== null || !AUTH_ENABLED}>{pendingAction === 'form' ? 'Aguarde...' : isRecovery ? 'Enviar instruções' : isReset ? 'Salvar nova senha' : mode === 'login' ? 'Entrar com e-mail' : 'Criar conta com e-mail'} {pendingAction === null && <ArrowRight size={17}/>}</button>
         </form>
         {notice && <p className="auth-notice" role="status">{notice}</p>}
+        {mode === 'signup' && verificationEmail && <button className="forgot-link" type="button" disabled={pendingAction !== null} onClick={resendConfirmation}>Reenviar confirmação</button>}
         {!isRecovery && !isReset && <p className="auth-switch">{mode === 'login' ? 'Ainda não tem conta?' : 'Já possui uma conta?'} <button onClick={() => onModeChange(mode === 'login' ? 'signup' : 'login')}>{mode === 'login' ? 'Criar conta' : 'Entrar'}</button></p>}
         <p className="auth-security"><ShieldCheck size={16}/> Credenciais são enviadas somente à API e não ficam persistidas no navegador.</p>
       </div>

@@ -51,4 +51,13 @@ for (const googleRecoveryContract of [
   if (!app.includes(googleRecoveryContract)) throw new Error(`Retorno do Google pode congelar a tela: ${googleRecoveryContract}`)
 }
 
+for (const emailConfirmationContract of [
+  'resendVerification,',
+  'setVerificationEmail(email)',
+  'Reenviar confirmação',
+  'Confira também o Lixo Eletrônico',
+]) {
+  if (!app.includes(emailConfirmationContract)) throw new Error(`Reenvio de confirmacao ausente: ${emailConfirmationContract}`)
+}
+
 console.log('Fluxos frontend de sessao, CSRF, verificacao e recuperacao validados.')

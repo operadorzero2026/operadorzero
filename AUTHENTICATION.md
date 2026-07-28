@@ -24,4 +24,6 @@ Cadastro, login, recuperacao e OIDC recebem rate limit por IP e sujeito no Redis
 
 O envio transacional usa a API HTTPS da Resend com `Idempotency-Key`; `RESEND_API_KEY` existe somente no backend. Falhas do provedor sao registradas sem destinatario em claro, corpo da resposta ou chave. O dominio `mail.operadorzero.com.br` esta verificado e os e-mails de confirmacao e recuperacao foram entregues no E2E externo.
 
+Depois do cadastro, a interface oferece reenvio neutro da confirmacao e orienta a consultar Lixo Eletronico, sem revelar se o endereco ja existe. O provedor confirmou entrega ao servidor destinatario no diagnostico de 2026-07-28; a pendencia externa de entregabilidade e publicar DMARC no DNS do Registro.br.
+
 Pendencias antes de usuarios reais: DMARC e tratamento de bounce, remocao do segredo Google anterior depois da homologacao concluida, MFA administrativo, reautenticacao critica, central de sessoes, termos/privacidade aprovados e infraestrutura sem expiracao.
