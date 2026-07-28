@@ -20,10 +20,13 @@
 - Frontend e segurança das mutações autenticadas; regras de autorização, backend e banco permanecem inalterados.
 
 ### Testes
-- Suíte frontend, build e validações de produção.
+- `npm run check`: lint, testes de autenticação, conteúdo real, SEO e etapa 2, build e validações de bundle/deploy aprovados.
+- `mvn test` em `services/api`: 53 testes aprovados, inclusive regras de autorização de equipes.
+- Versão publicada carregada com sucesso no domínio oficial.
+- Deploy Vercel de produção `dpl_DzmiEmumHiWF5PaHUfyRNm9dXALk`.
 
 ### Pendências
-- Publicar e homologar o fluxo autenticado de criação de equipe.
+- Repetir a criação com a conta real que apresentou o erro; o navegador de homologação não possui sessão autenticada e nenhum usuário/equipe artificial foi criado em produção.
 
 ## 2026-07-28 - Login como ação principal da página inicial
 
