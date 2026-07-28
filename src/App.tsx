@@ -58,7 +58,7 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
 }) {
   const [showPassword, setShowPassword] = useState(false)
   const [notice, setNotice] = useState(initialNotice)
-  const [pending, setPending] = useState(false)
+  const [pendingAction, setPendingAction] = useState<'form' | 'google' | null>(null)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const isRecovery = mode === 'recovery'
   const isReset = mode === 'reset'
@@ -72,6 +72,15 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
     window.addEventListener('keydown', onKeyDown)
     return () => { document.body.classList.remove('modal-open'); window.removeEventListener('keydown', onKeyDown) }
   }, [onClose])
+  useEffect(() => {
+    const resumeAfterGoogle = (event: PageTransitionEvent) => {
+      if (!event.persisted) return
+      setPendingAction(null)
+      setNotice('O acesso com Google foi cancelado. Você pode tentar novamente.')
+    }
+    window.addEventListener('pageshow', resumeAfterGoogle)
+    return () => window.removeEventListener('pageshow', resumeAfterGoogle)
+  }, [])
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -79,7 +88,7 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
     const data = new FormData(event.currentTarget)
     const email = String(data.get('email') ?? '').trim().toLowerCase()
     const password = String(data.get('password') ?? '')
-    setPending(true)
+    setPendingAction('form')
     setNotice('')
     try {
       if (isRecovery) {
@@ -98,18 +107,19 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
     } catch (error) {
       setNotice(isRecovery ? 'Se o e-mail estiver cadastrado, você receberá as instruções de recuperação.' : error instanceof Error ? error.message : 'Não foi possível concluir a solicitação.')
     } finally {
-      setPending(false)
+      setPendingAction(null)
     }
   }
 
   const continueWithGoogle = async () => {
     if (mode === 'signup' && !termsAccepted) { setNotice('Aceite os Termos de Uso e a Política de Privacidade para criar a conta.'); return }
-    setPending(true)
+    setPendingAction('google')
+    setNotice('Abrindo o Google para continuar. Se o servidor estiver iniciando, isso pode levar até dois minutos.')
     try {
       window.location.assign(await prepareGoogleLogin(mode === 'signup' && termsAccepted))
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Login com Google indisponível.')
-      setPending(false)
+      setPendingAction(null)
     }
   }
 
@@ -121,14 +131,14 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
         {(isRecovery || isReset) && <button className="auth-back" onClick={() => onModeChange('login')}><ArrowLeft size={16}/> Voltar para entrar</button>}
         <div className="auth-heading"><p className="eyebrow"><span/>{isRecovery || isReset ? 'Recuperação por e-mail' : 'Acesso à plataforma'}</p><h2 id="auth-title">{title}</h2><p>{description}</p></div>
         {!AUTH_ENABLED && <p className="auth-unavailable"><ShieldAlert size={17}/> Autenticação remota temporariamente indisponível.</p>}
-        {!isRecovery && !isReset && <><button className="google-button" type="button" disabled={pending || !AUTH_ENABLED} onClick={continueWithGoogle}><GoogleMark/> Continuar com Google</button><div className="auth-divider"><span/> ou use seu e-mail <span/></div></>}
+        {!isRecovery && !isReset && <><button className="google-button" type="button" disabled={pendingAction !== null || !AUTH_ENABLED} aria-busy={pendingAction === 'google'} onClick={continueWithGoogle}><GoogleMark/> {pendingAction === 'google' ? 'Conectando ao Google...' : 'Continuar com Google'}</button><div className="auth-divider"><span/> ou use seu e-mail <span/></div></>}
         <form className="auth-form" onSubmit={submit}>
           {mode === 'signup' && <label><span>Nome de exibição</span><div><Users/><input name="displayName" autoComplete="name" maxLength={80} required placeholder="Como devemos chamar você?"/></div></label>}
           {!isReset && <label><span>E-mail</span><div><Mail/><input name="email" type="email" autoComplete="email" maxLength={254} required placeholder="voce@exemplo.com.br"/></div></label>}
           {!isRecovery && <label><span>{isReset ? 'Nova senha' : 'Senha'}</span><div><LockKeyhole/><input name="password" type={showPassword ? 'text' : 'password'} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength={12} maxLength={128} required placeholder={mode === 'signup' || isReset ? '12+ caracteres, maiúscula, minúscula e número' : 'Sua senha'}/><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? <EyeOff/> : <Eye/>}</button></div></label>}
           {mode === 'login' && <button className="forgot-link" type="button" onClick={() => onModeChange('recovery')}>Esqueci minha senha</button>}
           {mode === 'signup' && <label className="terms-check"><input type="checkbox" required checked={termsAccepted} onChange={event => setTermsAccepted(event.target.checked)}/><span>Li e aceito os Termos de Uso e a Política de Privacidade.</span></label>}
-          <button className="button auth-submit" type="submit" disabled={pending || !AUTH_ENABLED}>{pending ? 'Aguarde...' : isRecovery ? 'Enviar instruções' : isReset ? 'Salvar nova senha' : mode === 'login' ? 'Entrar com e-mail' : 'Criar conta com e-mail'} {!pending && <ArrowRight size={17}/>}</button>
+          <button className="button auth-submit" type="submit" disabled={pendingAction !== null || !AUTH_ENABLED}>{pendingAction === 'form' ? 'Aguarde...' : isRecovery ? 'Enviar instruções' : isReset ? 'Salvar nova senha' : mode === 'login' ? 'Entrar com e-mail' : 'Criar conta com e-mail'} {pendingAction === null && <ArrowRight size={17}/>}</button>
         </form>
         {notice && <p className="auth-notice" role="status">{notice}</p>}
         {!isRecovery && !isReset && <p className="auth-switch">{mode === 'login' ? 'Ainda não tem conta?' : 'Já possui uma conta?'} <button onClick={() => onModeChange(mode === 'login' ? 'signup' : 'login')}>{mode === 'login' ? 'Criar conta' : 'Entrar'}</button></p>}

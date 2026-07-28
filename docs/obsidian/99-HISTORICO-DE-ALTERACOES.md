@@ -1,5 +1,29 @@
 # Histórico de alterações
 
+## 2026-07-28 - Recuperação da tela após cancelar o Google
+
+### Arquivos alterados
+- `src/App.tsx`
+- `scripts/auth-flow-scenarios.mjs`
+- `AUTHENTICATION.md`
+- `docs/obsidian/99-HISTORICO-DE-ALTERACOES.md`
+
+### O que foi feito
+- O botão agora exibe o estado real de conexão durante o cold start da API.
+- O retorno pelo botão Voltar ou pelo cancelamento do Google limpa o estado pendente restaurado pelo cache do navegador.
+
+### Motivo
+- A versão publicada desabilitava o formulário sem alterar o texto e podia restaurar esse estado indefinidamente via bfcache, aparentando congelamento.
+
+### Impacto
+- Frontend de autenticação; sem alteração de sessão, token, banco ou segredo.
+
+### Testes
+- Regressão estática do fluxo Google, suíte frontend, build e reprodução no domínio oficial.
+
+### Pendências
+- Nenhuma pendência de código identificada para este defeito.
+
 ## 2026-07-24 - Recuperação do cadastro Google quando a API demora
 
 ### Arquivos alterados

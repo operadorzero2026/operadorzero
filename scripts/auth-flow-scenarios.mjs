@@ -41,4 +41,14 @@ if (!app.includes("oauthCode === 'TERMS_REQUIRED'") || !app.includes('Selecione 
   throw new Error('Conta Google nova nao orienta o usuario a concluir cadastro e aceite.')
 }
 
+for (const googleRecoveryContract of [
+  "pendingAction === 'google'",
+  'Conectando ao Google...',
+  "window.addEventListener('pageshow', resumeAfterGoogle)",
+  'event.persisted',
+  'O acesso com Google foi cancelado.',
+]) {
+  if (!app.includes(googleRecoveryContract)) throw new Error(`Retorno do Google pode congelar a tela: ${googleRecoveryContract}`)
+}
+
 console.log('Fluxos frontend de sessao, CSRF, verificacao e recuperacao validados.')
