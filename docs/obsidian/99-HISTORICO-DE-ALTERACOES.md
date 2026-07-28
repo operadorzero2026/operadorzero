@@ -32,10 +32,13 @@
 - Frontend, backend, banco, segurança e documentação.
 
 ### Testes
-- Suítes frontend/backend, validação de imagem real e rejeição de conteúdo inválido.
+- `npm run check`: lint, testes de autenticação, conteúdo real, SEO e etapa 2, build e validações de bundle/deploy aprovados.
+- `mvn test` em `services/api`: 57 testes aprovados, incluindo PNG real reprocessado e rejeição de arquivo falso.
+- Render confirmou 11 migrations válidas e aplicou `V11__team_logos.sql`; commit `01c2b02` ficou `live` e readiness respondeu `UP`.
+- Frontend publicado no deploy Vercel `dpl_EXXs7puQE5Ud9A79ovuUKGsu4AHS`, associado a `https://operadorzero.com.br`.
 
 ### Pendências
-- Publicar, aplicar a migration V11 e homologar upload/leitura com conta autenticada.
+- Homologar upload e substituição visual com uma conta real; nenhum arquivo artificial foi persistido em produção.
 - Migrar os binários para object storage privado quando a infraestrutura estiver disponível.
 
 ## 2026-07-28 - Siglas de equipe com pontos e erro de campo claro
