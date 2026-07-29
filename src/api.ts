@@ -165,8 +165,11 @@ export class ApiClientError extends Error {
 let csrfToken: string | null = null
 let csrfHeader = 'X-CSRF-TOKEN'
 let csrfRequest: Promise<void> | null = null
+let csrfPreparedAt = 0
 const AUTH_REQUEST_TIMEOUT_MS = 15000
 const AUTH_BOOT_TIMEOUT_MS = 120000
+const AUTH_MUTATION_TIMEOUT_MS = 45000
+const CSRF_FRESHNESS_MS = 5 * 60 * 1000
 
 function authMark(name: string) {
   if (typeof performance !== 'undefined') performance.mark(`oz-auth:${name}`)
@@ -225,7 +228,8 @@ async function readError(response: Response) {
 }
 
 async function ensureCsrf() {
-  if (csrfToken) return
+  if (csrfToken && Date.now() - csrfPreparedAt < CSRF_FRESHNESS_MS) return
+  csrfToken = null
   if (!csrfRequest) {
     csrfRequest = (async () => {
       authMark('csrf-start')
@@ -236,6 +240,7 @@ async function ensureCsrf() {
       const result = await response.json() as { token: string; headerName: string }
       csrfToken = result.token
       csrfHeader = result.headerName
+      csrfPreparedAt = Date.now()
       authMark('csrf-end')
       authMeasure('csrf', 'csrf-start', 'csrf-end')
     })().finally(() => { csrfRequest = null })
@@ -279,10 +284,11 @@ function json(method: string, body?: unknown): RequestInit {
 
 export async function login(email: string, password: string) {
   authMark('login-start')
-  const session = await apiRequest<SessionUser>('/api/auth/login', json('POST', { email, password }))
+  const session = await apiRequest<SessionUser>('/api/auth/login', json('POST', { email, password }), AUTH_MUTATION_TIMEOUT_MS)
   authMark('login-response')
   authMeasure('login-request', 'login-start', 'login-response')
   csrfToken = null
+  csrfPreparedAt = 0
   return session
 }
 
@@ -292,12 +298,12 @@ export function markAuthenticatedAreaUsable() {
 }
 
 export const register = (displayName: string, email: string, password: string, passwordConfirmation: string, termsAccepted: boolean) =>
-  apiRequest<{ message: string }>('/api/auth/register', json('POST', { displayName, email, password, passwordConfirmation, termsAccepted }))
-export const requestPasswordRecovery = (email: string) => apiRequest<{ message: string }>('/api/auth/password-recovery', json('POST', { email }))
-export const resendVerification = (email: string) => apiRequest<{ message: string }>('/api/auth/resend-verification', json('POST', { email }))
-export const verifyEmail = (token: string) => apiRequest<{ message: string }>('/api/auth/verify-email', json('POST', { token }))
+  apiRequest<{ message: string }>('/api/auth/register', json('POST', { displayName, email, password, passwordConfirmation, termsAccepted }), AUTH_MUTATION_TIMEOUT_MS)
+export const requestPasswordRecovery = (email: string) => apiRequest<{ message: string }>('/api/auth/password-recovery', json('POST', { email }), AUTH_MUTATION_TIMEOUT_MS)
+export const resendVerification = (email: string) => apiRequest<{ message: string }>('/api/auth/resend-verification', json('POST', { email }), AUTH_MUTATION_TIMEOUT_MS)
+export const verifyEmail = (token: string) => apiRequest<{ message: string }>('/api/auth/verify-email', json('POST', { token }), AUTH_MUTATION_TIMEOUT_MS)
 export const resetPassword = (token: string, password: string, passwordConfirmation: string) =>
-  apiRequest<{ message: string }>('/api/auth/password-reset', json('POST', { token, password, passwordConfirmation }))
+  apiRequest<{ message: string }>('/api/auth/password-reset', json('POST', { token, password, passwordConfirmation }), AUTH_MUTATION_TIMEOUT_MS)
 
 export async function getCurrentSession(timeoutMs = 7000): Promise<SessionUser | null> {
   try {
@@ -316,6 +322,7 @@ export async function getCurrentSession(timeoutMs = 7000): Promise<SessionUser |
 export async function logout() {
   await apiRequest<void>('/api/auth/logout', json('POST', {}))
   csrfToken = null
+  csrfPreparedAt = 0
 }
 
 export const getOperatorProfile = () => apiRequest<OperatorProfile>('/api/operators/me')

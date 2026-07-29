@@ -1,5 +1,9 @@
 # Frontend web
 
+## Retomada resiliente no login — 2026-07-29
+
+O preparo CSRF é reutilizado por no máximo cinco minutos. Depois disso, uma nova consulta idempotente desperta e valida a API antes do envio de senha, evitando que um token mantido em memória contorne a retomada do Render gratuito. Login, cadastro, confirmação e recuperação possuem limite de 45 segundos para tolerar trocas transitórias de instância, enquanto as demais chamadas continuam com timeout curto.
+
 ## Gestão de data, briefing e exclusão de Operações — 2026-07-29
 
 O detalhe de [[09-OPERACOES]] apresenta ao organizador um painel responsivo para remarcar data/horários, editar o briefing e registrar o motivo da alteração. A exclusão fica em uma área de risco separada, exige motivo e confirmação explícita. Usuários que não administram a operação apenas visualizam o briefing publicado e não recebem os controles de gestão.

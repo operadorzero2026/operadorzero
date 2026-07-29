@@ -1,5 +1,28 @@
 # Histórico de alterações
 
+## 2026-07-29 - Login resiliente após suspensão ou deploy do Render
+
+### Arquivos alterados
+- `src/api.ts`
+- `scripts/auth-flow-scenarios.mjs`
+- [[06-FRONTEND-WEB]] e [[99-HISTORICO-DE-ALTERACOES]]
+
+### O que foi feito
+- O CSRF preparado no navegador passou a expirar em cinco minutos e ser renovado antes de novas ações de autenticação.
+- O timeout exclusivo de login, cadastro, confirmação e recuperação passou para 45 segundos.
+
+### Motivo
+- Evitar falha prematura quando o formulário permanece aberto enquanto a instância gratuita adormece ou é substituída durante um deploy.
+
+### Impacto
+- Frontend de autenticação; sem alteração de senha, sessão, banco ou backend.
+
+### Testes
+- Cenários de autenticação, lint, build e validação do bundle/deploy.
+
+### Pendências
+- O primeiro preparo após suspensão completa ainda depende do tempo de retomada oferecido pelo plano gratuito do Render.
+
 ## 2026-07-29 - Remarcação, briefing e exclusão segura de operações
 
 ### Arquivos alterados
