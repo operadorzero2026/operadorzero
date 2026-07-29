@@ -18,6 +18,10 @@ for (const required of [
   'controller.abort()',
   "error.name === 'AbortError'",
   'AUTH_REQUEST_TIMEOUT_MS = 15000',
+  'AUTH_BOOT_TIMEOUT_MS = 120000',
+  'csrfRequest: Promise<void> | null',
+  'prepareAuthentication',
+  'markAuthenticatedAreaUsable',
   'fetchWithTimeout',
   'ApiTimeoutError',
   'A conexão está demorando para iniciar.',
@@ -39,6 +43,10 @@ if (app.includes('if (authChecking) return') || app.includes('Validando sessão 
 
 if (!app.includes('sessionRestoring') || !app.includes('Verificando acesso...')) {
   throw new Error('Restauracao nao bloqueante da sessao deve informar seu estado.')
+}
+
+if (!app.includes('Preparando conexão segura...') || !app.includes('Conectando com segurança...')) {
+  throw new Error('Cold start deve ter estado visual sem congelar o formulario.')
 }
 
 for (const removedSocialAuth of ['prepareGoogleLogin', 'Continuar com Google', 'Conectando ao Google', '/api/auth/google/intent']) {

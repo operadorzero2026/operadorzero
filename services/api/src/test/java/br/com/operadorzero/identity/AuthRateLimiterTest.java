@@ -33,10 +33,11 @@ class AuthRateLimiterTest {
         limiter.check("login", secondIp, "victim@example.com", 10, Duration.ofMinutes(15));
 
         ArgumentCaptor<List<String>> keys = ArgumentCaptor.forClass(List.class);
-        org.mockito.Mockito.verify(redis, org.mockito.Mockito.times(4))
+        org.mockito.Mockito.verify(redis, org.mockito.Mockito.times(2))
             .execute(any(RedisScript.class), keys.capture(), anyString());
         List<List<String>> calls = keys.getAllValues();
-        assertThat(calls.get(1).getFirst()).isNotEqualTo(calls.get(3).getFirst());
-        assertThat(calls.get(1).getFirst()).contains("oz:auth:rate:login:subject-ip:");
+        assertThat(calls).allSatisfy(call -> assertThat(call).hasSize(2));
+        assertThat(calls.getFirst().get(1)).isNotEqualTo(calls.get(1).get(1));
+        assertThat(calls.getFirst().get(1)).contains("oz:auth:rate:login:subject-ip:");
     }
 }

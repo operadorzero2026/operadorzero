@@ -1,5 +1,39 @@
 # Histórico de alterações
 
+## 2026-07-29 - Diagnóstico e correção da latência de login
+
+### Arquivos alterados
+- `src/api.ts`
+- `src/App.tsx`
+- `scripts/auth-flow-scenarios.mjs`
+- `services/api/src/main/java/br/com/operadorzero/identity/AuthRateLimiter.java`
+- `services/api/src/main/java/br/com/operadorzero/identity/AuthService.java`
+- `services/api/src/test/java/br/com/operadorzero/identity/AuthRateLimiterTest.java`
+- `AUTHENTICATION.md`
+- `docs/obsidian/00-LEIA-ANTES-CODEX.md`
+- `docs/obsidian/20-DIAGNOSTICO-DE-LATENCIA-DO-LOGIN-2026-07-29.md`
+
+### O que foi feito
+- Medida a latência direta, via proxy e no navegador oficial.
+- Antecipado e deduplicado o bootstrap CSRF ao abrir o formulário.
+- Consolidado o rate limit IP/sujeito em um script Redis atômico.
+- Adicionadas métricas sanitizadas do clique até a tela utilizável e das fases internas do backend.
+- Mantidos Argon2id, CSRF, cookie HttpOnly, confirmação de e-mail e rate limit.
+
+### Motivo
+- Separar cold start, proxy e processamento real e reduzir trabalho serial no caminho crítico do login.
+
+### Impacto
+- Frontend, backend, Redis, observabilidade e documentação; sem migration ou alteração de schema.
+
+### Testes
+- `npm run check` aprovado.
+- `mvn -B clean verify` aprovado com 65 testes.
+- Smoke remoto aquecido e tentativa inválida não destrutiva no navegador oficial.
+
+### Pendências
+- Repetir a coleta após deploy e após hibernação real do Render Free; login bem-sucedido exige conta de homologação confirmada.
+
 ## 2026-07-28 - Organizador pode participar da própria operação
 
 ### Arquivos alterados

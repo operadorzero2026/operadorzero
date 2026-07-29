@@ -27,6 +27,8 @@ import {
 import {
   ApiClientError,
   getCurrentSession,
+  markAuthenticatedAreaUsable,
+  prepareAuthentication,
   getOperations,
   getOperatorProfile,
   getOperatorRanking,
@@ -70,6 +72,7 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
   const [showPassword, setShowPassword] = useState(false)
   const [notice, setNotice] = useState(initialNotice)
   const [pendingAction, setPendingAction] = useState<'form' | null>(null)
+  const [authPreparing, setAuthPreparing] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [verificationEmail, setVerificationEmail] = useState('')
   const isRecovery = mode === 'recovery'
@@ -78,6 +81,17 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
   const description = mode === 'login' ? 'Acesse sua conta com segurança.' : mode === 'signup' ? 'Crie sua identidade de operador em poucos passos.' : isReset ? 'O link será invalidado após a troca da senha.' : 'Informe seu e-mail para receber as instruções.'
 
   useEffect(() => { setNotice(initialNotice); setShowPassword(false); setTermsAccepted(false); setVerificationEmail('') }, [mode, initialNotice])
+  useEffect(() => {
+    if (!AUTH_ENABLED) return
+    // Wake the API and obtain CSRF while the user is reading/filling the form.
+    // ensureCsrf deduplicates this with a submit that happens immediately.
+    let active = true
+    const delayedStatus = window.setTimeout(() => active && setAuthPreparing(true), 500)
+    void prepareAuthentication()
+      .catch(() => undefined)
+      .finally(() => { window.clearTimeout(delayedStatus); if (active) setAuthPreparing(false) })
+    return () => { active = false; window.clearTimeout(delayedStatus) }
+  }, [mode])
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && onClose()
     document.body.classList.add('modal-open')
@@ -148,8 +162,9 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
           {(mode === 'signup' || isReset) && <label><span>Confirmar senha</span><div><LockKeyhole/><input name="passwordConfirmation" type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={12} maxLength={128} required placeholder="Digite a senha novamente"/></div></label>}
           {mode === 'login' && <button className="forgot-link" type="button" onClick={() => onModeChange('recovery')}>Esqueci minha senha</button>}
           {mode === 'signup' && <label className="terms-check"><input type="checkbox" required checked={termsAccepted} onChange={event => setTermsAccepted(event.target.checked)}/><span>Li e aceito os Termos de Uso e a Política de Privacidade.</span></label>}
-          <button className="button auth-submit" type="submit" disabled={pendingAction !== null || !AUTH_ENABLED}>{pendingAction === 'form' ? 'Aguarde...' : isRecovery ? 'Enviar instruções' : isReset ? 'Salvar nova senha' : mode === 'login' ? 'Entrar com e-mail' : 'Criar conta com e-mail'} {pendingAction === null && <ArrowRight size={17}/>}</button>
+          <button className="button auth-submit" type="submit" disabled={pendingAction !== null || !AUTH_ENABLED}>{pendingAction === 'form' ? 'Conectando com segurança...' : isRecovery ? 'Enviar instruções' : isReset ? 'Salvar nova senha' : mode === 'login' ? 'Entrar com e-mail' : 'Criar conta com e-mail'} {pendingAction === null && <ArrowRight size={17}/>}</button>
         </form>
+        {authPreparing && pendingAction === null && <p className="auth-notice" role="status">Preparando conexão segura...</p>}
         {notice && <p className="auth-notice" role="status">{notice}</p>}
         {(mode === 'signup' || mode === 'login') && verificationEmail && <button className="forgot-link" type="button" disabled={pendingAction !== null} onClick={resendConfirmation}>Reenviar e-mail de confirmação</button>}
         {!isRecovery && !isReset && <p className="auth-switch">{mode === 'login' ? 'Ainda não tem conta?' : 'Já possui uma conta?'} <button onClick={() => onModeChange(mode === 'login' ? 'signup' : 'login')}>{mode === 'login' ? 'Criar conta' : 'Entrar'}</button></p>}
@@ -212,6 +227,10 @@ function Dashboard({ onLogout, onUserUpdated, onNavigateCommunity, user }: { onL
       .catch(() => active && setOverviewError('Não foi possível atualizar todos os dados da visão geral.'))
       .finally(() => active && setOverviewLoading(false))
     return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    requestAnimationFrame(() => requestAnimationFrame(markAuthenticatedAreaUsable))
   }, [])
   const operationDate = (value: string) => new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(`${value}T12:00:00`))
   return <div className="app-shell">

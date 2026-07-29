@@ -10,6 +10,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.MDC;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
     public static final String TERMS_VERSION = "2026-07-22";
     public static final String PRIVACY_VERSION = "2026-07-22";
 
@@ -86,30 +89,56 @@ public class AuthService {
 
     @Transactional
     public UserAccount login(String email, String password, HttpServletRequest request, HttpServletResponse response) {
+        long totalStarted = System.nanoTime();
         ensureEnabled();
         String normalizedEmail = normalizeEmail(email);
+        long rateStarted = System.nanoTime();
         rateLimiter.check("login", request, normalizedEmail, 10, Duration.ofMinutes(15));
+        long redisMs = elapsedMs(rateStarted);
+        long findStarted = System.nanoTime();
         Optional<UserAccount> candidate = repository.findByEmail(normalizedEmail);
+        long findUserMs = elapsedMs(findStarted);
         String passwordHash = candidate.map(UserAccount::passwordHash).orElse(null);
+        long passwordStarted = System.nanoTime();
         boolean passwordMatches = passwordEncoder.matches(password,
             passwordHash == null ? dummyPasswordHash : passwordHash);
+        long passwordMs = elapsedMs(passwordStarted);
         UserAccount account = candidate.orElse(null);
         if (account == null) {
+            logLoginDuration(redisMs, findUserMs, passwordMs, 0, 0, 0, totalStarted, "INVALID");
             throw AuthException.invalidCredentials();
         }
         if (passwordHash == null) {
+            logLoginDuration(redisMs, findUserMs, passwordMs, 0, 0, 0, totalStarted, "PASSWORD_SETUP");
             throw AuthException.passwordSetupRequired();
         }
         if (!passwordMatches) {
+            logLoginDuration(redisMs, findUserMs, passwordMs, 0, 0, 0, totalStarted, "INVALID");
             throw AuthException.invalidCredentials();
         }
         if ("PENDING_EMAIL".equals(account.status())) {
+            logLoginDuration(redisMs, findUserMs, passwordMs, 0, 0, 0, totalStarted, "UNVERIFIED");
             throw AuthException.emailNotVerified();
         }
         if (!account.active()) {
+            logLoginDuration(redisMs, findUserMs, passwordMs, 0, 0, 0, totalStarted, "INACTIVE");
             throw AuthException.invalidCredentials();
         }
-        return createSession(account, request, response, "AUTH_LOGIN_PASSWORD");
+        String raw = tokens.newToken();
+        String sessionHash = tokens.hash(raw);
+        Instant now = Instant.now();
+        long sessionStarted = System.nanoTime();
+        repository.saveSession(account.id(), sessionHash, headerHash(request, "User-Agent"), ipHash(request),
+            now.plus(properties.sessionDuration()), now);
+        long sessionMs = elapsedMs(sessionStarted);
+        long cookieStarted = System.nanoTime();
+        cookies.writeSession(response, raw);
+        long cookieMs = elapsedMs(cookieStarted);
+        long auditStarted = System.nanoTime();
+        audit(account, "AUTH_LOGIN_PASSWORD", sessionHash, ipHash(request), now);
+        long auditMs = elapsedMs(auditStarted);
+        logLoginDuration(redisMs, findUserMs, passwordMs, sessionMs, cookieMs, auditMs, totalStarted, "SUCCESS");
+        return account;
     }
 
     @Transactional
@@ -238,5 +267,16 @@ public class AuthService {
         if (!properties.enabled()) {
             throw AuthException.unavailable();
         }
+    }
+
+    private static long elapsedMs(long started) {
+        return Math.round((System.nanoTime() - started) / 1_000_000.0);
+    }
+
+    private void logLoginDuration(long redisMs, long findUserMs, long passwordMs, long sessionMs,
+                                  long cookieMs, long auditMs, long totalStarted, String outcome) {
+        log.info("auth_login_duration correlationId={} outcome={} redisMs={} findUserMs={} passwordMs={} sessionMs={} cookieMs={} auditMs={} totalMs={}",
+            MDC.get("correlationId"), outcome, redisMs, findUserMs, passwordMs, sessionMs, cookieMs, auditMs,
+            elapsedMs(totalStarted));
     }
 }

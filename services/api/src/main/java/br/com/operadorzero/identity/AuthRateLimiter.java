@@ -12,9 +12,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuthRateLimiter {
     private static final DefaultRedisScript<Long> INCREMENT = new DefaultRedisScript<>("""
-        local current = redis.call('INCR', KEYS[1])
-        if current == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end
-        return current
+        local first = redis.call('INCR', KEYS[1])
+        if first == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end
+        local second = redis.call('INCR', KEYS[2])
+        if second == 1 then redis.call('EXPIRE', KEYS[2], ARGV[1]) end
+        return math.max(first, second)
         """, Long.class);
 
     private final StringRedisTemplate redis;
@@ -31,9 +33,8 @@ public class AuthRateLimiter {
         String normalizedSubject = subject == null ? "anonymous" : subject.toLowerCase(Locale.ROOT);
         String subjectKey = key(action, "subject-ip", normalizedSubject + "\u0000" + remoteAddress);
         try {
-            long ipCount = increment(ipKey, window);
-            long subjectCount = increment(subjectKey, window);
-            if (ipCount > limit || subjectCount > limit) {
+            long highestCount = increment(ipKey, subjectKey, window);
+            if (highestCount > limit) {
                 throw AuthException.rateLimited();
             }
         } catch (AuthException exception) {
@@ -43,8 +44,8 @@ public class AuthRateLimiter {
         }
     }
 
-    private long increment(String key, Duration window) {
-        Long value = redis.execute(INCREMENT, List.of(key), Long.toString(window.toSeconds()));
+    private long increment(String firstKey, String secondKey, Duration window) {
+        Long value = redis.execute(INCREMENT, List.of(firstKey, secondKey), Long.toString(window.toSeconds()));
         if (value == null) {
             throw AuthException.unavailable();
         }

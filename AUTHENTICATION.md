@@ -47,3 +47,9 @@ Variáveis necessárias no Render:
 - PostgreSQL, Redis e `CORS_ALLOWED_ORIGINS`
 
 A Vercel publica somente variáveis `VITE_` não sensíveis. O proxy same-origin mantém `/api` e `/actuator` antes do fallback da SPA.
+
+## Desempenho e observabilidade
+
+Ao abrir qualquer formulário de autenticação, o frontend prepara o CSRF de forma idempotente e compartilhada, antecipando a retomada da API sem criar keep-alive periódico. O login mede no navegador as fases `csrf`, `login-request` e `login-to-usable` com `performance.mark/measure`, sem dados pessoais.
+
+O backend emite o evento estruturado `auth_login_duration` com `correlationId`, resultado técnico e tempos de Redis, consulta do usuário, Argon2id, sessão, cookie, auditoria e total. E-mail, senha, hash, token e cookie nunca são incluídos. Consulte [[20-DIAGNOSTICO-DE-LATENCIA-DO-LOGIN-2026-07-29]] no vault.

@@ -159,7 +159,18 @@ export class ApiClientError extends Error {
 
 let csrfToken: string | null = null
 let csrfHeader = 'X-CSRF-TOKEN'
+let csrfRequest: Promise<void> | null = null
 const AUTH_REQUEST_TIMEOUT_MS = 15000
+const AUTH_BOOT_TIMEOUT_MS = 120000
+
+function authMark(name: string) {
+  if (typeof performance !== 'undefined') performance.mark(`oz-auth:${name}`)
+}
+
+function authMeasure(name: string, start: string, end: string) {
+  if (typeof performance === 'undefined') return
+  try { performance.measure(`oz-auth:${name}`, `oz-auth:${start}`, `oz-auth:${end}`) } catch { /* mark not present */ }
+}
 
 class ApiTimeoutError extends Error {
   constructor(message = 'A conexão está demorando para iniciar. Aguarde alguns segundos e tente novamente.') {
@@ -210,14 +221,25 @@ async function readError(response: Response) {
 
 async function ensureCsrf() {
   if (csrfToken) return
-  const response = await fetchWithTimeout(`${getApiBaseUrl()}/api/auth/csrf`, {
-    method: 'GET', credentials: 'include', headers: { Accept: 'application/json' },
-  })
-  if (!response.ok) throw await readError(response)
-  const result = await response.json() as { token: string; headerName: string }
-  csrfToken = result.token
-  csrfHeader = result.headerName
+  if (!csrfRequest) {
+    csrfRequest = (async () => {
+      authMark('csrf-start')
+      const response = await fetchWithTimeout(`${getApiBaseUrl()}/api/auth/csrf`, {
+        method: 'GET', credentials: 'include', headers: { Accept: 'application/json' },
+      }, AUTH_BOOT_TIMEOUT_MS)
+      if (!response.ok) throw await readError(response)
+      const result = await response.json() as { token: string; headerName: string }
+      csrfToken = result.token
+      csrfHeader = result.headerName
+      authMark('csrf-end')
+      authMeasure('csrf', 'csrf-start', 'csrf-end')
+    })().finally(() => { csrfRequest = null })
+  }
+  await csrfRequest
 }
+
+/** Starts the safe, idempotent CSRF/bootstrap request while the user fills the form. */
+export const prepareAuthentication = () => ensureCsrf()
 
 async function apiRequest<T>(path: string, init: RequestInit = {}, timeoutMs = AUTH_REQUEST_TIMEOUT_MS): Promise<T> {
   const method = (init.method || 'GET').toUpperCase()
@@ -251,9 +273,17 @@ function json(method: string, body?: unknown): RequestInit {
 }
 
 export async function login(email: string, password: string) {
+  authMark('login-start')
   const session = await apiRequest<SessionUser>('/api/auth/login', json('POST', { email, password }))
+  authMark('login-response')
+  authMeasure('login-request', 'login-start', 'login-response')
   csrfToken = null
   return session
+}
+
+export function markAuthenticatedAreaUsable() {
+  authMark('usable')
+  authMeasure('login-to-usable', 'login-start', 'usable')
 }
 
 export const register = (displayName: string, email: string, password: string, passwordConfirmation: string, termsAccepted: boolean) =>
