@@ -116,3 +116,6 @@ Requisições mutáveis renovam o token CSRF e repetem a chamada uma única vez 
 ## Comunidade - 2026-07-28
 
 [[14-COMUNIDADE]] usa leitura pública com projeção mínima e mutações autenticadas por sessão/CSRF. Autorizações de exclusão e moderação são verificadas no backend. Votos, salvos e chaves idempotentes possuem unicidade no PostgreSQL; SQL usa parâmetros e ordenações fixas. Conteúdo suspenso/excluído não entra no feed público. Imagens são limitadas a quatro por publicação, PNG/JPEG reais de até 2 MB, reencodificadas e armazenadas sem nome original ou metadados. Foto privada do perfil não é exposta: a interface usa avatar textual até existir consentimento específico.
+# Isolamento dos chats de operação
+
+O canal geral segue as regras de participação da operação. Canais privados são vinculados ao esquadrão e cada requisição valida no backend se o usuário ainda pertence àquele esquadrão. Trocar de esquadrão revoga imediatamente o acesso ao histórico anterior; ocultação de opções no frontend não é considerada controle de autorização.

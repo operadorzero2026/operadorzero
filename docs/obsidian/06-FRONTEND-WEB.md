@@ -164,3 +164,6 @@ O detalhe de uma operação consulta participantes e estrutura de forma paralela
 ## Contraste das ações de times e esquadrões (2026-07-29)
 
 Os botões **Esquadrão** e **Criar time** usam fundo oliva claro com texto escuro, além de estados de foco, hover e carregamento legíveis. No celular, a ação de criação ocupa a largura do formulário para manter uma área de toque adequada. Relacionado a [[09-OPERACOES]] e registrado em [[99-HISTORICO-DE-ALTERACOES]].
+# Operações em duas etapas
+
+A criação de operação usa duas etapas: dados gerais e organização do rascunho. A central exibe edição de times e esquadrões somente antes da publicação. Após publicar, a interface apresenta seleção das opções existentes e comunicação geral ou privada do esquadrão atual.

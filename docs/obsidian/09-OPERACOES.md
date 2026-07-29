@@ -117,3 +117,11 @@ A [[06-FRONTEND-WEB|Visão Geral]] apresenta até três operações publicadas e
 ## Correção das consultas de estrutura (2026-07-29)
 
 As consultas PostgreSQL de times e esquadrões agrupam explicitamente as colunas usadas na ordenação (`sort_order`). Isso evita erro `500` ao abrir uma operação publicada e mantém disponíveis a seleção do time, a inscrição e a central da operação. O frontend trata roster e estrutura separadamente, conforme [[06-FRONTEND-WEB]].
+# Estrutura definida antes da publicação e chats por esquadrão
+
+- O organizador salva a operação como rascunho e conclui times, capacidades, esquadrões e funções antes de publicar.
+- Depois da publicação, jogadores apenas escolhem um time e, em jogos médios ou grandes, um esquadrão existente.
+- Alterações estruturais após a publicação são recusadas pelo backend; movimentações administrativas de participantes permanecem separadas.
+- Toda operação possui chat geral. Cada esquadrão possui um canal privado, autorizado novamente no backend a cada leitura ou envio.
+- Integrantes de outro esquadrão não conseguem consultar histórico nem enviar mensagens no canal adversário.
+- Canais privados antigos de time permanecem somente como histórico no banco, sem endpoint público.

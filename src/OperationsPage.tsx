@@ -79,8 +79,6 @@ export function OperationsPage() {
     setMaps(id ? (await getMaps(id)).items : [])
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null
-    const publishNow = submitter?.value === 'publish'
     const d = new FormData(e.currentTarget)
     const cover = d.get('cover')
     setPending('create')
@@ -111,11 +109,11 @@ export function OperationsPage() {
         waitingListEnabled: d.get('waitingListEnabled') === 'on',
       })
       if (cover instanceof File && cover.size > 0) await uploadOperationCover(created.id, cover)
-      if (publishNow) await publishOperation(created.id)
-      setFeedback(publishNow ? 'Operação publicada com inscrições abertas.' : 'Operação salva como rascunho.')
+      setFeedback('Rascunho salvo. Agora configure os times e esquadrões antes de publicar.')
       setShowCreate(false)
       setCoverPreview('')
       await load('')
+      await openOperation(created)
     } catch (err) {
       setFeedback(
         err instanceof Error
@@ -130,9 +128,10 @@ export function OperationsPage() {
     setPending(item.id)
     setFeedback('')
     try {
-      await publishOperation(item.id)
+      const published = await publishOperation(item.id)
       setFeedback('Operação publicada com inscrições abertas.')
       await load(query)
+      if (selected?.id === item.id) await openOperation(published)
     } catch (err) {
       setFeedback(err instanceof Error ? err.message : 'Não foi possível publicar a operação.')
     } finally {
@@ -414,11 +413,8 @@ export function OperationsPage() {
               <input type="checkbox" name="waitingListEnabled" defaultChecked />{' '}
               Permitir lista de espera
             </label>
-            <button type="submit" value="draft" className="module-secondary" disabled={pending === 'create'}>
-              Salvar rascunho
-            </button>
-            <button type="submit" value="publish" className="module-primary" disabled={pending === 'create'}>
-              {pending === 'create' ? 'Salvando…' : 'Publicar operação'}
+            <button type="submit" className="module-primary" disabled={pending === 'create'}>
+              {pending === 'create' ? 'Salvando…' : 'Continuar para times e esquadrões'}
             </button>
           </form>
         </section>
@@ -475,8 +471,8 @@ export function OperationsPage() {
                     </span>
                   )}
                   {item.managedByCurrentUser && item.status === 'DRAFT' ? (
-                    <button className="module-primary" disabled={pending === item.id} onClick={(event) => { event.stopPropagation(); void publish(item) }}>
-                      {pending === item.id ? 'Publicando…' : 'Publicar operação'}
+                    <button className="module-primary" onClick={(event) => { event.stopPropagation(); void openOperation(item) }}>
+                      Configurar antes de publicar
                     </button>
                   ) : item.participantStatus &&
                   item.participantStatus !== 'CANCELLED' ? (
@@ -534,14 +530,14 @@ export function OperationsPage() {
                 {roster.teams.map(team => <article key={team.id} className={selectedTeam === team.id ? 'active' : ''}>
                   <label><input type="radio" name="operationTeam" value={team.id} checked={selectedTeam === team.id} onChange={() => {setSelectedTeam(team.id);setSelectedSquad('')}} disabled={Boolean(roster.currentUserTeamId)} /><strong>{team.name}</strong><small>{team.participantCount}/{team.capacity} inscritos</small></label>
                   <div>{roster.participants.filter(person => person.operationTeamId === team.id).map(person => <p key={person.operatorId}><span className="operator-avatar">{person.callsign.charAt(0).toUpperCase()}</span><b>{person.callsign}</b><small>{person.status === 'WAITING_LIST' ? 'Lista de espera' : person.displayName}</small></p>)}</div>
-                  {selectedTeam===team.id&&structure?.gameSize!=='SMALL'&&<div className="operation-squad-choice"><b>Esquadrão opcional</b><label><input type="radio" name="operationSquad" checked={!selectedSquad} onChange={()=>setSelectedSquad('')}/> Sem esquadrão</label>{structure?.teams.find(t=>t.id===team.id)?.squads.map(s=><label key={s.id}><input type="radio" name="operationSquad" value={s.id} checked={selectedSquad===s.id} disabled={s.status!=='OPEN'||s.participantCount>=s.capacity} onChange={()=>setSelectedSquad(s.id)}/>{s.name} · {s.participantCount}/{s.capacity}</label>)}</div>}
+                  {selectedTeam===team.id&&structure?.gameSize!=='SMALL'&&<div className="operation-squad-choice"><b>Escolha obrigatória do esquadrão</b>{structure?.teams.find(t=>t.id===team.id)?.squads.map(s=><label key={s.id}><input type="radio" name="operationSquad" value={s.id} checked={selectedSquad===s.id} disabled={s.status!=='OPEN'||s.participantCount>=s.capacity} onChange={()=>setSelectedSquad(s.id)}/>{s.name} · {s.participantCount}/{s.capacity}</label>)}</div>}
                 </article>)}
               </div>
               {roster.participants.length === 0 && <p className="module-empty">Ainda não há participantes inscritos.</p>}
-              {!roster.currentUserTeamId && <button className="module-primary" disabled={!selectedTeam || pending === selected.id} onClick={() => void participate(selected, false, selectedTeam, selectedSquad)}>{pending === selected.id ? 'Inscrevendo…' : 'Inscrever-se no time escolhido'}</button>}
+              {!roster.currentUserTeamId && <button className="module-primary" disabled={!selectedTeam || (structure?.gameSize!=='SMALL'&&!selectedSquad) || pending === selected.id} onClick={() => void participate(selected, false, selectedTeam, selectedSquad)}>{pending === selected.id ? 'Inscrevendo…' : 'Entrar no time e esquadrão escolhidos'}</button>}
               {roster.currentUserTeamId && <p className="module-feedback">Você já está inscrito em {roster.teams.find(team => team.id === roster.currentUserTeamId)?.name || 'um time'}.</p>}
             </>}
-            {structureError ? <p className="module-feedback" role="alert">{structureError} <button type="button" onClick={() => void openOperation(selected)}>Tentar novamente</button></p> : <OperationCommandCenter operation={selected} initialStructure={structure}/>}
+            {structureError ? <p className="module-feedback" role="alert">{structureError} <button type="button" onClick={() => void openOperation(selected)}>Tentar novamente</button></p> : <OperationCommandCenter operation={selected} initialStructure={structure} onPublish={publish}/>}
           </section>
         </div>
       )}

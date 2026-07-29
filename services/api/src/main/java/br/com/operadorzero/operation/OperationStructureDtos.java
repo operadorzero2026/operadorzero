@@ -36,9 +36,9 @@ public final class OperationStructureDtos {
                                         int capacity, long participantCount, int sortOrder, String status,
                                         UUID commanderId, String commanderCallsign, UUID radioId,
                                         String radioCallsign, List<SquadResponse> squads) {}
-    public record StructureResponse(UUID operationId, String gameSize, Integer participantLimit, long participantCount,
+    public record StructureResponse(UUID operationId, String operationStatus, String gameSize, Integer participantLimit, long participantCount,
                                     boolean commandRolesEnabled, boolean allowRoleAccumulation,
-                                    boolean managedByCurrentUser, List<TeamStructureResponse> teams,
+                                    boolean managedByCurrentUser, UUID currentUserSquadId, List<TeamStructureResponse> teams,
                                     List<RoleAssignmentResponse> roles) {}
 
     public record SendMessageRequest(@NotBlank @Size(max=2000) String body, UUID parentMessageId,

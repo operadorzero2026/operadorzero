@@ -22,7 +22,7 @@ public class OperationStructureRepository {
     public Optional<OperationAccess> access(UUID operationId, long userId, boolean lock) {
         try {
             return Optional.ofNullable(jdbc.queryForObject("""
-                SELECT o.id,o.public_id,o.organizer_user_id,o.game_size,o.participant_limit,o.command_roles_enabled,
+                SELECT o.id,o.public_id,o.organizer_user_id,o.status,o.game_size,o.participant_limit,o.command_roles_enabled,
                        o.allow_role_accumulation,o.organizer_user_id=:userId owner,
                        EXISTS(SELECT 1 FROM operation_role_assignment r WHERE r.operation_id=o.id AND r.user_id=:userId
                               AND r.role='OPERATION_ADMIN') operation_admin
@@ -31,7 +31,7 @@ public class OperationStructureRepository {
                     SELECT 1 FROM operation_role_assignment ar WHERE ar.operation_id=o.id AND ar.user_id=:userId AND ar.role='OPERATION_ADMIN'))
                 """ + (lock ? " FOR UPDATE" : ""), Map.of("id", operationId, "userId", userId), (r,i) ->
                 new OperationAccess(r.getLong("id"), r.getObject("public_id", UUID.class), r.getLong("organizer_user_id"),
-                    r.getString("game_size"), (Integer) r.getObject("participant_limit"), r.getBoolean("command_roles_enabled"),
+                    r.getString("status"), r.getString("game_size"), (Integer) r.getObject("participant_limit"), r.getBoolean("command_roles_enabled"),
                     r.getBoolean("allow_role_accumulation"), r.getBoolean("owner"), r.getBoolean("operation_admin"))));
         } catch (EmptyResultDataAccessException ex) { return Optional.empty(); }
     }
@@ -81,8 +81,12 @@ public class OperationStructureRepository {
             });
         long count = jdbc.queryForObject("SELECT count(*) FROM operation_participant WHERE operation_id=:id AND status IN "+ACTIVE,
             Map.of("id",access.id()),Long.class);
-        return new StructureResponse(access.publicId(),access.gameSize(),access.participantLimit(),count,
-            access.commandRolesEnabled(),access.allowRoleAccumulation(),access.owner()||access.operationAdmin(),teams,roles);
+        UUID currentUserSquadId=jdbc.query("""
+            SELECT s.public_id FROM operation_participant p JOIN operation_squad s ON s.id=p.operation_squad_id
+            WHERE p.operation_id=:operationId AND p.user_id=:userId AND p.status IN ('REQUESTED','APPROVED','WAITING_LIST','CONFIRMED','CHECKED_IN')
+            """,Map.of("operationId",access.id(),"userId",userId),(r,i)->r.getObject("public_id",UUID.class)).stream().findFirst().orElse(null);
+        return new StructureResponse(access.publicId(),access.status(),access.gameSize(),access.participantLimit(),count,
+            access.commandRolesEnabled(),access.allowRoleAccumulation(),access.owner()||access.operationAdmin(),currentUserSquadId,teams,roles);
     }
     public int updateSettings(OperationAccess a,UpdateStructureSettingsRequest r,String size,Instant now){int changed=jdbc.update("""
         UPDATE airsoft_operation SET game_size=:size,participant_limit=:limit,
@@ -176,17 +180,17 @@ public class OperationStructureRepository {
     }
     public int removeRole(OperationAccess a, UUID assignmentId) { return jdbc.update("DELETE FROM operation_role_assignment WHERE public_id=:id AND operation_id=:op",Map.of("id",assignmentId,"op",a.id())); }
 
-    public ChatAccess chatAccess(OperationAccess a, long userId, UUID teamId) {
-        var params=new MapSqlParameterSource().addValue("op",a.id()).addValue("user",userId).addValue("teamId",teamId);
+    public ChatAccess chatAccess(OperationAccess a, long userId, UUID squadId) {
+        var params=new MapSqlParameterSource().addValue("op",a.id()).addValue("user",userId).addValue("squadId",squadId);
         return jdbc.queryForObject("""
             SELECT c.id,c.public_id,c.channel_type,c.status,c.public_read,
               EXISTS(SELECT 1 FROM operation_participant p WHERE p.operation_id=:op AND p.user_id=:user AND p.status IN ('REQUESTED','APPROVED','WAITING_LIST','CONFIRMED','CHECKED_IN')) participant,
-              (CAST(:teamId AS uuid) IS NULL OR EXISTS(SELECT 1 FROM operation_participant p JOIN operation_team t ON t.id=p.operation_team_id
-                WHERE p.operation_id=:op AND p.user_id=:user AND p.status IN ('REQUESTED','APPROVED','WAITING_LIST','CONFIRMED','CHECKED_IN') AND t.public_id=:teamId)) team_member
-            FROM operation_chat_channel c LEFT JOIN operation_team t ON t.id=c.operation_team_id
-            WHERE c.operation_id=:op AND ((CAST(:teamId AS uuid) IS NULL AND c.channel_type='GENERAL') OR t.public_id=:teamId)
+              (CAST(:squadId AS uuid) IS NULL OR EXISTS(SELECT 1 FROM operation_participant p JOIN operation_squad s ON s.id=p.operation_squad_id
+                WHERE p.operation_id=:op AND p.user_id=:user AND p.status IN ('REQUESTED','APPROVED','WAITING_LIST','CONFIRMED','CHECKED_IN') AND s.public_id=:squadId)) squad_member
+            FROM operation_chat_channel c LEFT JOIN operation_squad s ON s.id=c.operation_squad_id
+            WHERE c.operation_id=:op AND ((CAST(:squadId AS uuid) IS NULL AND c.channel_type='GENERAL') OR (c.channel_type='SQUAD' AND s.public_id=:squadId))
             """,params,(r,i)->new ChatAccess(r.getLong("id"),r.getObject("public_id",UUID.class),r.getString("channel_type"),
-                r.getString("status"),r.getBoolean("public_read"),r.getBoolean("participant"),r.getBoolean("team_member")));
+                r.getString("status"),r.getBoolean("public_read"),r.getBoolean("participant"),r.getBoolean("squad_member")));
     }
     public ChatPageResponse messages(ChatAccess c,long userId,int limit,Instant before) {
         var params=new MapSqlParameterSource().addValue("channel",c.id()).addValue("user",userId).addValue("limit",limit+1)
@@ -241,6 +245,6 @@ public class OperationStructureRepository {
         .addValue("capacity",r.capacity()).addValue("sortOrder",r.sortOrder()).addValue("status",r.entriesOpen()?"OPEN":"CLOSED")
         .addValue("now",Timestamp.from(now));}
     private String clean(String s){return s==null?"":s.trim().replaceAll("\\s+"," ");} private String nullable(String s){String v=clean(s);return v.isEmpty()?null:v;}
-    public record OperationAccess(long id,UUID publicId,long ownerId,String gameSize,Integer participantLimit,boolean commandRolesEnabled,boolean allowRoleAccumulation,boolean owner,boolean operationAdmin){}
-    public record ChatAccess(long id,UUID publicId,String type,String status,boolean publicRead,boolean participant,boolean teamMember){}
+    public record OperationAccess(long id,UUID publicId,long ownerId,String status,String gameSize,Integer participantLimit,boolean commandRolesEnabled,boolean allowRoleAccumulation,boolean owner,boolean operationAdmin){}
+    public record ChatAccess(long id,UUID publicId,String type,String status,boolean publicRead,boolean participant,boolean squadMember){}
 }

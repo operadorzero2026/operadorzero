@@ -120,6 +120,9 @@ public class OperationService {
     @Transactional
     public OperationResponse publish(AuthenticatedUser user, UUID id) {
         Instant now = clock.instant();
+        if (!repository.publishStructureReady(id, user.internalId())) {
+            throw BusinessException.conflict("OPERATION_STRUCTURE_INCOMPLETE", "Antes de publicar, configure os times e ao menos um esquadrão em cada time. Jogos pequenos exigem exatamente dois times e não usam esquadrões.");
+        }
         if (repository.publish(id, user.internalId(), now) != 1) {
             throw BusinessException.conflict("OPERATION_NOT_PUBLISHABLE", "A operação não foi encontrada ou não está mais como rascunho.");
         }

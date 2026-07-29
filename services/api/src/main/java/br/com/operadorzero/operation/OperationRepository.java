@@ -205,6 +205,22 @@ public class OperationRepository {
             """, Map.of("now", Timestamp.from(now), "id", operationId, "userId", userId));
     }
 
+    public boolean publishStructureReady(UUID operationId, long userId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+            SELECT CASE
+              WHEN o.game_size='SMALL' THEN count(DISTINCT t.id)=2 AND count(DISTINCT s.id)=0
+              WHEN o.game_size='MEDIUM' THEN count(DISTINCT t.id) BETWEEN 2 AND 4
+                AND count(DISTINCT t.id)=count(DISTINCT s.operation_team_id)
+              ELSE count(DISTINCT t.id)>=2 AND count(DISTINCT t.id)=count(DISTINCT s.operation_team_id)
+            END
+            FROM airsoft_operation o
+            LEFT JOIN operation_team t ON t.operation_id=o.id
+            LEFT JOIN operation_squad s ON s.operation_team_id=t.id
+            WHERE o.public_id=:id AND o.organizer_user_id=:userId AND o.status='DRAFT' AND o.deleted_at IS NULL
+            GROUP BY o.id,o.game_size
+            """, Map.of("id",operationId,"userId",userId), Boolean.class));
+    }
+
     public int requestParticipation(UUID operationId, UUID operationTeamId, UUID operationSquadId, long userId, Instant now) {
         if (jdbc.queryForList("SELECT id FROM airsoft_operation WHERE public_id=:id AND deleted_at IS NULL FOR UPDATE", Map.of("id", operationId), Long.class).isEmpty()) return 0;
         if (jdbc.queryForList("SELECT id FROM operation_team WHERE public_id=:id FOR UPDATE", Map.of("id", operationTeamId), Long.class).isEmpty()) return 0;
@@ -230,6 +246,7 @@ public class OperationRepository {
               WHERE p.operation_squad_id = os.id AND p.status IN ('REQUESTED','APPROVED','CONFIRMED','CHECKED_IN')) sc
             WHERE o.public_id=:id AND o.deleted_at IS NULL AND o.status IN ('PUBLISHED','REGISTRATION_OPEN','FULL')
               AND (:operationSquadId IS NULL OR os.id IS NOT NULL)
+              AND (o.game_size = 'SMALL' OR :operationSquadId IS NOT NULL)
               AND (o.game_size <> 'SMALL' OR :operationSquadId IS NULL)
               AND ((tc.total < ot.capacity AND (o.participant_limit IS NULL OR oc.total < o.participant_limit)
                     AND (:operationSquadId IS NULL OR sc.total < os.capacity)) OR o.waiting_list_enabled)

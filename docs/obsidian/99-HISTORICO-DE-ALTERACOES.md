@@ -2244,3 +2244,10 @@
 ### Pendências
 - As quatro variáveis `GOOGLE_*` foram removidas do Render e o cliente OAuth exclusivo do Operador Zero foi excluído no Google Cloud; a restauração administrativa permanece possível por até 30 dias conforme o provedor.
 - Permanece pendente somente o E2E humano de recebimento e abertura dos e-mails em uma caixa postal real, pois a automação não acessou mensagens privadas.
+# 2026-07-29 - Estrutura pré-publicação e chat privado por esquadrão
+
+- A criação de operações passou a conduzir o organizador ao rascunho para configurar times e esquadrões antes de publicar.
+- O backend bloqueia alterações estruturais após a publicação e exige esquadrão nas inscrições de jogos médios e grandes.
+- Chats privados por time foram substituídos por canais privados por esquadrão, com autorização server-side e preservação dos canais antigos como histórico inacessível.
+- Migration adicionada: `V20__squad_private_chat_channels.sql`.
+- Validações executadas: `npm run check` e `mvn -B clean verify`.

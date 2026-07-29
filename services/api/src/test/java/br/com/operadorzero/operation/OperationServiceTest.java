@@ -63,6 +63,7 @@ class OperationServiceTest {
             "Operator", "Zero", List.of("OPERATOR"));
         UUID operationId = UUID.randomUUID();
         Instant now = Instant.parse("2026-07-28T12:00:00Z");
+        when(repository.publishStructureReady(operationId, user.internalId())).thenReturn(true);
         when(repository.publish(operationId, user.internalId(), now)).thenReturn(0);
         OperationService service = new OperationService(repository, mock(AuditEventRepository.class),
             Clock.fixed(now, ZoneOffset.UTC));
