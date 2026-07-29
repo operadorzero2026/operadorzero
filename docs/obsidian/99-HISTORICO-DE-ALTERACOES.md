@@ -1,5 +1,29 @@
 # Histórico de alterações
 
+## 2026-07-29 - Contraste dos botões de times e esquadrões
+
+### Arquivos alterados
+- `src/functional-modules.css`
+- `scripts/real-content-scenarios.mjs`
+- [[06-FRONTEND-WEB]]
+
+### O que foi feito
+- definido texto escuro sobre fundo oliva para **Esquadrão** e **Criar time**;
+- adicionados estados legíveis de hover e carregamento;
+- ampliado o botão de criação no layout móvel.
+
+### Motivo
+- o texto herdava a mesma tonalidade clara do fundo do botão e ficava ilegível.
+
+### Impacto
+- frontend responsivo do gerenciamento de operações.
+
+### Testes
+- cenário automatizado de contraste, lint e build do frontend.
+
+### Pendências
+- nenhuma.
+
 ## 2026-07-29 - Correção do carregamento e inscrição em operação publicada
 
 ### Arquivos alterados

@@ -5,6 +5,7 @@ const [app, operations] = await Promise.all([
   readFile('src/App.tsx', 'utf8'),
   readFile('src/OperationsPage.tsx', 'utf8'),
 ])
+const functionalStyles = await readFile('src/functional-modules.css', 'utf8')
 
 const heroLogin = app.indexOf("onClick={() => setAuthMode('login')}>Entrar <ArrowRight")
 const heroSignup = app.indexOf("className=\"text-button link-button\" onClick={() => setAuthMode('signup')}>Criar perfil gratuito")
@@ -57,5 +58,7 @@ assert.equal(app.includes('localStorage'), false)
 assert.equal(app.includes('sessionStorage'), false)
 assert.equal(operations.includes('Promise.allSettled'), true, 'O detalhe da operação deve tolerar falha parcial das consultas.')
 assert.equal(operations.includes('Tentar novamente'), true, 'Falhas no detalhe da operação devem permitir nova tentativa.')
+assert.match(functionalStyles, /\.operation-team-create>button\{[^}]*background:#b7b95e;[^}]*color:#0e100d;/, 'O botão Criar time deve manter contraste entre fundo e texto.')
+assert.match(functionalStyles, /\.operation-structure-grid article>button/, 'O botão de esquadrão deve possuir estilo de alto contraste.')
 
 console.log('Aplicação oficial validada sem registros fictícios ou persistência simulada.')

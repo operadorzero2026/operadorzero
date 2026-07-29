@@ -153,3 +153,6 @@ O cartão Comunidade mantém título e subtítulo e agora é um controle clicáv
 ## Carregamento resiliente do detalhe de operação (2026-07-29)
 
 O detalhe de uma operação consulta participantes e estrutura de forma paralela e independente. Se apenas uma consulta falhar, os dados disponíveis continuam visíveis; o bloco afetado apresenta o erro e a ação **Tentar novamente**, sem permanecer indefinidamente em carregamento. A correção está ligada ao fluxo real de [[09-OPERACOES]] e registrada em [[99-HISTORICO-DE-ALTERACOES]].
+## Contraste das ações de times e esquadrões (2026-07-29)
+
+Os botões **Esquadrão** e **Criar time** usam fundo oliva claro com texto escuro, além de estados de foco, hover e carregamento legíveis. No celular, a ação de criação ocupa a largura do formulário para manter uma área de toque adequada. Relacionado a [[09-OPERACOES]] e registrado em [[99-HISTORICO-DE-ALTERACOES]].
