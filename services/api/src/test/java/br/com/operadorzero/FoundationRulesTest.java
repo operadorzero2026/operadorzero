@@ -120,4 +120,15 @@ class FoundationRulesTest {
         );
         assertThat(v16).doesNotContain("DROP TABLE", "TRUNCATE", "DELETE FROM app_user");
     }
+
+    @Test
+    void operationStructureQueriesGroupEveryExplicitOrderingColumn() throws Exception {
+        String repository = Files.readString(Path.of(
+            "src/main/java/br/com/operadorzero/operation/OperationStructureRepository.java"));
+
+        assertThat(repository).contains(
+            "GROUP BY s.id,t.public_id,t.sort_order,cp.public_id",
+            "GROUP BY t.id,t.sort_order,cp.public_id"
+        );
+    }
 }

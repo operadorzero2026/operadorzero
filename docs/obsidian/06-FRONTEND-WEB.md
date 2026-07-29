@@ -150,3 +150,6 @@ A Visão Geral autenticada consulta dados reais de [[09-OPERACOES]], [[10-MINHA-
 ## Rota funcional da Comunidade - 2026-07-28
 
 O cartão Comunidade mantém título e subtítulo e agora é um controle clicável que navega para `/comunidade`. A mesma rota está disponível na landing, menu e rodapé. O feed é público e responsivo; tentativas de publicar, comentar, responder, votar, salvar ou denunciar sem sessão abrem o login real. Rotas filhas cobrem nova publicação, detalhe e perfil comunitário do autor, conforme [[14-COMUNIDADE]].
+## Carregamento resiliente do detalhe de operação (2026-07-29)
+
+O detalhe de uma operação consulta participantes e estrutura de forma paralela e independente. Se apenas uma consulta falhar, os dados disponíveis continuam visíveis; o bloco afetado apresenta o erro e a ação **Tentar novamente**, sem permanecer indefinidamente em carregamento. A correção está ligada ao fluxo real de [[09-OPERACOES]] e registrada em [[99-HISTORICO-DE-ALTERACOES]].

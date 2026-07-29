@@ -56,6 +56,8 @@ export function OperationsPage() {
     [selected, setSelected] = useState<Operation | null>(null),
     [roster, setRoster] = useState<OperationRoster | null>(null),
     [structure, setStructure] = useState<OperationStructure | null>(null),
+    [rosterError, setRosterError] = useState(''),
+    [structureError, setStructureError] = useState(''),
     [selectedTeam, setSelectedTeam] = useState(''),
     [selectedSquad, setSelectedSquad] = useState(''),
     [coverPreview, setCoverPreview] = useState('')
@@ -138,16 +140,23 @@ export function OperationsPage() {
     setSelected(item)
     setRoster(null)
     setStructure(null)
+    setRosterError('')
+    setStructureError('')
     setSelectedTeam('')
     setSelectedSquad('')
-    try {
-      const [result, structureResult] = await Promise.all([getOperationRoster(item.id),getOperationStructure(item.id)])
+    const [rosterResult, structureResult] = await Promise.allSettled([
+      getOperationRoster(item.id),
+      getOperationStructure(item.id),
+    ])
+    if (rosterResult.status === 'fulfilled') {
+      const result = rosterResult.value
       setRoster(result)
-      setStructure(structureResult)
       setSelectedTeam(result.currentUserTeamId || result.teams.find(team => team.participantCount < team.capacity)?.id || result.teams[0]?.id || '')
-    } catch (err) {
-      setFeedback(err instanceof Error ? err.message : 'Não foi possível carregar os participantes.')
+    } else {
+      setRosterError(rosterResult.reason instanceof Error ? rosterResult.reason.message : 'Não foi possível carregar os times e participantes.')
     }
+    if (structureResult.status === 'fulfilled') setStructure(structureResult.value)
+    else setStructureError(structureResult.reason instanceof Error ? structureResult.reason.message : 'Não foi possível carregar a organização da operação.')
   }
   const participate = async (item: Operation, cancel = false, operationTeamId = '', operationSquadId = '') => {
     setPending(item.id)
@@ -463,7 +472,7 @@ export function OperationsPage() {
             <h2>{selected.name}</h2>
             <p>{selected.description}</p>
             <div className="operation-roster-summary"><span><MapPin /> {selected.fieldName} · {selected.city}/{selected.stateCode}</span><span><Users /> {selected.participantCount}/{selected.participantLimit ?? 'sem limite'} participantes</span></div>
-            {!roster ? <p>Carregando times e participantes…</p> : <>
+            {rosterError ? <p className="module-feedback" role="alert">{rosterError} <button type="button" onClick={() => void openOperation(selected)}>Tentar novamente</button></p> : !roster ? <p>Carregando times e participantes…</p> : <>
               <div className="operation-team-grid">
                 {roster.teams.map(team => <article key={team.id} className={selectedTeam === team.id ? 'active' : ''}>
                   <label><input type="radio" name="operationTeam" value={team.id} checked={selectedTeam === team.id} onChange={() => {setSelectedTeam(team.id);setSelectedSquad('')}} disabled={Boolean(roster.currentUserTeamId)} /><strong>{team.name}</strong><small>{team.participantCount}/{team.capacity} inscritos</small></label>
@@ -475,7 +484,7 @@ export function OperationsPage() {
               {!roster.currentUserTeamId && <button className="module-primary" disabled={!selectedTeam || pending === selected.id} onClick={() => void participate(selected, false, selectedTeam, selectedSquad)}>{pending === selected.id ? 'Inscrevendo…' : 'Inscrever-se no time escolhido'}</button>}
               {roster.currentUserTeamId && <p className="module-feedback">Você já está inscrito em {roster.teams.find(team => team.id === roster.currentUserTeamId)?.name || 'um time'}.</p>}
             </>}
-            <OperationCommandCenter operation={selected} initialStructure={structure}/>
+            {structureError ? <p className="module-feedback" role="alert">{structureError} <button type="button" onClick={() => void openOperation(selected)}>Tentar novamente</button></p> : <OperationCommandCenter operation={selected} initialStructure={structure}/>}
           </section>
         </div>
       )}

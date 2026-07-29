@@ -1,5 +1,32 @@
 # Histórico de alterações
 
+## 2026-07-29 - Correção do carregamento e inscrição em operação publicada
+
+### Arquivos alterados
+- `services/api/src/main/java/br/com/operadorzero/operation/OperationStructureRepository.java`
+- `services/api/src/test/java/br/com/operadorzero/FoundationRulesTest.java`
+- `src/OperationsPage.tsx`
+- `scripts/real-content-scenarios.mjs`
+- [[06-FRONTEND-WEB]]
+- [[09-OPERACOES]]
+
+### O que foi feito
+- incluídas no `GROUP BY` as colunas de ordenação das consultas de times e esquadrões;
+- separados os resultados de participantes e estrutura no frontend;
+- adicionada mensagem visível com nova tentativa em falhas parciais.
+
+### Motivo
+- o PostgreSQL rejeitava a consulta da estrutura e a tela mantinha os dois blocos em carregamento.
+
+### Impacto
+- backend, frontend e fluxo de inscrição em operações publicadas.
+
+### Testes
+- teste de regressão da consulta e cenário de resiliência do detalhe; suítes completas executadas antes da publicação.
+
+### Pendências
+- nenhuma para esta falha.
+
 ## 2026-07-29 - Redução da latência ao abrir operações
 
 ### Arquivos alterados

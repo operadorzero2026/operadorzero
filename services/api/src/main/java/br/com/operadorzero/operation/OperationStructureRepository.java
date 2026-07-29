@@ -55,7 +55,7 @@ public class OperationStructureRepository {
             LEFT JOIN operator_profile cp ON cp.user_id=cr.user_id
             LEFT JOIN operation_role_assignment rr ON rr.operation_squad_id=s.id AND rr.role='SQUAD_RADIO'
             LEFT JOIN operator_profile rp ON rp.user_id=rr.user_id
-            WHERE t.operation_id=:operationId GROUP BY s.id,t.public_id,cp.public_id,cp.callsign,rp.public_id,rp.callsign
+            WHERE t.operation_id=:operationId GROUP BY s.id,t.public_id,t.sort_order,cp.public_id,cp.callsign,rp.public_id,rp.callsign
             ORDER BY t.sort_order,s.sort_order
             """, Map.of("operationId",access.id()), (r,i)->new SquadResponse(r.getObject("public_id",UUID.class),
                 r.getObject("team_id",UUID.class),r.getString("name"),r.getString("acronym"),r.getString("description"),
@@ -70,7 +70,7 @@ public class OperationStructureRepository {
             LEFT JOIN operator_profile cp ON cp.user_id=cr.user_id
             LEFT JOIN operation_role_assignment rr ON rr.operation_team_id=t.id AND rr.operation_squad_id IS NULL AND rr.role='TEAM_RADIO'
             LEFT JOIN operator_profile rp ON rp.user_id=rr.user_id
-            WHERE t.operation_id=:operationId GROUP BY t.id,cp.public_id,cp.callsign,rp.public_id,rp.callsign ORDER BY t.sort_order
+            WHERE t.operation_id=:operationId GROUP BY t.id,t.sort_order,cp.public_id,cp.callsign,rp.public_id,rp.callsign ORDER BY t.sort_order
             """, Map.of("operationId",access.id()), (r,i)-> {
                 UUID teamId=r.getObject("public_id",UUID.class);
                 return new TeamStructureResponse(teamId,r.getString("name"),r.getString("acronym"),r.getString("color"),

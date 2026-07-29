@@ -108,3 +108,6 @@ Local preciso reservado, missões secretas, briefing privado e composição inte
 ## Resumo na Visão Geral (2026-07-28)
 
 A [[06-FRONTEND-WEB|Visão Geral]] apresenta até três operações publicadas e disponíveis em datas futuras. A ordenação dá preferência à cidade do operador, depois ao estado e, dentro de cada faixa regional, à operação mais próxima na agenda.
+## Correção das consultas de estrutura (2026-07-29)
+
+As consultas PostgreSQL de times e esquadrões agrupam explicitamente as colunas usadas na ordenação (`sort_order`). Isso evita erro `500` ao abrir uma operação publicada e mantém disponíveis a seleção do time, a inscrição e a central da operação. O frontend trata roster e estrutura separadamente, conforme [[06-FRONTEND-WEB]].
