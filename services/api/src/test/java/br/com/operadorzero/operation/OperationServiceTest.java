@@ -10,6 +10,8 @@ import br.com.operadorzero.shared.audit.AuditEventRepository;
 import br.com.operadorzero.shared.web.BusinessException;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
@@ -68,5 +70,53 @@ class OperationServiceTest {
         assertThatThrownBy(() -> service.publish(user, operationId))
             .isInstanceOfSatisfying(BusinessException.class,
                 exception -> assertThat(exception.code()).isEqualTo("OPERATION_NOT_PUBLISHABLE"));
+    }
+
+    @Test
+    void updateRejectsAnInvalidScheduleBeforePersistence() {
+        OperationRepository repository = mock(OperationRepository.class);
+        AuthenticatedUser user = new AuthenticatedUser(10L, UUID.randomUUID(), "operator@example.test", "operator",
+            "Operator", "Zero", List.of("OPERATOR"));
+        OperationService service = new OperationService(repository, mock(AuditEventRepository.class),
+            Clock.fixed(Instant.parse("2026-07-29T12:00:00Z"), ZoneOffset.UTC));
+        var request = new OperationDtos.UpdateOperationRequest(LocalDate.of(2026, 8, 10),
+            LocalTime.of(9, 0), LocalTime.of(8, 0), LocalTime.of(18, 0), "Briefing", "Ajuste", 0L);
+
+        assertThatThrownBy(() -> service.update(user, UUID.randomUUID(), request))
+            .isInstanceOfSatisfying(BusinessException.class,
+                exception -> assertThat(exception.code()).isEqualTo("INVALID_OPERATION_TIME"));
+    }
+
+    @Test
+    void updateReportsAnOptimisticConflictForAnOwnedOperation() {
+        OperationRepository repository = mock(OperationRepository.class);
+        AuthenticatedUser user = new AuthenticatedUser(10L, UUID.randomUUID(), "operator@example.test", "operator",
+            "Operator", "Zero", List.of("OPERATOR"));
+        UUID operationId = UUID.randomUUID();
+        Instant now = Instant.parse("2026-07-29T12:00:00Z");
+        var request = new OperationDtos.UpdateOperationRequest(LocalDate.of(2026, 8, 10),
+            LocalTime.of(8, 0), LocalTime.of(9, 0), LocalTime.of(18, 0), "Briefing", "Ajuste", 2L);
+        when(repository.update(operationId, user.internalId(), request, "Briefing", now)).thenReturn(0);
+        when(repository.isOwned(operationId, user.internalId())).thenReturn(true);
+        OperationService service = new OperationService(repository, mock(AuditEventRepository.class), Clock.fixed(now, ZoneOffset.UTC));
+
+        assertThatThrownBy(() -> service.update(user, operationId, request))
+            .isInstanceOfSatisfying(BusinessException.class,
+                exception -> assertThat(exception.code()).isEqualTo("OPERATION_UPDATE_CONFLICT"));
+    }
+
+    @Test
+    void deleteSoftDeletesAnOwnedOperation() {
+        OperationRepository repository = mock(OperationRepository.class);
+        AuditEventRepository audit = mock(AuditEventRepository.class);
+        AuthenticatedUser user = new AuthenticatedUser(10L, UUID.randomUUID(), "operator@example.test", "operator",
+            "Operator", "Zero", List.of("OPERATOR"));
+        UUID operationId = UUID.randomUUID();
+        Instant now = Instant.parse("2026-07-29T12:00:00Z");
+        when(repository.softDelete(operationId, user.internalId(), now)).thenReturn(1);
+        OperationService service = new OperationService(repository, audit, Clock.fixed(now, ZoneOffset.UTC));
+
+        assertThat(service.delete(user, operationId, new OperationDtos.DeleteOperationRequest("Evento cancelado")).message())
+            .isEqualTo("Operação excluída.");
     }
 }

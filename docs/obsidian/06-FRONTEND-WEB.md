@@ -1,5 +1,9 @@
 # Frontend web
 
+## Gestão de data, briefing e exclusão de Operações — 2026-07-29
+
+O detalhe de [[09-OPERACOES]] apresenta ao organizador um painel responsivo para remarcar data/horários, editar o briefing e registrar o motivo da alteração. A exclusão fica em uma área de risco separada, exige motivo e confirmação explícita. Usuários que não administram a operação apenas visualizam o briefing publicado e não recebem os controles de gestão.
+
 ## Otimização do detalhe de Operações — 2026-07-29
 
 Ao abrir uma operação, a estrutura carregada pela página é reutilizada pela Central da Operação; a chamada duplicada a `/structure` foi removida. O chat passou a carregar somente após a ação `Abrir comunicação`, com polling de 15 segundos apenas enquanto estiver visível.

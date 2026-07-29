@@ -7,6 +7,8 @@ import br.com.operadorzero.operation.OperationDtos.OperationListResponse;
 import br.com.operadorzero.operation.OperationDtos.OperationResponse;
 import br.com.operadorzero.operation.OperationDtos.SaveOperationRequest;
 import br.com.operadorzero.operation.OperationDtos.UpdateStatusRequest;
+import br.com.operadorzero.operation.OperationDtos.UpdateOperationRequest;
+import br.com.operadorzero.operation.OperationDtos.DeleteOperationRequest;
 import br.com.operadorzero.operation.OperationDtos.ParticipationRequest;
 import br.com.operadorzero.operation.OperationDtos.OperationRosterResponse;
 import jakarta.validation.Valid;
@@ -54,6 +56,8 @@ public class OperationController {
     @GetMapping("/{id}") OperationResponse detail(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) { return service.detail(user, id); }
     @GetMapping("/{id}/roster") OperationRosterResponse roster(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) { return service.roster(user, id); }
     @PostMapping @ResponseStatus(HttpStatus.CREATED) OperationResponse create(@AuthenticationPrincipal AuthenticatedUser user, @Valid @RequestBody SaveOperationRequest request) { return service.create(user, request); }
+    @PatchMapping("/{id}") OperationResponse update(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id, @Valid @RequestBody UpdateOperationRequest request) { return service.update(user, id, request); }
+    @DeleteMapping("/{id}") MessageResponse delete(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id, @Valid @RequestBody DeleteOperationRequest request) { return service.delete(user, id, request); }
     @PatchMapping("/{id}/status") OperationResponse status(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id, @Valid @RequestBody UpdateStatusRequest request) { return service.updateStatus(user, id, request); }
     @PostMapping("/{id}/publish") OperationResponse publish(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) { return service.publish(user, id); }
     @PostMapping("/{id}/participation") @ResponseStatus(HttpStatus.CREATED) MessageResponse participate(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id, @Valid @RequestBody ParticipationRequest request) { return service.requestParticipation(user, id, request); }

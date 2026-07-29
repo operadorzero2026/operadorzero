@@ -1,5 +1,11 @@
 # Operações
 
+## Remarcação, briefing e exclusão segura — 2026-07-29
+
+O organizador pode editar data, horários e briefing pelo detalhe da própria operação. `PATCH /api/operations/{id}` exige motivo, data presente ou futura, sequência válida dos horários e a versão atual do registro; conflitos de edição simultânea retornam `409` sem sobrescrever dados. O briefing é texto simples de até 12.000 caracteres e nunca é renderizado como HTML.
+
+`DELETE /api/operations/{id}` exige motivo e executa exclusão lógica somente para o proprietário. Operações em andamento ou finalizadas não podem ser excluídas. A operação removida deixa de aparecer nas consultas e de aceitar acesso por endpoints de estrutura, participação, capa ou desempenho, enquanto participantes, chats e auditoria permanecem preservados no PostgreSQL. A migration incremental `V19__operation_briefing_and_soft_delete.sql` adiciona `briefing`, `deleted_at`, `deleted_by` e índice parcial para consultas ativas.
+
 ## Estrutura persistente, comando e chats — 2026-07-29
 
 A migration `V18__operation_structure_roles_and_chat.sql` amplia o agregado sem alterar migrations aplicadas: define `SMALL`, `MEDIUM` e `LARGE`, enriquece `operation_team`, cria `operation_squad`, funções específicas da operação, canais geral/time, mensagens, denúncias e ações de moderação. Operações antigas são classificadas pela capacidade e pela quantidade real de times, sem excluir participantes.

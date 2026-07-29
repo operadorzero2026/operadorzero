@@ -1,8 +1,9 @@
-import { CalendarDays, MapPin, Plus, Search, Target, Users, X } from 'lucide-react'
+import { CalendarClock, CalendarDays, MapPin, Plus, Search, Target, Trash2, Users, X } from 'lucide-react'
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import {
   cancelOperationParticipation,
   createOperation,
+  deleteOperation,
   getFields,
   getMaps,
   getOperationRoster,
@@ -14,6 +15,7 @@ import {
   operationCoverUrl,
   publishOperation,
   requestOperationParticipation,
+  updateOperation,
   uploadOperationCover,
   VenueField,
   VenueMap,
@@ -60,7 +62,8 @@ export function OperationsPage() {
     [structureError, setStructureError] = useState(''),
     [selectedTeam, setSelectedTeam] = useState(''),
     [selectedSquad, setSelectedSquad] = useState(''),
-    [coverPreview, setCoverPreview] = useState('')
+    [coverPreview, setCoverPreview] = useState(''),
+    [deleteReason, setDeleteReason] = useState('')
   const load = useCallback(async (q = '') => {
     try {
       setItems((await getOperations(q)).items)
@@ -157,6 +160,40 @@ export function OperationsPage() {
     }
     if (structureResult.status === 'fulfilled') setStructure(structureResult.value)
     else setStructureError(structureResult.reason instanceof Error ? structureResult.reason.message : 'Não foi possível carregar a organização da operação.')
+  }
+  const updateManagedOperation = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!selected) return
+    const data = new FormData(event.currentTarget)
+    setPending(`edit-${selected.id}`)
+    setFeedback('')
+    try {
+      const updated = await updateOperation(selected.id, {
+        operationDate: data.get('operationDate'), presentationTime: data.get('presentationTime'),
+        startTime: data.get('startTime'), endTime: data.get('endTime'), briefing: data.get('briefing'),
+        reason: data.get('reason'), version: selected.version ?? 0,
+      })
+      setSelected(updated)
+      setFeedback('Data, horários e briefing atualizados.')
+      await load(query)
+    } catch (err) {
+      setFeedback(err instanceof Error ? err.message : 'Não foi possível atualizar a operação.')
+    } finally { setPending('') }
+  }
+  const removeManagedOperation = async () => {
+    if (!selected || !deleteReason.trim()) { setFeedback('Informe o motivo da exclusão.'); return }
+    if (!window.confirm(`Excluir a operação "${selected.name}"? Ela deixará de aparecer para os usuários.`)) return
+    setPending(`delete-${selected.id}`)
+    setFeedback('')
+    try {
+      await deleteOperation(selected.id, deleteReason.trim())
+      setSelected(null)
+      setDeleteReason('')
+      setFeedback('Operação excluída com segurança.')
+      await load(query)
+    } catch (err) {
+      setFeedback(err instanceof Error ? err.message : 'Não foi possível excluir a operação.')
+    } finally { setPending('') }
   }
   const participate = async (item: Operation, cancel = false, operationTeamId = '', operationSquadId = '') => {
     setPending(item.id)
@@ -471,7 +508,27 @@ export function OperationsPage() {
             <small>{statusLabels[selected.status] || selected.status}</small>
             <h2>{selected.name}</h2>
             <p>{selected.description}</p>
+            {selected.briefing && <section className="operation-briefing"><small>BRIEFING DO JOGO</small><p>{selected.briefing}</p></section>}
             <div className="operation-roster-summary"><span><MapPin /> {selected.fieldName} · {selected.city}/{selected.stateCode}</span><span><Users /> {selected.participantCount}/{selected.participantLimit ?? 'sem limite'} participantes</span></div>
+            {selected.managedByCurrentUser && <section className="operation-organizer-tools">
+              <header><CalendarClock/><div><small>ORGANIZAÇÃO</small><h3>Editar data e briefing</h3><p>Remarque a operação ou atualize as instruções apresentadas aos jogadores.</p></div></header>
+              <form className="module-form" onSubmit={updateManagedOperation} key={`${selected.id}-${selected.version ?? 0}`}>
+                <div className="form-grid">
+                  <label><span>Nova data</span><input name="operationDate" type="date" defaultValue={selected.operationDate} required/></label>
+                  <label><span>Apresentação</span><input name="presentationTime" type="time" defaultValue={selected.presentationTime.slice(0,5)} required/></label>
+                  <label><span>Início</span><input name="startTime" type="time" defaultValue={selected.startTime.slice(0,5)} required/></label>
+                  <label><span>Término</span><input name="endTime" type="time" defaultValue={selected.endTime.slice(0,5)} required/></label>
+                </div>
+                <label><span>Briefing do jogo</span><textarea name="briefing" maxLength={12000} defaultValue={selected.briefing ?? ''} placeholder="Objetivos, contexto, cronograma, regras de respawn e orientações para os participantes."/></label>
+                <label><span>Motivo da alteração</span><input name="reason" maxLength={500} required placeholder="Ex.: remarcação por condições climáticas"/></label>
+                <button className="module-primary" disabled={pending === `edit-${selected.id}`}>{pending === `edit-${selected.id}` ? 'Salvando…' : 'Salvar alterações'}</button>
+              </form>
+              <div className="operation-delete-zone">
+                <label><span>Motivo para excluir</span><textarea value={deleteReason} onChange={event=>setDeleteReason(event.target.value)} maxLength={500} placeholder="Explique por que esta operação será removida."/></label>
+                <button type="button" onClick={()=>void removeManagedOperation()} disabled={pending === `delete-${selected.id}`}><Trash2/>{pending === `delete-${selected.id}` ? 'Excluindo…' : 'Excluir operação'}</button>
+                <small>A exclusão remove a operação das telas, mas preserva auditoria e registros relacionados.</small>
+              </div>
+            </section>}
             {rosterError ? <p className="module-feedback" role="alert">{rosterError} <button type="button" onClick={() => void openOperation(selected)}>Tentar novamente</button></p> : !roster ? <p>Carregando times e participantes…</p> : <>
               <div className="operation-team-grid">
                 {roster.teams.map(team => <article key={team.id} className={selectedTeam === team.id ? 'active' : ''}>

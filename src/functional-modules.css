@@ -159,6 +159,24 @@
   border-color: #b8645c;
   background: rgba(184, 100, 92, 0.09);
 }
+.operation-briefing,
+.operation-organizer-tools {
+  margin: 22px 0;
+  padding: 20px;
+  border: 1px solid rgba(183, 185, 94, 0.24);
+  background: rgba(183, 185, 94, 0.055);
+}
+.operation-briefing p { white-space: pre-wrap; color: #d8d9d1; line-height: 1.65; }
+.operation-organizer-tools > header { display: flex; align-items: flex-start; gap: 14px; }
+.operation-organizer-tools > header svg { flex: 0 0 auto; color: #b7b95e; }
+.operation-organizer-tools h3 { margin: 2px 0 5px; }
+.operation-organizer-tools header p { margin: 0; color: #a7a99f; }
+.operation-delete-zone { margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(184, 100, 92, 0.35); }
+.operation-delete-zone label { display: grid; gap: 7px; color: #c7c8c0; font-size: 0.8rem; }
+.operation-delete-zone textarea { min-height: 72px; padding: 12px 13px; border: 1px solid rgba(184, 100, 92, 0.4); background: #121510; color: #f4f4ef; resize: vertical; }
+.operation-delete-zone button { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 11px 17px; border: 1px solid #b8645c; background: transparent; color: #f0b6b0; font-weight: 800; cursor: pointer; }
+.operation-delete-zone button:disabled { opacity: 0.55; cursor: wait; }
+.operation-delete-zone > small { display: block; margin-top: 9px; color: #92958d; }
 .module-state {
   padding: 54px 0;
   text-align: center;

@@ -4,6 +4,7 @@ import br.com.operadorzero.operation.OperationDtos.OperationFilter;
 import br.com.operadorzero.operation.OperationDtos.OperationResponse;
 import br.com.operadorzero.operation.OperationDtos.OperationSummary;
 import br.com.operadorzero.operation.OperationDtos.SaveOperationRequest;
+import br.com.operadorzero.operation.OperationDtos.UpdateOperationRequest;
 import br.com.operadorzero.operation.OperationDtos.OperationRosterResponse;
 import br.com.operadorzero.operation.OperationDtos.OperationTeamResponse;
 import br.com.operadorzero.operation.OperationDtos.ParticipantResponse;
@@ -32,7 +33,7 @@ public class OperationRepository {
                    o.presentation_time, o.start_time, o.end_time, o.modality, o.status, o.game_size, o.participant_limit,
                    o.registration_price, COALESCE(pc.total, 0) participant_count, mine.status participant_status,
                    o.organizer_user_id = :userId managed_by_current_user,
-                   oc.operation_id IS NOT NULL has_cover, COALESCE(oc.version, 0) cover_version
+                   oc.operation_id IS NOT NULL has_cover, COALESCE(oc.version, 0) cover_version, o.briefing, o.version
             FROM airsoft_operation o
             JOIN airsoft_field f ON f.id = o.field_id
             LEFT JOIN field_map m ON m.id = o.map_id
@@ -40,7 +41,8 @@ public class OperationRepository {
             LEFT JOIN operation_participant mine ON mine.operation_id = o.id AND mine.user_id = :userId
             LEFT JOIN (SELECT operation_id, count(*) total FROM operation_participant
                        WHERE status IN ('APPROVED','CONFIRMED','CHECKED_IN') GROUP BY operation_id) pc ON pc.operation_id = o.id
-            WHERE (o.status <> 'DRAFT' OR o.organizer_user_id = :userId)
+            WHERE o.deleted_at IS NULL
+              AND (o.status <> 'DRAFT' OR o.organizer_user_id = :userId)
               AND (:q = '' OR lower(o.name) LIKE :query OR lower(f.name) LIKE :query)
               AND (:city = '' OR lower(o.city) = lower(:city))
               AND (:stateCode = '' OR o.state_code = upper(:stateCode))
@@ -58,7 +60,8 @@ public class OperationRepository {
                 row.getTime("end_time").toLocalTime(), row.getString("modality"), row.getString("status"), row.getString("game_size"),
                 (Integer) row.getObject("participant_limit"), row.getLong("participant_count"),
                 row.getBigDecimal("registration_price"), row.getString("participant_status"),
-                row.getBoolean("managed_by_current_user"), row.getBoolean("has_cover"), row.getLong("cover_version")));
+                row.getBoolean("managed_by_current_user"), row.getBoolean("has_cover"), row.getLong("cover_version"),
+                row.getString("briefing"), row.getLong("version")));
     }
 
     public Optional<OperationResponse> find(UUID operationId, long userId) {
@@ -75,7 +78,8 @@ public class OperationRepository {
                 LEFT JOIN operation_participant mine ON mine.operation_id = o.id AND mine.user_id = :userId
                 LEFT JOIN (SELECT operation_id, count(*) total FROM operation_participant
                            WHERE status IN ('APPROVED','CONFIRMED','CHECKED_IN') GROUP BY operation_id) pc ON pc.operation_id = o.id
-                WHERE o.public_id = :operationId AND (o.status <> 'DRAFT' OR o.organizer_user_id = :userId)
+                WHERE o.public_id = :operationId AND o.deleted_at IS NULL
+                  AND (o.status <> 'DRAFT' OR o.organizer_user_id = :userId)
                 """, Map.of("operationId", operationId, "userId", userId), (row, index) -> mapResponse(row, userId)));
         } catch (EmptyResultDataAccessException exception) { return Optional.empty(); }
     }
@@ -112,8 +116,34 @@ public class OperationRepository {
         return jdbc.update("""
             UPDATE airsoft_operation SET status=:status, updated_at=:now, version=version+1,
               published_at=CASE WHEN :status IN ('PUBLISHED','REGISTRATION_OPEN') AND published_at IS NULL THEN :now ELSE published_at END
-            WHERE public_id=:id AND organizer_user_id=:userId
+            WHERE public_id=:id AND organizer_user_id=:userId AND deleted_at IS NULL
             """, Map.of("status", status, "now", Timestamp.from(now), "id", operationId, "userId", userId));
+    }
+
+    public int update(UUID operationId, long userId, UpdateOperationRequest request, String briefing, Instant now) {
+        return jdbc.update("""
+            UPDATE airsoft_operation SET operation_date=:date, presentation_time=:presentation,
+              start_time=:start, end_time=:end, briefing=:briefing, updated_at=:now, version=version+1
+            WHERE public_id=:id AND organizer_user_id=:userId AND deleted_at IS NULL
+              AND status NOT IN ('IN_PROGRESS','FINISHED') AND version=:version
+            """, new MapSqlParameterSource().addValue("id", operationId).addValue("userId", userId)
+                .addValue("date", request.operationDate()).addValue("presentation", request.presentationTime())
+                .addValue("start", request.startTime()).addValue("end", request.endTime()).addValue("briefing", briefing)
+                .addValue("version", request.version()).addValue("now", Timestamp.from(now)));
+    }
+
+    public int softDelete(UUID operationId, long userId, Instant now) {
+        return jdbc.update("""
+            UPDATE airsoft_operation SET deleted_at=:now, deleted_by=:userId, status='CANCELLED',
+              updated_at=:now, version=version+1
+            WHERE public_id=:id AND organizer_user_id=:userId AND deleted_at IS NULL
+              AND status NOT IN ('IN_PROGRESS','FINISHED')
+            """, Map.of("id", operationId, "userId", userId, "now", Timestamp.from(now)));
+    }
+
+    public boolean isOwned(UUID operationId, long userId) {
+        return !jdbc.queryForList("SELECT id FROM airsoft_operation WHERE public_id=:id AND organizer_user_id=:userId AND deleted_at IS NULL",
+            Map.of("id", operationId, "userId", userId), Long.class).isEmpty();
     }
 
     public void createTeams(UUID operationId, long userId) {
@@ -123,7 +153,7 @@ public class OperationRepository {
                    CEIL(o.participant_limit::numeric / LEAST(COALESCE(o.team_limit, 2), 20))::integer, n
             FROM airsoft_operation o
             CROSS JOIN LATERAL generate_series(1, LEAST(COALESCE(o.team_limit, 2), 20)) AS n
-            WHERE o.public_id = :operationId AND o.organizer_user_id = :userId
+            WHERE o.public_id = :operationId AND o.organizer_user_id = :userId AND o.deleted_at IS NULL
             ON CONFLICT (operation_id, sort_order) DO NOTHING
             """, Map.of("operationId", operationId, "userId", userId));
     }
@@ -171,12 +201,12 @@ public class OperationRepository {
             UPDATE airsoft_operation
             SET status = 'REGISTRATION_OPEN', published_at = COALESCE(published_at, :now),
                 updated_at = :now, version = version + 1
-            WHERE public_id = :id AND organizer_user_id = :userId AND status = 'DRAFT'
+            WHERE public_id = :id AND organizer_user_id = :userId AND status = 'DRAFT' AND deleted_at IS NULL
             """, Map.of("now", Timestamp.from(now), "id", operationId, "userId", userId));
     }
 
     public int requestParticipation(UUID operationId, UUID operationTeamId, UUID operationSquadId, long userId, Instant now) {
-        if (jdbc.queryForList("SELECT id FROM airsoft_operation WHERE public_id=:id FOR UPDATE", Map.of("id", operationId), Long.class).isEmpty()) return 0;
+        if (jdbc.queryForList("SELECT id FROM airsoft_operation WHERE public_id=:id AND deleted_at IS NULL FOR UPDATE", Map.of("id", operationId), Long.class).isEmpty()) return 0;
         if (jdbc.queryForList("SELECT id FROM operation_team WHERE public_id=:id FOR UPDATE", Map.of("id", operationTeamId), Long.class).isEmpty()) return 0;
         if (operationSquadId != null) {
             if (jdbc.queryForList("SELECT id FROM operation_squad WHERE public_id=:id FOR UPDATE", Map.of("id", operationSquadId), Long.class).isEmpty()) return 0;
@@ -198,7 +228,7 @@ public class OperationRepository {
               WHERE p.operation_id = o.id AND p.status IN ('REQUESTED','APPROVED','CONFIRMED','CHECKED_IN')) oc
             CROSS JOIN LATERAL (SELECT count(*) total FROM operation_participant p
               WHERE p.operation_squad_id = os.id AND p.status IN ('REQUESTED','APPROVED','CONFIRMED','CHECKED_IN')) sc
-            WHERE o.public_id=:id AND o.status IN ('PUBLISHED','REGISTRATION_OPEN','FULL')
+            WHERE o.public_id=:id AND o.deleted_at IS NULL AND o.status IN ('PUBLISHED','REGISTRATION_OPEN','FULL')
               AND (:operationSquadId IS NULL OR os.id IS NOT NULL)
               AND (o.game_size <> 'SMALL' OR :operationSquadId IS NULL)
               AND ((tc.total < ot.capacity AND (o.participant_limit IS NULL OR oc.total < o.participant_limit)
@@ -214,7 +244,7 @@ public class OperationRepository {
     public int cancelParticipation(UUID operationId, long userId, Instant now) {
         return jdbc.update("""
             UPDATE operation_participant p SET status='CANCELLED',updated_at=:now
-            FROM airsoft_operation o WHERE p.operation_id=o.id AND o.public_id=:id AND p.user_id=:userId
+            FROM airsoft_operation o WHERE p.operation_id=o.id AND o.public_id=:id AND o.deleted_at IS NULL AND p.user_id=:userId
               AND p.status IN ('REQUESTED','APPROVED','WAITING_LIST','CONFIRMED')
             """, Map.of("id", operationId, "userId", userId, "now", Timestamp.from(now)));
     }
@@ -236,7 +266,7 @@ public class OperationRepository {
         return jdbc.query("""
             SELECT c.content_type, c.image_data
             FROM operation_cover c JOIN airsoft_operation o ON o.id = c.operation_id
-            WHERE o.public_id = :operationId AND (o.status <> 'DRAFT' OR o.organizer_user_id = :userId)
+            WHERE o.public_id = :operationId AND o.deleted_at IS NULL AND (o.status <> 'DRAFT' OR o.organizer_user_id = :userId)
             """, Map.of("operationId", operationId, "userId", userId),
             (r, i) -> new CoverRow(r.getString("content_type"), r.getBytes("image_data")))
             .stream().findFirst();
@@ -244,7 +274,7 @@ public class OperationRepository {
     public int removeCover(UUID operationId, long userId) {
         return jdbc.update("""
             DELETE FROM operation_cover c USING airsoft_operation o
-            WHERE c.operation_id=o.id AND o.public_id=:operationId AND o.organizer_user_id=:userId
+            WHERE c.operation_id=o.id AND o.public_id=:operationId AND o.organizer_user_id=:userId AND o.deleted_at IS NULL
             """, Map.of("operationId",operationId,"userId",userId));
     }
 
@@ -278,7 +308,7 @@ public class OperationRepository {
             r.getString("field_name"), r.getObject("map_public_id", UUID.class), r.getString("map_name"), r.getString("city"),
             r.getString("state_code"), r.getDate("operation_date").toLocalDate(), r.getTime("presentation_time").toLocalTime(),
             r.getTime("start_time").toLocalTime(), r.getTime("end_time").toLocalTime(), r.getString("modality"),
-            r.getString("custom_modality"), r.getString("rules"), r.getString("game_size"), (Integer) r.getObject("participant_limit"), (Integer) r.getObject("team_limit"),
+            r.getString("custom_modality"), r.getString("rules"), r.getString("briefing"), r.getString("game_size"), (Integer) r.getObject("participant_limit"), (Integer) r.getObject("team_limit"),
             r.getBigDecimal("registration_price"), r.getString("payment_methods"), r.getInt("minimum_age"),
             r.getString("required_equipment"), (Integer) r.getObject("fps_limit"), r.getString("entry_mode"),
             r.getBoolean("approval_required"), r.getBoolean("waiting_list_enabled"), r.getString("status"),

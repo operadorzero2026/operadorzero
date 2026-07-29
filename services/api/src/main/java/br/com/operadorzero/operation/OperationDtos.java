@@ -54,6 +54,16 @@ public final class OperationDtos {
     ) {}
 
     public record UpdateStatusRequest(@NotBlank @Size(max = 32) String status, @Size(max = 500) String reason) {}
+    public record UpdateOperationRequest(
+        @NotNull @FutureOrPresent LocalDate operationDate,
+        @NotNull LocalTime presentationTime,
+        @NotNull LocalTime startTime,
+        @NotNull LocalTime endTime,
+        @Size(max = 12000) String briefing,
+        @NotBlank @Size(max = 500) String reason,
+        @NotNull @PositiveOrZero Long version
+    ) {}
+    public record DeleteOperationRequest(@NotBlank @Size(max = 500) String reason) {}
     public record ParticipationRequest(@NotNull UUID operationTeamId, UUID operationSquadId) {}
     public record OperationTeamResponse(UUID id, String name, String acronym, String color, String description,
                                         int capacity, long participantCount, String status) {}
@@ -67,14 +77,14 @@ public final class OperationDtos {
         String city, String stateCode, LocalDate operationDate, LocalTime presentationTime, LocalTime startTime,
         LocalTime endTime, String modality, String status, String gameSize, Integer participantLimit, long participantCount,
         BigDecimal registrationPrice, String participantStatus, boolean managedByCurrentUser,
-        boolean hasCover, long coverVersion
+        boolean hasCover, long coverVersion, String briefing, long version
     ) {}
 
     public record OperationResponse(
         UUID id, String name, String description, UUID organizerId, String organizerCallsign,
         UUID fieldId, String fieldName, UUID mapId, String mapName, String city, String stateCode,
         LocalDate operationDate, LocalTime presentationTime, LocalTime startTime, LocalTime endTime,
-        String modality, String customModality, String rules, String gameSize, Integer participantLimit, Integer teamLimit,
+        String modality, String customModality, String rules, String briefing, String gameSize, Integer participantLimit, Integer teamLimit,
         BigDecimal registrationPrice, String paymentMethods, int minimumAge, String requiredEquipment,
         Integer fpsLimit, String entryMode, boolean approvalRequired, boolean waitingListEnabled,
         String status, long participantCount, String participantStatus, boolean managedByCurrentUser, long version,

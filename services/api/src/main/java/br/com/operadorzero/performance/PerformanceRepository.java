@@ -29,7 +29,7 @@ public class PerformanceRepository {
           LEFT JOIN operation_participant op ON op.operation_id=o.id AND op.user_id=:userId
           LEFT JOIN team_member tm ON tm.user_id=:userId AND tm.left_at IS NULL
           LEFT JOIN team t ON t.id=tm.team_id AND t.status='ACTIVE'
-          WHERE o.public_id=:operationId
+          WHERE o.public_id=:operationId AND o.deleted_at IS NULL
           """,Map.of("operationId",operationId,"userId",userId),(r,i)->new OperationAccess(r.getLong("id"),r.getObject("public_id",UUID.class),r.getString("name"),r.getString("status"),r.getLong("organizer_user_id"),r.getString("participant_status"),(Long)r.getObject("team_id"),r.getString("team_role"),r.getObject("team_public_id",UUID.class))));}catch(EmptyResultDataAccessException e){return Optional.empty();}}
 
     public Optional<Long> teamInternalId(UUID teamId,long userId){if(teamId==null)return Optional.empty();try{return Optional.ofNullable(jdbc.queryForObject("""

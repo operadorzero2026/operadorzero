@@ -1,5 +1,34 @@
 # Histórico de alterações
 
+## 2026-07-29 - Remarcação, briefing e exclusão segura de operações
+
+### Arquivos alterados
+- `src/OperationsPage.tsx`, `src/api.ts`, `src/functional-modules.css`
+- `services/api/src/main/java/br/com/operadorzero/operation/*`
+- `services/api/src/main/java/br/com/operadorzero/performance/PerformanceRepository.java`
+- `services/api/src/main/resources/db/migration/V19__operation_briefing_and_soft_delete.sql`
+- `services/api/src/test/java/br/com/operadorzero/operation/OperationServiceTest.java`
+- `scripts/real-content-scenarios.mjs`
+- [[06-FRONTEND-WEB]], [[09-OPERACOES]] e [[99-HISTORICO-DE-ALTERACOES]]
+
+### O que foi feito
+- Adicionada edição persistente de data, horários e briefing pelo organizador, com motivo, validação no servidor e controle otimista de versão.
+- Adicionada exclusão lógica autorizada, com confirmação visual, motivo obrigatório e preservação de registros relacionados e auditoria.
+- Operações excluídas foram retiradas das consultas e dos acessos diretos aos sub-recursos.
+
+### Motivo
+- Permitir que o organizador corrija ou remarque o jogo e remova uma operação sem perda silenciosa de histórico.
+
+### Impacto
+- Frontend, backend, PostgreSQL, autorização por objeto e auditoria de Operações.
+
+### Testes
+- Testes unitários de horários inválidos, conflito otimista e exclusão lógica.
+- Build frontend, cenários de regressão e suíte Maven.
+
+### Pendências
+- Aplicar a migration e publicar frontend/backend apenas mediante solicitação de deploy.
+
 ## 2026-07-29 - Contraste dos botões de times e esquadrões
 
 ### Arquivos alterados

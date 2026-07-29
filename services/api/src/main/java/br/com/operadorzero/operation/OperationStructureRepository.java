@@ -26,7 +26,7 @@ public class OperationStructureRepository {
                        o.allow_role_accumulation,o.organizer_user_id=:userId owner,
                        EXISTS(SELECT 1 FROM operation_role_assignment r WHERE r.operation_id=o.id AND r.user_id=:userId
                               AND r.role='OPERATION_ADMIN') operation_admin
-                FROM airsoft_operation o WHERE o.public_id=:id
+                FROM airsoft_operation o WHERE o.public_id=:id AND o.deleted_at IS NULL
                   AND (o.status<>'DRAFT' OR o.organizer_user_id=:userId OR EXISTS(
                     SELECT 1 FROM operation_role_assignment ar WHERE ar.operation_id=o.id AND ar.user_id=:userId AND ar.role='OPERATION_ADMIN'))
                 """ + (lock ? " FOR UPDATE" : ""), Map.of("id", operationId, "userId", userId), (r,i) ->

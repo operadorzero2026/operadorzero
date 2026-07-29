@@ -7,6 +7,8 @@ import br.com.operadorzero.operation.OperationDtos.OperationListResponse;
 import br.com.operadorzero.operation.OperationDtos.OperationResponse;
 import br.com.operadorzero.operation.OperationDtos.SaveOperationRequest;
 import br.com.operadorzero.operation.OperationDtos.UpdateStatusRequest;
+import br.com.operadorzero.operation.OperationDtos.UpdateOperationRequest;
+import br.com.operadorzero.operation.OperationDtos.DeleteOperationRequest;
 import br.com.operadorzero.operation.OperationDtos.ParticipationRequest;
 import br.com.operadorzero.operation.OperationDtos.OperationRosterResponse;
 import br.com.operadorzero.operation.OperationRepository.FieldRef;
@@ -87,6 +89,35 @@ public class OperationService {
     }
 
     @Transactional
+    public OperationResponse update(AuthenticatedUser user, UUID id, UpdateOperationRequest request) {
+        validateTimes(request.presentationTime(), request.startTime(), request.endTime());
+        Instant now = clock.instant();
+        int changed = repository.update(id, user.internalId(), request, nullable(request.briefing()), now);
+        if (changed == 0) {
+            if (repository.isOwned(id, user.internalId())) {
+                throw BusinessException.conflict("OPERATION_UPDATE_CONFLICT", "A operação foi alterada, iniciada ou finalizada. Atualize a tela antes de tentar novamente.");
+            }
+            throw BusinessException.notFound("Operação não encontrada.");
+        }
+        audit.record(user.internalId(), "OPERATION_UPDATED", "OPERATION", id, nullable(request.reason()), now);
+        return detail(user, id);
+    }
+
+    @Transactional
+    public MessageResponse delete(AuthenticatedUser user, UUID id, DeleteOperationRequest request) {
+        Instant now = clock.instant();
+        int changed = repository.softDelete(id, user.internalId(), now);
+        if (changed == 0) {
+            if (repository.isOwned(id, user.internalId())) {
+                throw BusinessException.conflict("OPERATION_NOT_DELETABLE", "Uma operação iniciada ou finalizada não pode ser excluída.");
+            }
+            throw BusinessException.notFound("Operação não encontrada.");
+        }
+        audit.record(user.internalId(), "OPERATION_DELETED", "OPERATION", id, nullable(request.reason()), now);
+        return new MessageResponse("Operação excluída.");
+    }
+
+    @Transactional
     public OperationResponse publish(AuthenticatedUser user, UUID id) {
         Instant now = clock.instant();
         if (repository.publish(id, user.internalId(), now) != 1) {
@@ -141,7 +172,10 @@ public class OperationService {
     }
 
     private void validateTimes(SaveOperationRequest request) {
-        if (!request.presentationTime().isBefore(request.startTime()) || !request.startTime().isBefore(request.endTime())) {
+        validateTimes(request.presentationTime(), request.startTime(), request.endTime());
+    }
+    private void validateTimes(java.time.LocalTime presentation, java.time.LocalTime start, java.time.LocalTime end) {
+        if (!presentation.isBefore(start) || !start.isBefore(end)) {
             throw BusinessException.badRequest("INVALID_OPERATION_TIME", "A apresentação deve ocorrer antes do início, e o término após o início.");
         }
     }

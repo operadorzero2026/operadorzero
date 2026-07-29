@@ -96,7 +96,7 @@ export type TeamWorkspace = { team: Team | null; receivedInvitations: TeamInvita
 
 export type VenueField = { id:string; name:string; description?:string|null; city:string; stateCode:string; addressLine?:string|null; addressNumber?:string|null; district?:string|null; region?:string|null; locationUrl?:string|null; openingHours?:string|null; amenities?:string|null; maximumCapacity?:number|null; averagePrice?:number|null; paymentMethods?:string|null; managedByCurrentUser:boolean; version:number }
 export type VenueMap = { id:string; fieldId:string; fieldName:string; city:string; stateCode:string; name:string; terrainType:string; description?:string|null; approximateSize?:string|null; capacity?:number|null; managedByCurrentUser:boolean; version:number }
-export type Operation = { id:string; name:string; description:string; fieldId:string; fieldName:string; mapId?:string|null; mapName?:string|null; city:string; stateCode:string; operationDate:string; presentationTime:string; startTime:string; endTime:string; modality:string; status:string; gameSize:'SMALL'|'MEDIUM'|'LARGE'; participantLimit:number|null; participantCount:number; registrationPrice:number; participantStatus?:string|null; managedByCurrentUser:boolean; hasCover:boolean; coverVersion:number }
+export type Operation = { id:string; name:string; description:string; fieldId:string; fieldName:string; mapId?:string|null; mapName?:string|null; city:string; stateCode:string; operationDate:string; presentationTime:string; startTime:string; endTime:string; modality:string; status:string; gameSize:'SMALL'|'MEDIUM'|'LARGE'; participantLimit:number|null; participantCount:number; registrationPrice:number; participantStatus?:string|null; managedByCurrentUser:boolean; hasCover:boolean; coverVersion:number; briefing?:string|null; version?:number }
 export type OperationTeam = { id:string; name:string; acronym?:string|null; color:string; description?:string|null; capacity:number; participantCount:number; status:string }
 export type OperationParticipant = { operatorId:string; callsign:string; displayName:string; status:string; operationTeamId?:string|null; operationTeamName?:string|null }
 export type OperationRoster = { teams:OperationTeam[]; participants:OperationParticipant[]; currentUserTeamId?:string|null }
@@ -364,8 +364,11 @@ export const createField = (field:Record<string,unknown>) => apiRequest<VenueFie
 export const getMaps = (fieldId = '') => apiRequest<{items:VenueMap[]}>(`/api/maps?limit=100${fieldId?`&fieldId=${encodeURIComponent(fieldId)}`:''}`)
 export const createVenueMap = (fieldId:string,map:Record<string,unknown>) => apiRequest<VenueMap>(`/api/fields/${encodeURIComponent(fieldId)}/maps`,json('POST',map))
 export const getOperations = (query = '') => apiRequest<{items:Operation[]}>(`/api/operations?q=${encodeURIComponent(query)}&limit=100`)
+export const getOperation = (id:string) => apiRequest<Operation>(`/api/operations/${encodeURIComponent(id)}`)
 export const getOperationRoster = (id:string) => apiRequest<OperationRoster>(`/api/operations/${encodeURIComponent(id)}/roster`)
 export const createOperation = (operation:Record<string,unknown>) => apiRequest<Operation>('/api/operations',json('POST',operation))
+export const updateOperation = (id:string,operation:Record<string,unknown>) => apiRequest<Operation>(`/api/operations/${encodeURIComponent(id)}`,json('PATCH',operation))
+export const deleteOperation = (id:string,reason:string) => apiRequest<{message:string}>(`/api/operations/${encodeURIComponent(id)}`,json('DELETE',{reason}))
 export async function uploadOperationCover(id:string,file:File) {
   const body = new FormData()
   body.append('file', file)

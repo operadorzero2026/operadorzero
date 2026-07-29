@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
-const [app, operations] = await Promise.all([
+const [app, operations, api] = await Promise.all([
   readFile('src/App.tsx', 'utf8'),
   readFile('src/OperationsPage.tsx', 'utf8'),
+  readFile('src/api.ts', 'utf8'),
 ])
 const functionalStyles = await readFile('src/functional-modules.css', 'utf8')
 
@@ -58,6 +59,10 @@ assert.equal(app.includes('localStorage'), false)
 assert.equal(app.includes('sessionStorage'), false)
 assert.equal(operations.includes('Promise.allSettled'), true, 'O detalhe da operação deve tolerar falha parcial das consultas.')
 assert.equal(operations.includes('Tentar novamente'), true, 'Falhas no detalhe da operação devem permitir nova tentativa.')
+assert.equal(operations.includes('Editar data e briefing'), true, 'O organizador deve poder editar data e briefing.')
+assert.equal(operations.includes('Excluir operação'), true, 'O organizador deve possuir exclusão explícita da operação.')
+assert.match(api, /updateOperation.*PATCH/, 'A edição da operação deve chamar o endpoint persistente.')
+assert.match(api, /deleteOperation.*DELETE/, 'A exclusão da operação deve chamar o endpoint persistente.')
 assert.match(functionalStyles, /\.operation-team-create>button\{[^}]*background:#b7b95e;[^}]*color:#0e100d;/, 'O botão Criar time deve manter contraste entre fundo e texto.')
 assert.match(functionalStyles, /\.operation-structure-grid article>button/, 'O botão de esquadrão deve possuir estilo de alto contraste.')
 
