@@ -32,7 +32,8 @@
 - Smoke remoto aquecido e tentativa inválida não destrutiva no navegador oficial.
 
 ### Pendências
-- Repetir a coleta após deploy e após hibernação real do Render Free; login bem-sucedido exige conta de homologação confirmada.
+- A coleta aquecida pós-deploy foi concluída. Ainda falta uma janela controlada após hibernação real e um login bem-sucedido com conta de homologação confirmada.
+- Publicado no commit `4217e65`; Vercel `dpl_HoPipi7bP8ZtpA4fbPJnZt4txsKy`; Render `Live` após 2m44s.
 
 ## 2026-07-28 - Organizador pode participar da própria operação
 

@@ -58,3 +58,15 @@ O índice funcional `uq_app_user_email_ci` já cobre `lower(email)`; não foi cr
 - Uma medição de sucesso real e do primeiro acesso após hibernação depende de conta de homologação confirmada e janela controlada de inatividade.
 - Métricas de região/CPU e `EXPLAIN ANALYZE` no banco remoto dependem de acesso operacional ao Render; nenhuma credencial foi solicitada ou exposta.
 - Não reduzir o custo Argon2id: em teste local, `matches` ficou aproximadamente entre 23 e 47 ms; o custo não explica esperas de dezenas de segundos.
+
+## Validação depois da publicação
+
+- Vercel: deployment de produção `dpl_HoPipi7bP8ZtpA4fbPJnZt4txsKy`, domínio oficial atualizado e bundle contendo o novo bootstrap.
+- Render: commit `4217e65` publicado e marcado como `Live` após 2m44s.
+- readiness direto depois do deploy, cinco amostras: 154–416 ms; média 238 ms; mediana 195 ms.
+- primeira tentativa instrumentada após deploy: Redis 1.298 ms, banco 102 ms, Argon2id 1.500 ms, total interno 2.900 ms.
+- tentativas internas aquecidas observadas: Redis 3–97 ms, banco 2–55 ms, Argon2id 900–1.168 ms, total 1.000–1.172 ms.
+- pelo proxy, três logins inválidos seguros responderam em 1.208–2.125 ms; o CSRF antecipado respondeu em 351–711 ms antes do envio.
+- navegador oficial, após a preparação do formulário: resposta final em 1.290 ms e nenhum erro/warning de console.
+
+Os números aquecidos variam com a CPU compartilhada do plano gratuito. A correção elimina trabalho serial após o clique, mas não transforma um serviço gratuito hibernável em instância sempre disponível.
