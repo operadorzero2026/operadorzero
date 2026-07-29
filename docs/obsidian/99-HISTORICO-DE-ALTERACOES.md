@@ -2044,8 +2044,13 @@
 ### Testes
 - Baseline antes da alteração: `npm run check` aprovado; `mvn -B clean verify` aprovado com 69 testes.
 - Após a alteração: `mvn -B test` aprovado com 65 testes; validações frontend e browser registradas na entrega.
+- CI do commit `9680a6e` aprovado nos jobs frontend, backend, configuração de deploy e varredura de segredos.
+- Vercel `dpl_FjqsEdX2oLowgrVgUyf2G6zTghyi` publicada e associada a `operadorzero.com.br`, sem resíduo do login Google no bundle.
+- Render publicado no commit `9680a6e`; readiness, liveness e health retornaram `200`.
+- Flyway validou 17 migrations e aplicou `V17__retire_social_authentication.sql`, deixando o schema na versão 17.
+- Smoke remoto validou CSRF, credencial inválida neutra, confirmação obrigatória de senha, recuperação/reenvio neutros e rejeição de tokens inválidos.
+- Browser oficial validado em desktop e viewport móvel `390x844`, sem overflow, sem login Google e sem erros no console.
 
 ### Pendências
-- Aplicar `V17` somente após backup/preflight do PostgreSQL remoto.
-- Remover manualmente do Render as variáveis antigas de autenticação social e revogar a credencial no provedor.
-- Executar E2E de envio/abertura dos e-mails no ambiente publicado depois do deploy autorizado.
+- As quatro variáveis `GOOGLE_*` foram removidas do Render e o cliente OAuth exclusivo do Operador Zero foi excluído no Google Cloud; a restauração administrativa permanece possível por até 30 dias conforme o provedor.
+- Permanece pendente somente o E2E humano de recebimento e abertura dos e-mails em uma caixa postal real, pois a automação não acessou mensagens privadas.
