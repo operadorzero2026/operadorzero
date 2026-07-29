@@ -34,7 +34,7 @@ class AuthServiceTest {
     private final TokenSupport tokens = new TokenSupport();
     private final AuthProperties properties = new AuthProperties(true, URI.create("http://localhost:4174"), "Operador Zero",
         Duration.ofDays(7), Duration.ofMinutes(30), new AuthProperties.Cookie("OZ_SESSION", false, "Lax", ""),
-        new AuthProperties.Mail(true, "no-reply@example.test"), new AuthProperties.Google(false, "", "", ""));
+        new AuthProperties.Mail(true, "no-reply@example.test"));
     private final AuthCookieService cookies = new AuthCookieService(properties);
     private final Argon2PasswordEncoder encoder = new Argon2PasswordEncoder(16, 32, 1, 19456, 2);
     private AuthService service;
@@ -92,15 +92,36 @@ class AuthServiceTest {
     }
 
     @Test
-    void registrationForExistingAccountStillPerformsPasswordValidationAndArgon2Hashing() {
+    void registrationForExistingAccountReturnsConflictAfterPasswordValidationAndHashing() {
         when(repository.findByEmail("new@example.com")).thenReturn(Optional.of(account("ACTIVE", encoder.encode("OutraSenha2026!"))));
 
         long startedAt = System.nanoTime();
-        service.register("New Operator", "new@example.com", "CampoSeguro2026!", true, request());
+        assertThatThrownBy(() -> service.register("New Operator", "new@example.com", "CampoSeguro2026!", true, request()))
+            .isInstanceOfSatisfying(AuthException.class, error -> assertThat(error.status().value()).isEqualTo(409));
 
         assertThat(Duration.ofNanos(System.nanoTime() - startedAt)).isGreaterThan(Duration.ofMillis(5));
         verify(repository, never()).createUser(anyString(), anyString(), anyString(), anyString(), anyString(),
             anyString(), anyString(), anyString(), any(Instant.class));
+    }
+
+    @Test
+    void loginRejectsPendingAccountWithExplicitConfirmationRequiredCode() {
+        String password = "CampoSeguro2026!";
+        when(repository.findByEmail("new@example.com")).thenReturn(Optional.of(account("PENDING_EMAIL", encoder.encode(password))));
+
+        assertThatThrownBy(() -> service.login("new@example.com", password, request(), new MockHttpServletResponse()))
+            .isInstanceOfSatisfying(AuthException.class, error -> {
+                assertThat(error.status().value()).isEqualTo(403);
+                assertThat(error.code()).isEqualTo("EMAIL_NOT_VERIFIED");
+            });
+    }
+
+    @Test
+    void loginGuidesLegacyAccountWithoutPasswordToRecovery() {
+        when(repository.findByEmail("new@example.com")).thenReturn(Optional.of(account("ACTIVE", null)));
+
+        assertThatThrownBy(() -> service.login("new@example.com", "CampoSeguro2026!", request(), new MockHttpServletResponse()))
+            .isInstanceOfSatisfying(AuthException.class, error -> assertThat(error.code()).isEqualTo("PASSWORD_SETUP_REQUIRED"));
     }
 
     @Test
@@ -123,25 +144,6 @@ class AuthServiceTest {
 
         assertThat(Duration.ofNanos(System.nanoTime() - startedAt)).isGreaterThan(Duration.ofMillis(5));
         verify(repository, never()).saveAuthToken(anyLong(), anyString(), anyString(), any(), any());
-    }
-
-    @Test
-    void googlePreparationCreatesOneTimeLaunchGateAndCleansStaleRegistrationIntents() {
-        AuthProperties googleProperties = new AuthProperties(true, URI.create("http://localhost:4174"), "Operador Zero",
-            Duration.ofDays(7), Duration.ofMinutes(30), new AuthProperties.Cookie("OZ_SESSION", false, "Lax", ""),
-            new AuthProperties.Mail(true, "no-reply@example.test"), new AuthProperties.Google(true, "client", "secret", "callback"));
-        AuthService googleService = new AuthService(googleProperties, repository, encoder, new PasswordPolicy(), tokens,
-            rateLimiter, new AuthCookieService(googleProperties), events);
-        MockHttpServletRequest request = request();
-        MockHttpServletResponse response = new MockHttpServletResponse();
-
-        assertThat(googleService.prepareGoogle(true, request, response)).isEqualTo("/oauth2/authorization/google");
-
-        verify(repository).deleteStaleGoogleIntents(any(Instant.class));
-        verify(repository).saveGoogleIntent(anyString(), eq(AuthService.TERMS_VERSION), eq(AuthService.PRIVACY_VERSION),
-            any(Instant.class), any(Instant.class));
-        assertThat(GoogleAuthorizationRequestGate.consume(request)).isTrue();
-        assertThat(GoogleAuthorizationRequestGate.consume(request)).isFalse();
     }
 
     @Test
@@ -172,6 +174,10 @@ class AuthServiceTest {
         ArgumentCaptor<String> passwordHash = ArgumentCaptor.forClass(String.class);
         verify(repository).updatePasswordAndRevokeSessions(eq(account.id()), passwordHash.capture(), any(Instant.class));
         assertThat(passwordHash.getValue()).startsWith("$argon2id$").doesNotContain("SenhaNovaSegura2026!");
+        ArgumentCaptor<AuthMailRequested> mail = ArgumentCaptor.forClass(AuthMailRequested.class);
+        verify(events).publishEvent(mail.capture());
+        assertThat(mail.getValue().kind()).isEqualTo("PASSWORD_CHANGED");
+        assertThat(mail.getValue().token()).isNotBlank();
     }
 
     private MockHttpServletRequest request() {

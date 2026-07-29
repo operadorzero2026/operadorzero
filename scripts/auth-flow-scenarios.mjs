@@ -41,18 +41,16 @@ if (!app.includes('sessionRestoring') || !app.includes('Verificando acesso...'))
   throw new Error('Restauracao nao bloqueante da sessao deve informar seu estado.')
 }
 
-for (const coldStartContract of [
-  'AUTH_API_WAKE_TIMEOUT_MS = 180000',
-  'AUTH_API_WAKE_ATTEMPT_MS = 30000',
-  '/actuator/health/readiness',
-  'waitForAuthenticationApi()',
-  'O acesso está demorando mais que o esperado',
-]) {
-  if (!api.includes(coldStartContract)) throw new Error(`Cold start nao tratado: ${coldStartContract}`)
+for (const removedSocialAuth of ['prepareGoogleLogin', 'Continuar com Google', 'Conectando ao Google', '/api/auth/google/intent']) {
+  if (api.includes(removedSocialAuth) || app.includes(removedSocialAuth)) {
+    throw new Error(`Autenticacao social ainda presente: ${removedSocialAuth}`)
+  }
 }
 
-if (!app.includes('Conectando ao Google...')) {
-  throw new Error('Inicio Google deve informar progresso.')
+for (const passwordConfirmationContract of ['passwordConfirmation', 'Confirmar senha', 'As senhas devem ser iguais.']) {
+  if (!api.includes(passwordConfirmationContract) && !app.includes(passwordConfirmationContract)) {
+    throw new Error(`Confirmacao de senha ausente: ${passwordConfirmationContract}`)
+  }
 }
 
 if (app.includes('logout().finally(() => setCurrentUser(null))')) {
@@ -72,24 +70,10 @@ for (const csrfRecoveryContract of [
   if (!api.includes(csrfRecoveryContract)) throw new Error(`Recuperacao de CSRF ausente: ${csrfRecoveryContract}`)
 }
 
-if (!app.includes("oauthCode === 'TERMS_REQUIRED'") || !app.includes('Selecione Criar conta')) {
-  throw new Error('Conta Google nova nao orienta o usuario a concluir cadastro e aceite.')
-}
-
-for (const googleRecoveryContract of [
-  "pendingAction === 'google'",
-  'Conectando ao Google...',
-  "window.addEventListener('pageshow', resumeAfterGoogle)",
-  'event.persisted',
-  'O acesso com Google foi cancelado.',
-]) {
-  if (!app.includes(googleRecoveryContract)) throw new Error(`Retorno do Google pode congelar a tela: ${googleRecoveryContract}`)
-}
-
 for (const emailConfirmationContract of [
   'resendVerification,',
   'setVerificationEmail(email)',
-  'Reenviar confirmação',
+  'Reenviar e-mail de confirmação',
   'Confira também o Lixo Eletrônico',
 ]) {
   if (!app.includes(emailConfirmationContract)) throw new Error(`Reenvio de confirmacao ausente: ${emailConfirmationContract}`)

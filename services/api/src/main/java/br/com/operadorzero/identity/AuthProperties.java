@@ -12,10 +12,8 @@ public record AuthProperties(
     Duration sessionDuration,
     Duration tokenDuration,
     Cookie cookie,
-    Mail mail,
-    Google google
+    Mail mail
 ) {
     public record Cookie(String name, boolean secure, String sameSite, String domain) {}
     public record Mail(boolean enabled, String from) {}
-    public record Google(boolean enabled, String clientId, String clientSecret, String redirectUri) {}
 }

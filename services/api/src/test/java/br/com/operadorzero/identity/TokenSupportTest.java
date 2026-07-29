@@ -31,7 +31,7 @@ class TokenSupportTest {
     void enabledAuthenticationRequiresAStableServerSideHashKey() {
         AuthProperties properties = new AuthProperties(true, URI.create("https://app.example.test"), "Operador Zero",
             Duration.ofDays(7), Duration.ofMinutes(30), new AuthProperties.Cookie("OZ_SESSION", true, "None", ""),
-            new AuthProperties.Mail(false, "no-reply@example.test"), new AuthProperties.Google(false, "", "", ""));
+            new AuthProperties.Mail(false, "no-reply@example.test"));
 
         assertThatThrownBy(() -> new TokenSupport(properties, ""))
             .isInstanceOf(IllegalStateException.class)

@@ -17,7 +17,21 @@ public final class AuthException extends RuntimeException {
     }
 
     public static AuthException invalidCredentials() {
-        return new AuthException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "E-mail ou senha incorretos.");
+        return new AuthException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "E-mail ou senha invalidos.");
+    }
+
+    public static AuthException emailNotVerified() {
+        return new AuthException(HttpStatus.FORBIDDEN, "EMAIL_NOT_VERIFIED",
+            "Seu cadastro ainda nao foi confirmado. Verifique seu e-mail ou solicite um novo link de confirmacao.");
+    }
+
+    public static AuthException passwordSetupRequired() {
+        return new AuthException(HttpStatus.UNAUTHORIZED, "PASSWORD_SETUP_REQUIRED",
+            "Esta conta foi criada anteriormente por outro metodo de acesso. Utilize Esqueci minha senha para definir uma senha e continuar.");
+    }
+
+    public static AuthException emailAlreadyRegistered() {
+        return new AuthException(HttpStatus.CONFLICT, "EMAIL_ALREADY_REGISTERED", "Este e-mail ja possui cadastro.");
     }
 
     public static AuthException invalidToken() {
@@ -30,10 +44,6 @@ public final class AuthException extends RuntimeException {
 
     public static AuthException invalidPassword(String message) {
         return new AuthException(HttpStatus.BAD_REQUEST, "INVALID_PASSWORD", message);
-    }
-
-    public static AuthException accountLinkRequired() {
-        return new AuthException(HttpStatus.CONFLICT, "ACCOUNT_LINK_REQUIRED", "Entre com e-mail e senha para vincular o Google com seguranca.");
     }
 
     public static AuthException rateLimited() {

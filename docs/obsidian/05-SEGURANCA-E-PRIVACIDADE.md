@@ -35,7 +35,7 @@ Segurança é critério de aceite, não etapa posterior. A baseline detalhada vi
 ## Controles obrigatórios
 
 - Argon2id para senha; tokens opacos de uso único; MFA obrigatório para administração.
-- Google somente via OAuth 2.0/OIDC com PKCE, `state`, `nonce`, redirect URIs exatas e validação de issuer/audience.
+- Acesso somente por e-mail e senha, com confirmação obrigatória do endereço antes da primeira sessão.
 - Recuperação por e-mail com resposta uniforme, rate limit, expiração curta, token armazenado como hash e revogação após uso.
 - Sessão em cookie `HttpOnly`, `Secure`, `SameSite` e proteção CSRF adequada.
 - Autorização por objeto no backend; IDs não são autorização.
@@ -49,7 +49,7 @@ Segurança é critério de aceite, não etapa posterior. A baseline detalhada vi
 
 ## Fronteira frontend/backend
 
-O browser recebe somente `VITE_API_URL`, que é configuração pública. Senhas fixas, tokens, chaves OAuth, banco, Redis, storage, e-mail e pagamentos são proibidos no bundle, no Git e no armazenamento do navegador. Login, cadastro, recuperação e Google apontam para a API; o modo demonstrativo existe apenas em build local de desenvolvimento. A CI valida o bundle e executa varredura de segredos. A implantação está conectada a [[16-ARQUITETURA-DE-PRODUCAO]].
+O browser recebe somente `VITE_API_URL`, que é configuração pública. Senhas fixas, tokens, chaves privadas, banco, Redis, storage, e-mail e pagamentos são proibidos no bundle, no Git e no armazenamento do navegador. Login, cadastro, confirmação e recuperação apontam para a API. A CI valida o bundle e executa varredura de segredos. A implantação está conectada a [[16-ARQUITETURA-DE-PRODUCAO]].
 
 URLs PostgreSQL recebidas do ambiente são normalizadas sem credenciais na URL JDBC e exigem `sslmode=require` no mínimo; modos mais fortes, como `verify-full`, são preservados. A interface só confirma logout depois que a revogação no backend conclui. O diagnóstico de 2026-07-27 ainda registra riscos de timing de autenticação, bloqueio por sujeito e acesso direto ao endpoint de autorização Google para tratamento posterior; veja [[17-DIAGNOSTICO-E-PLANO-DE-PRODUCAO-2026-07-27]].
 
@@ -105,7 +105,7 @@ Hashes de tokens, sessões, endereços e identificadores de auditoria usam HMAC-
 
 ## Sessão first-party no domínio oficial - 2026-07-28
 
-O frontend oficial usa proxy same-origin da Vercel para `/api`, `/actuator`, `/oauth2` e `/login/oauth2`. Login por senha, CSRF, callback Google e restauração de sessão passam por `operadorzero.com.br`, evitando dependência de cookies de terceiros no domínio `onrender.com`. Cookies continuam `HttpOnly` quando aplicável, `Secure`, com CSRF dedicado; segredos Google e Resend permanecem somente no backend. Veja `AUTHENTICATION.md` e [[06-FRONTEND-WEB]].
+O frontend oficial usa proxy same-origin da Vercel somente para `/api` e `/actuator`. Login por senha, CSRF e restauração de sessão passam por `operadorzero.com.br`, evitando cookies de terceiros. Cookies continuam `HttpOnly` quando aplicável, `Secure`, com CSRF dedicado; o segredo Resend permanece somente no backend. Veja `AUTHENTICATION.md` e [[06-FRONTEND-WEB]].
 
 Requisições mutáveis renovam o token CSRF e repetem a chamada uma única vez quando o servidor retorna `403 ACCESS_DENIED`. Isso recupera com segurança divergências entre o token mantido em memória e o cookie renovado por login, restauração de sessão ou outra aba, sem desabilitar CSRF nem ampliar permissões.
 

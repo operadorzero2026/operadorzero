@@ -3,7 +3,7 @@ package br.com.operadorzero.identity;
 interface AuthMailGateway {
     void send(Message message);
 
-    record Message(String from, String to, String subject, String text, String kind, String idempotencyKey) {}
+    record Message(String from, String to, String subject, String text, String html, String kind, String idempotencyKey) {}
 }
 
 final class AuthMailDeliveryException extends RuntimeException {

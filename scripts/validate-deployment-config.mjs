@@ -41,11 +41,16 @@ if (!vercelConfig.rewrites?.some(rule => rule.destination === '/index.html')) {
   throw new Error('vercel.json deve preservar deep links da SPA.')
 }
 const spaFallbackIndex = vercelConfig.rewrites.findIndex(rule => rule.destination === '/index.html')
-for (const source of ['/api/:path*', '/actuator/:path*', '/oauth2/:path*', '/login/oauth2/:path*']) {
+for (const source of ['/api/:path*', '/actuator/:path*']) {
   const proxyIndex = vercelConfig.rewrites.findIndex(rule => rule.source === source
     && rule.destination?.startsWith('https://operadorzero-api-staging.onrender.com/'))
   if (proxyIndex < 0 || proxyIndex > spaFallbackIndex) {
     throw new Error(`Proxy same-origin ausente ou posterior ao fallback da SPA: ${source}.`)
+  }
+}
+for (const retiredRoute of ['/oauth2/:path*', '/login/oauth2/:path*']) {
+  if (vercelConfig.rewrites.some(rule => rule.source === retiredRoute)) {
+    throw new Error(`Rota social aposentada ainda publicada: ${retiredRoute}`)
   }
 }
 const globalHeaders = vercelConfig.headers?.find(rule => rule.source === '/(.*)')?.headers ?? []

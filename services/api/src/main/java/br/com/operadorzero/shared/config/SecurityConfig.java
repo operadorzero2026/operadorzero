@@ -1,7 +1,6 @@
 package br.com.operadorzero.shared.config;
 
 import br.com.operadorzero.identity.AuthProperties;
-import br.com.operadorzero.identity.GoogleAuthSuccessHandler;
 import br.com.operadorzero.identity.SessionAuthenticationFilter;
 import br.com.operadorzero.shared.web.ApiError;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,7 +9,6 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,9 +17,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestCustomizers;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.context.NullSecurityContextRepository;
@@ -36,15 +31,11 @@ public class SecurityConfig {
     private final List<String> allowedOrigins;
     private final AuthProperties authProperties;
     private final SessionAuthenticationFilter sessionAuthenticationFilter;
-    private final ClientRegistrationRepository clientRegistrations;
-    private final GoogleAuthSuccessHandler googleHandler;
     private final ObjectMapper objectMapper;
 
     public SecurityConfig(@Value("${app.security.cors.allowed-origins}") String allowedOrigins,
                           AuthProperties authProperties,
                           SessionAuthenticationFilter sessionAuthenticationFilter,
-                          ObjectProvider<ClientRegistrationRepository> clientRegistrations,
-                          GoogleAuthSuccessHandler googleHandler,
                           ObjectMapper objectMapper) {
         this.allowedOrigins = Arrays.stream(allowedOrigins.split(","))
             .map(String::trim)
@@ -55,8 +46,6 @@ public class SecurityConfig {
         }
         this.authProperties = authProperties;
         this.sessionAuthenticationFilter = sessionAuthenticationFilter;
-        this.clientRegistrations = clientRegistrations.getIfAvailable();
-        this.googleHandler = googleHandler;
         this.objectMapper = objectMapper;
     }
 
@@ -69,9 +58,7 @@ public class SecurityConfig {
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/api/auth/csrf", "/api/auth/register", "/api/auth/verify-email",
                     "/api/auth/login", "/api/auth/password-recovery", "/api/auth/password-reset",
-                    "/api/auth/resend-verification", "/api/auth/google/intent",
-                    "/api/auth/session",
-                    "/oauth2/**", "/login/oauth2/**").permitAll()
+                    "/api/auth/resend-verification", "/api/auth/session").permitAll()
                 .requestMatchers("/api/auth/logout").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/community/**").permitAll()
                 .requestMatchers("/api/admin/community/**").hasAnyRole("ADMIN", "MODERATOR")
@@ -93,17 +80,6 @@ public class SecurityConfig {
                 .csrfTokenRepository(csrfRepository())
                 .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
             .addFilterBefore(sessionAuthenticationFilter, AnonymousAuthenticationFilter.class);
-
-        if (clientRegistrations != null) {
-            DefaultOAuth2AuthorizationRequestResolver resolver =
-                new DefaultOAuth2AuthorizationRequestResolver(clientRegistrations, "/oauth2/authorization");
-            resolver.setAuthorizationRequestCustomizer(OAuth2AuthorizationRequestCustomizers.withPkce());
-            http.oauth2Login(oauth -> oauth
-                .authorizationEndpoint(endpoint -> endpoint.authorizationRequestResolver(
-                    new GatedOAuth2AuthorizationRequestResolver(resolver)))
-                .successHandler(googleHandler)
-                .failureHandler(googleHandler));
-        }
         return http.build();
     }
 

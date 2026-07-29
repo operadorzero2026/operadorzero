@@ -14,8 +14,14 @@ public final class AuthDtos {
         @NotBlank @Size(max = 80) String displayName,
         @NotBlank @Email @Size(max = 254) String email,
         @NotBlank @Size(min = 12, max = 128) String password,
+        @NotBlank @Size(min = 12, max = 128) String passwordConfirmation,
         @AssertTrue boolean termsAccepted
-    ) {}
+    ) {
+        @AssertTrue(message = "As senhas devem ser iguais.")
+        public boolean isPasswordConfirmationValid() {
+            return password != null && password.equals(passwordConfirmation);
+        }
+    }
 
     public record LoginRequest(
         @NotBlank @Email @Size(max = 254) String email,
@@ -28,16 +34,18 @@ public final class AuthDtos {
 
     public record PasswordResetRequest(
         @NotBlank @Size(min = 32, max = 256) String token,
-        @NotBlank @Size(min = 12, max = 128) String password
-    ) {}
-
-    public record GoogleIntentRequest(boolean termsAccepted) {}
+        @NotBlank @Size(min = 12, max = 128) String password,
+        @NotBlank @Size(min = 12, max = 128) String passwordConfirmation
+    ) {
+        @AssertTrue(message = "As senhas devem ser iguais.")
+        public boolean isPasswordConfirmationValid() {
+            return password != null && password.equals(passwordConfirmation);
+        }
+    }
 
     public record MessageResponse(String message) {}
 
     public record CsrfResponse(String token, String headerName) {}
-
-    public record GoogleIntentResponse(String authorizationPath) {}
 
     public record SessionResponse(UUID id, String email, String username, String displayName, String callsign, List<String> roles) {
         public static SessionResponse from(UserAccount account) {

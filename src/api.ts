@@ -160,20 +160,12 @@ export class ApiClientError extends Error {
 let csrfToken: string | null = null
 let csrfHeader = 'X-CSRF-TOKEN'
 const AUTH_REQUEST_TIMEOUT_MS = 15000
-const AUTH_API_WAKE_TIMEOUT_MS = 180000
-const AUTH_API_WAKE_ATTEMPT_MS = 30000
-const AUTH_API_READY_CACHE_MS = 30000
-let apiReadyUntil = 0
 
 class ApiTimeoutError extends Error {
   constructor(message = 'A conexão está demorando para iniciar. Aguarde alguns segundos e tente novamente.') {
     super(message)
     this.name = 'ApiTimeoutError'
   }
-}
-
-function wait(timeoutMs: number) {
-  return new Promise<void>(resolve => window.setTimeout(resolve, timeoutMs))
 }
 
 function isAbortError(error: unknown) {
@@ -198,27 +190,6 @@ function getApiBaseUrl() {
   const url = new URL(configuredApiUrl)
   if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Não foi possível conectar ao serviço neste momento.')
   return url.toString().replace(/\/$/, '')
-}
-
-async function waitForAuthenticationApi() {
-  if (Date.now() < apiReadyUntil) return
-  const deadline = Date.now() + AUTH_API_WAKE_TIMEOUT_MS
-  while (Date.now() < deadline) {
-    const remaining = deadline - Date.now()
-    try {
-      const response = await fetchWithTimeout(`${getApiBaseUrl()}/actuator/health/readiness`, {
-        method: 'GET', credentials: 'include', headers: { Accept: 'application/json' },
-      }, Math.min(AUTH_API_WAKE_ATTEMPT_MS, remaining))
-      if (response.ok) {
-        apiReadyUntil = Date.now() + AUTH_API_READY_CACHE_MS
-        return
-      }
-    } catch (error) {
-      if (!(error instanceof ApiTimeoutError) && !(error instanceof TypeError)) throw error
-    }
-    if (Date.now() < deadline) await wait(1500)
-  }
-  throw new ApiTimeoutError('O acesso está demorando mais que o esperado. Tente novamente em instantes.')
 }
 
 async function readError(response: Response) {
@@ -249,7 +220,6 @@ async function ensureCsrf() {
 }
 
 async function apiRequest<T>(path: string, init: RequestInit = {}, timeoutMs = AUTH_REQUEST_TIMEOUT_MS): Promise<T> {
-  await waitForAuthenticationApi()
   const method = (init.method || 'GET').toUpperCase()
   const mutating = !['GET', 'HEAD', 'OPTIONS'].includes(method)
   if (mutating) await ensureCsrf()
@@ -286,17 +256,13 @@ export async function login(email: string, password: string) {
   return session
 }
 
-export const register = (displayName: string, email: string, password: string, termsAccepted: boolean) =>
-  apiRequest<{ message: string }>('/api/auth/register', json('POST', { displayName, email, password, termsAccepted }))
+export const register = (displayName: string, email: string, password: string, passwordConfirmation: string, termsAccepted: boolean) =>
+  apiRequest<{ message: string }>('/api/auth/register', json('POST', { displayName, email, password, passwordConfirmation, termsAccepted }))
 export const requestPasswordRecovery = (email: string) => apiRequest<{ message: string }>('/api/auth/password-recovery', json('POST', { email }))
 export const resendVerification = (email: string) => apiRequest<{ message: string }>('/api/auth/resend-verification', json('POST', { email }))
 export const verifyEmail = (token: string) => apiRequest<{ message: string }>('/api/auth/verify-email', json('POST', { token }))
-export const resetPassword = (token: string, password: string) => apiRequest<{ message: string }>('/api/auth/password-reset', json('POST', { token, password }))
-
-export async function prepareGoogleLogin(termsAccepted: boolean) {
-  const result = await apiRequest<{ authorizationPath: string }>('/api/auth/google/intent', json('POST', { termsAccepted }))
-  return `${getApiBaseUrl()}${result.authorizationPath}`
-}
+export const resetPassword = (token: string, password: string, passwordConfirmation: string) =>
+  apiRequest<{ message: string }>('/api/auth/password-reset', json('POST', { token, password, passwordConfirmation }))
 
 export async function getCurrentSession(timeoutMs = 7000): Promise<SessionUser | null> {
   try {

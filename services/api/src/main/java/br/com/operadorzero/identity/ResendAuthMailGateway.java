@@ -47,7 +47,7 @@ final class ResendAuthMailGateway implements AuthMailGateway {
         String payload;
         try {
             payload = objectMapper.writeValueAsString(new SendEmailRequest(
-                message.from(), List.of(message.to()), message.subject(), message.text(),
+                message.from(), List.of(message.to()), message.subject(), message.text(), message.html(),
                 List.of(new Tag("auth_action", message.kind().toLowerCase(Locale.ROOT).replace('_', '-')))
             ));
         } catch (JsonProcessingException exception) {
@@ -82,6 +82,6 @@ final class ResendAuthMailGateway implements AuthMailGateway {
         }
     }
 
-    private record SendEmailRequest(String from, List<String> to, String subject, String text, List<Tag> tags) {}
+    private record SendEmailRequest(String from, List<String> to, String subject, String text, String html, List<Tag> tags) {}
     private record Tag(String name, String value) {}
 }

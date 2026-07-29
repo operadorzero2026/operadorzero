@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class AuthCookieService {
-    public static final String GOOGLE_INTENT_COOKIE = "OZ_GOOGLE_INTENT";
+    private static final String[] LEGACY_AUTH_COOKIES = {"OZ_GOOGLE_INTENT", "OZ_OAUTH_SESSION"};
 
     private final AuthProperties properties;
 
@@ -24,10 +24,6 @@ public class AuthCookieService {
         return cookie(request, properties.cookie().name());
     }
 
-    public Optional<String> googleIntent(HttpServletRequest request) {
-        return cookie(request, GOOGLE_INTENT_COOKIE);
-    }
-
     public void writeSession(HttpServletResponse response, String token) {
         add(response, properties.cookie().name(), token, properties.sessionDuration(), true);
     }
@@ -36,12 +32,10 @@ public class AuthCookieService {
         add(response, properties.cookie().name(), "", Duration.ZERO, true);
     }
 
-    public void writeGoogleIntent(HttpServletResponse response, String token) {
-        add(response, GOOGLE_INTENT_COOKIE, token, Duration.ofMinutes(10), true);
-    }
-
-    public void clearGoogleIntent(HttpServletResponse response) {
-        add(response, GOOGLE_INTENT_COOKIE, "", Duration.ZERO, true);
+    public void clearLegacyAuthentication(HttpServletResponse response) {
+        for (String name : LEGACY_AUTH_COOKIES) {
+            add(response, name, "", Duration.ZERO, true);
+        }
     }
 
     private Optional<String> cookie(HttpServletRequest request, String name) {

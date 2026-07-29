@@ -1,5 +1,13 @@
 # Estado atual do projeto
 
+## 2026-07-29
+
+- Autenticação social foi removida do frontend, backend, dependências, proxies e configuração pública. O acesso agora usa exclusivamente e-mail e senha.
+- Cadastro exige confirmação da senha e do e-mail. Login bloqueia contas pendentes com orientação de reenvio; recuperação permite que contas antigas sem senha definam uma credencial sem perder perfil ou histórico.
+- A migration aditiva `V17__retire_social_authentication.sql` audita usuários anteriormente vinculados, revoga sessões antigas e remove somente as tabelas exclusivas do mecanismo aposentado.
+- O preflight de três minutos foi removido das ações de autenticação. A restauração continua não bloqueante e as ações falham com mensagem clara dentro do timeout normal.
+- Consulte `AUTHENTICATION.md`, [[02-ARQUITETURA-E-STACK]], [[05-SEGURANCA-E-PRIVACIDADE]], [[06-FRONTEND-WEB]] e [[99-HISTORICO-DE-ALTERACOES]].
+
 ## 2026-07-27
 
 - Concluída a auditoria inicial de todas as superfícies em [[18-AUDITORIA-DE-TELAS-E-INTEGRACAO-2026-07-27]]. Somente identidade possui integração real; os nove destinos autenticados continuam sem rotas e sem contratos de negócio.

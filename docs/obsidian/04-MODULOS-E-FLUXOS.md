@@ -8,9 +8,9 @@ Visitante, operador, capitão/admin de equipe, organizador de partida, administr
 
 ## Fluxos do MVP
 
-1. Cadastro por Google: consentimento OAuth/OIDC -> identidade validada -> idade mínima -> perfil privado -> publicação controlada.
+1. Cadastro por e-mail e senha -> confirmação obrigatória do endereço -> perfil privado -> publicação controlada.
 2. Cadastro por e-mail: idade mínima -> e-mail e senha -> e-mail confirmado -> perfil privado -> publicação controlada.
-3. Login: Google ou e-mail/senha -> avaliação de risco -> sessão segura em cookie.
+3. Login: e-mail/senha -> verificação de estado e confirmação -> sessão segura em cookie.
 4. Recuperação: e-mail -> resposta neutra -> token de uso único -> nova senha -> revogação das sessões anteriores.
 5. Equipe: criação ou convite -> decisão explícita -> validação de responsabilidades -> vínculo principal -> papel -> histórico preservado, conforme [[10-MINHA-EQUIPE]].
 6. Operação: rascunho -> publicação -> inscrição/espera -> times/esquadrões/missões -> check-in -> encerramento -> resultados, conforme [[09-OPERACOES]].
@@ -24,7 +24,7 @@ Visitante, operador, capitão/admin de equipe, organizador de partida, administr
 
 ## Identidade implementada em 2026-07-22
 
-Os fluxos 1 a 4 possuem contratos reais na API e na SPA. Cadastro por e-mail cria conta `PENDING_EMAIL`; o link de uso unico ativa a conta. Login cria sessao opaca, logout a revoga e recuperacao troca o hash Argon2id e revoga sessoes anteriores. Google cria conta somente apos aceite registrado; conta local com o mesmo e-mail nao e mesclada silenciosamente. A interface autenticada recebe a identidade da sessao, mas seus demais modulos continuam demonstrativos.
+Os fluxos 1 a 4 possuem contratos reais na API e na SPA. Cadastro por e-mail cria conta `PENDING_EMAIL`; o link de uso único ativa a conta. Login cria sessão opaca, logout a revoga e recuperação troca o hash Argon2id e revoga sessões anteriores. Contas antigas sem senha usam a recuperação para definir uma credencial sem perder dados. A interface autenticada recebe a identidade da sessão.
 
 ## Notificações
 

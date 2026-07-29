@@ -58,10 +58,7 @@ public class AuthService {
 
         Optional<UserAccount> existing = repository.findByEmail(normalizedEmail);
         if (existing.isPresent()) {
-            if ("PENDING_EMAIL".equals(existing.get().status())) {
-                issueToken(existing.get(), "VERIFY_EMAIL");
-            }
-            return;
+            throw AuthException.emailAlreadyRegistered();
         }
 
         Instant now = Instant.now();
@@ -69,7 +66,7 @@ public class AuthService {
         long userId = repository.createUser(normalizedEmail, uniqueUsername(safeDisplayName), passwordHash,
             "PENDING_EMAIL", safeDisplayName, callsign(safeDisplayName), TERMS_VERSION, PRIVACY_VERSION, now);
         if (userId == 0L) {
-            return;
+            throw AuthException.emailAlreadyRegistered();
         }
         UserAccount account = repository.findById(userId).orElseThrow();
         issueToken(account, "VERIFY_EMAIL");
@@ -97,7 +94,19 @@ public class AuthService {
         boolean passwordMatches = passwordEncoder.matches(password,
             passwordHash == null ? dummyPasswordHash : passwordHash);
         UserAccount account = candidate.orElse(null);
-        if (account == null || !account.active() || passwordHash == null || !passwordMatches) {
+        if (account == null) {
+            throw AuthException.invalidCredentials();
+        }
+        if (passwordHash == null) {
+            throw AuthException.passwordSetupRequired();
+        }
+        if (!passwordMatches) {
+            throw AuthException.invalidCredentials();
+        }
+        if ("PENDING_EMAIL".equals(account.status())) {
+            throw AuthException.emailNotVerified();
+        }
+        if (!account.active()) {
             throw AuthException.invalidCredentials();
         }
         return createSession(account, request, response, "AUTH_LOGIN_PASSWORD");
@@ -138,6 +147,7 @@ public class AuthService {
         passwordPolicy.validate(newPassword, account.email());
         repository.updatePasswordAndRevokeSessions(userId, passwordEncoder.encode(newPassword), now);
         audit(account, "AUTH_PASSWORD_RESET", null, ipHash(request), now);
+        events.publishEvent(new AuthMailRequested(account.email(), account.displayName(), "PASSWORD_CHANGED", tokens.newToken()));
     }
 
     @Transactional
@@ -152,64 +162,11 @@ public class AuthService {
             }
         });
         cookies.clearSession(response);
+        cookies.clearLegacyAuthentication(response);
     }
 
-    @Transactional
-    public String prepareGoogle(boolean termsAccepted, HttpServletRequest request, HttpServletResponse response) {
-        ensureEnabled();
-        if (!properties.google().enabled()) {
-            throw AuthException.unavailable();
-        }
-        rateLimiter.check("google", request, request.getRemoteAddr(), 10, Duration.ofMinutes(15));
-        if (!termsAccepted) {
-            // Existing linked users may start through the login button without creating an account.
-            cookies.clearGoogleIntent(response);
-            GoogleAuthorizationRequestGate.allowNext(request);
-            return "/oauth2/authorization/google";
-        }
-        String raw = tokens.newToken();
-        Instant now = Instant.now();
-        repository.deleteStaleGoogleIntents(now);
-        repository.saveGoogleIntent(tokens.hash(raw), TERMS_VERSION, PRIVACY_VERSION, now, now.plus(Duration.ofMinutes(10)));
-        cookies.writeGoogleIntent(response, raw);
-        GoogleAuthorizationRequestGate.allowNext(request);
-        return "/oauth2/authorization/google";
-    }
-
-    @Transactional
-    public UserAccount googleLogin(String issuer, String subject, String email, boolean emailVerified,
-                                   String displayName, String intentToken, HttpServletRequest request,
-                                   HttpServletResponse response) {
-        ensureEnabled();
-        if (!properties.google().enabled() || !emailVerified) {
-            throw AuthException.invalidCredentials();
-        }
-        Optional<UserAccount> linked = repository.findByOidc(issuer, subject);
-        if (linked.isPresent()) {
-            cookies.clearGoogleIntent(response);
-            return createSession(linked.get(), request, response, "AUTH_LOGIN_GOOGLE");
-        }
-
-        String normalizedEmail = normalizeEmail(email);
-        if (repository.findByEmail(normalizedEmail).isPresent()) {
-            throw AuthException.accountLinkRequired();
-        }
-        if (intentToken == null || !repository.consumeGoogleIntent(tokens.hash(intentToken), Instant.now())) {
-            throw AuthException.termsRequired();
-        }
-
-        String safeDisplayName = displayName == null || displayName.isBlank() ? "Operador" : displayName.strip();
-        Instant now = Instant.now();
-        long userId = repository.createUser(normalizedEmail, uniqueUsername(safeDisplayName), null, "ACTIVE",
-            safeDisplayName, callsign(safeDisplayName), TERMS_VERSION, PRIVACY_VERSION, now);
-        if (userId == 0L) {
-            throw AuthException.accountLinkRequired();
-        }
-        repository.linkOidc(userId, issuer, subject, normalizedEmail, now);
-        UserAccount account = repository.findById(userId).orElseThrow();
-        cookies.clearGoogleIntent(response);
-        audit(account, "AUTH_REGISTER_GOOGLE", null, ipHash(request), now);
-        return createSession(account, request, response, "AUTH_LOGIN_GOOGLE");
+    public void clearLegacyAuthentication(HttpServletResponse response) {
+        cookies.clearLegacyAuthentication(response);
     }
 
     private UserAccount createSession(UserAccount account, HttpServletRequest request, HttpServletResponse response, String action) {

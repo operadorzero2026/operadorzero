@@ -25,9 +25,9 @@ Browser/PWA futura -> CDN frontend -> API REST -> módulos de aplicação -> Pos
 
 ## Identidade e acesso
 
-O cadastro e o login suportam Google via OAuth 2.0/OIDC com Authorization Code + PKCE e credenciais próprias por e-mail e senha. Contas do mesmo e-mail exigem vinculação autenticada, nunca fusão silenciosa. Recuperação de senha ocorre por e-mail com token opaco, de uso único, armazenado somente como hash, com expiração curta e resposta não enumerável. O frontend não armazena senha nem token de recuperação.
+O cadastro e o login usam exclusivamente e-mail e senha. A confirmação do endereço é obrigatória antes da primeira sessão. Recuperação de senha ocorre por e-mail com token opaco, de uso único, armazenado somente como hash, com expiração curta e resposta não enumerável. O frontend não armazena senha nem token de recuperação.
 
-Implementacao de 2026-07-23: a API usa sessao opaca de usuario persistida no PostgreSQL e enviada em cookie `HttpOnly`, em vez de JWT no navegador. CSRF usa cookie/header dedicado; Redis aplica limites por IP e sujeito e tambem preserva por 10 minutos a `HttpSession` temporaria do Google entre reinicios. Google OIDC usa o cliente do Spring Security com PKCE e validacao de issuer/audience/nonce. Confirmacao e recuperacao usam a API HTTPS da Resend com idempotencia; a chave fica somente no backend. Resend e Google continuam configuracoes externas obrigatorias por ambiente. Consulte [[05-SEGURANCA-E-PRIVACIDADE]] e `AUTHENTICATION.md`.
+Implementação atual: a API usa sessão opaca persistida no PostgreSQL e enviada em cookie `HttpOnly`, em vez de JWT no navegador. CSRF usa cookie/header dedicado e Redis aplica limites por IP e sujeito. Confirmação e recuperação usam a API HTTPS da Resend com idempotência; a chave fica somente no backend. Consulte [[05-SEGURANCA-E-PRIVACIDADE]] e `AUTHENTICATION.md`.
 
 ## Limites de módulo
 
@@ -41,4 +41,4 @@ Conecta-se a [[03-DOMINIO-E-REGRAS-DE-NEGOCIO]], [[05-SEGURANCA-E-PRIVACIDADE]] 
 
 ## Identidade endurecida em 2026-07-27
 
-Tokens, sessoes e pseudonimos tecnicos usam HMAC-SHA-256 com `AUTH_HASH_KEY` exclusiva por ambiente. Google OIDC exige preparacao de uso unico via endpoint protegido antes do redirecionamento Spring, e intencoes expiradas ou consumidas possuem limpeza indexada. Rate limit combina IP e sujeito associado ao IP; o Redis usa `noeviction` para falhar fechado sem descartar silenciosamente estado vivo. Veja [[05-SEGURANCA-E-PRIVACIDADE]] e [[17-DIAGNOSTICO-E-PLANO-DE-PRODUCAO-2026-07-27]].
+Tokens, sessões e pseudônimos técnicos usam HMAC-SHA-256 com `AUTH_HASH_KEY` exclusiva por ambiente. Rate limit combina IP e sujeito associado ao IP; o Redis usa `noeviction` para falhar fechado sem descartar silenciosamente estado vivo. A migration `V17` aposenta a autenticação social sem apagar usuários. Veja [[05-SEGURANCA-E-PRIVACIDADE]].

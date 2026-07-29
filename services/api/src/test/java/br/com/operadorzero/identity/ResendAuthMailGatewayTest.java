@@ -88,7 +88,8 @@ class ResendAuthMailGatewayTest {
 
     private AuthMailGateway.Message message() {
         return new AuthMailGateway.Message("Operador Zero <acesso@example.test>", "operator@example.test",
-            "Confirme sua conta", "Abra https://app.example.test/?token=opaque", "VERIFY_EMAIL",
+            "Confirme sua conta", "Abra https://app.example.test/?token=opaque",
+            "<a href=\"https://app.example.test/?token=opaque\">Confirmar</a>", "VERIFY_EMAIL",
             "auth-verify-email-token-hash");
     }
 }

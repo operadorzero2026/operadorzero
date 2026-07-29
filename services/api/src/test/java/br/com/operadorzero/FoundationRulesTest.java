@@ -41,17 +41,14 @@ class FoundationRulesTest {
     }
 
     @Test
-    void productionPersistsTemporaryOauthSessionInRedis() throws Exception {
+    void productionDoesNotLoadSocialAuthenticationDependenciesOrSessions() throws Exception {
         String pom = Files.readString(Path.of("pom.xml"));
         String productionYaml = Files.readString(Path.of("src/main/resources/application-prod.yml"));
+        String securityConfig = Files.readString(Path.of("src/main/java/br/com/operadorzero/shared/config/SecurityConfig.java"));
 
-        assertThat(pom).contains("spring-session-data-redis");
-        assertThat(productionYaml).contains(
-            "timeout: 10m",
-            "namespace: operador-zero:oauth-session",
-            "repository-type: default",
-            "name: OZ_OAUTH_SESSION"
-        );
+        assertThat(pom).doesNotContain("spring-boot-starter-oauth2-client", "spring-session-data-redis");
+        assertThat(productionYaml).doesNotContain("OZ_OAUTH_SESSION", "spring.session");
+        assertThat(securityConfig).doesNotContain("oauth2Login", "/oauth2/", "/login/oauth2/");
     }
 
     @Test
@@ -88,11 +85,11 @@ class FoundationRulesTest {
     }
 
     @Test
-    void oauthIntentCleanupHasAnIndexedExpirationPath() throws Exception {
-        String v5 = Files.readString(Path.of("src/main/resources/db/migration/V5__oauth_intent_cleanup_index.sql"));
+    void socialAuthenticationRetirementPreservesUsersAndRevokesOldSessions() throws Exception {
+        String v17 = Files.readString(Path.of("src/main/resources/db/migration/V17__retire_social_authentication.sql"));
 
-        assertThat(v5).contains("oauth_registration_intent", "expires_at", "consumed_at", "CREATE INDEX");
-        assertThat(v5).doesNotContain("DROP TABLE", "TRUNCATE");
+        assertThat(v17).contains("AUTH_SOCIAL_LOGIN_RETIRED", "UPDATE user_session", "DROP TABLE IF EXISTS oauth_registration_intent", "DROP TABLE IF EXISTS user_oidc_identity");
+        assertThat(v17).doesNotContain("DELETE FROM app_user", "DROP TABLE app_user", "TRUNCATE");
     }
 
     @Test

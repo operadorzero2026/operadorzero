@@ -34,7 +34,6 @@ class ResendMailHealthIndicatorTest {
     private AuthProperties properties(boolean mailEnabled) {
         return new AuthProperties(true, URI.create("https://app.example.test"), "Operador Zero",
             Duration.ofDays(7), Duration.ofMinutes(30), new AuthProperties.Cookie("OZ_SESSION", true, "None", ""),
-            new AuthProperties.Mail(mailEnabled, "Operador Zero <acesso@example.test>"),
-            new AuthProperties.Google(false, "", "", ""));
+            new AuthProperties.Mail(mailEnabled, "Operador Zero <acesso@example.test>"));
     }
 }

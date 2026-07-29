@@ -2,8 +2,6 @@ package br.com.operadorzero.identity;
 
 import br.com.operadorzero.identity.AuthDtos.CsrfResponse;
 import br.com.operadorzero.identity.AuthDtos.EmailRequest;
-import br.com.operadorzero.identity.AuthDtos.GoogleIntentRequest;
-import br.com.operadorzero.identity.AuthDtos.GoogleIntentResponse;
 import br.com.operadorzero.identity.AuthDtos.LoginRequest;
 import br.com.operadorzero.identity.AuthDtos.MessageResponse;
 import br.com.operadorzero.identity.AuthDtos.PasswordResetRequest;
@@ -36,7 +34,8 @@ public class AuthController {
     }
 
     @GetMapping("/csrf")
-    CsrfResponse csrf(CsrfToken token) {
+    CsrfResponse csrf(CsrfToken token, HttpServletResponse response) {
+        service.clearLegacyAuthentication(response);
         return new CsrfResponse(token.getToken(), token.getHeaderName());
     }
 
@@ -44,7 +43,7 @@ public class AuthController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     MessageResponse register(@Valid @RequestBody RegisterRequest body, HttpServletRequest request) {
         service.register(body.displayName(), body.email(), body.password(), body.termsAccepted(), request);
-        return new MessageResponse(NEUTRAL_EMAIL_MESSAGE);
+        return new MessageResponse("Cadastro realizado. Enviamos um link de confirmacao para o seu e-mail.");
     }
 
     @PostMapping("/verify-email")
@@ -78,13 +77,10 @@ public class AuthController {
         return new MessageResponse("Senha alterada. Entre novamente em todos os dispositivos.");
     }
 
-    @PostMapping("/google/intent")
-    GoogleIntentResponse googleIntent(@RequestBody GoogleIntentRequest body, HttpServletRequest request, HttpServletResponse response) {
-        return new GoogleIntentResponse(service.prepareGoogle(body.termsAccepted(), request, response));
-    }
-
     @GetMapping("/session")
-    ResponseEntity<SessionResponse> session(@AuthenticationPrincipal AuthenticatedUser principal) {
+    ResponseEntity<SessionResponse> session(@AuthenticationPrincipal AuthenticatedUser principal,
+                                             HttpServletResponse response) {
+        service.clearLegacyAuthentication(response);
         if (principal == null) {
             return ResponseEntity.noContent().build();
         }

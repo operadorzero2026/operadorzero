@@ -7,11 +7,6 @@ spring:
   data:
     redis:
       url: ${REDIS_URL}
-  session:
-    timeout: 10m
-    redis:
-      namespace: operador-zero:oauth-session
-      repository-type: default
 springdoc:
   swagger-ui:
     enabled: false
@@ -19,13 +14,6 @@ springdoc:
     enabled: false
 server:
   shutdown: graceful
-  servlet:
-    session:
-      cookie:
-        name: OZ_OAUTH_SESSION
-        http-only: true
-        secure: true
-        same-site: lax
 app:
   auth:
     cookie:

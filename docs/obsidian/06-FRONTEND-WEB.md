@@ -68,13 +68,13 @@ O produto usa o nome **Operador Zero**. A interface permanece escura, esportiva 
 
 ## Superfície atual
 
-Landing pública responsiva em `src/App.tsx`, com hero, agenda demonstrativa, método de validação, ranking demonstrativo, ecossistema e CTA. Inclui painel modal responsivo para entrar ou criar conta por Google/e-mail e senha, além de recuperação por e-mail. Menu desktop e mobile, `prefers-reduced-motion`, HTML sem renderização insegura e sem persistência local de credenciais.
+Landing pública responsiva em `src/App.tsx`, com hero, agenda, método de validação, comunidade e CTA. Inclui painel modal responsivo para entrar ou criar conta exclusivamente por e-mail e senha, confirmação da senha, confirmação obrigatória do e-mail e recuperação por e-mail. Menu desktop e mobile, `prefers-reduced-motion`, HTML sem renderização insegura e sem persistência local de credenciais.
 
-O modal chama os contratos reais `/api/auth/login`, `/api/auth/register`, `/api/auth/password-recovery`, `/api/auth/password-reset`, `/api/auth/verify-email`, `/api/auth/session`, `/api/auth/logout` e o inicio OIDC na URL publica `VITE_API_URL`. Credenciais nao sao persistidas. Depois do login, a identidade exibida no cabecalho vem da sessao validada pela API.
+O modal chama os contratos reais `/api/auth/login`, `/api/auth/register`, `/api/auth/resend-verification`, `/api/auth/password-recovery`, `/api/auth/password-reset`, `/api/auth/verify-email`, `/api/auth/session` e `/api/auth/logout`. Credenciais não são persistidas. Depois do login, a identidade exibida no cabeçalho vem da sessão validada pela API.
 
 `VITE_AUTH_ENABLED=true` habilita a integração somente quando a API do ambiente estiver configurada. `VITE_APP_ENV=production` remove o banner de ambiente descartável. O domínio oficial possui canonical, Open Graph, Twitter Card, JSON-LD, `robots.txt`, sitemap e manifest próprios; previews públicos devem usar proteção de acesso ou política `noindex` da plataforma de hospedagem. Segredos e tokens nunca pertencem a variáveis `VITE_`.
 
-Desde 2026-07-27, a restauração de sessão ocorre em segundo plano e nunca substitui a landing por uma tela bloqueante. O início Google informa o cold start, aguarda readiness com tentativas por até três minutos, impede clique duplo e recupera o botão em falha. O logout mantém a interface autenticada quando a API não consegue revogar a sessão, evitando confirmação de saída falsa em dispositivo compartilhado.
+A restauração de sessão ocorre em segundo plano, possui timeout curto e nunca substitui a landing por uma tela bloqueante. Ações iniciadas pelo usuário possuem envio único e retornam erro claro quando a API está indisponível, sem espera oculta de três minutos. O logout mantém a interface autenticada quando a API não consegue revogar a sessão, evitando confirmação falsa de saída.
 
 A landing oficial usa o posicionamento “O airsoft brasileiro em um só lugar”, mantém conteúdo real e estados vazios, apresenta a ação de cadastro na primeira tela móvel e inclui uma seção institucional sobre gratuidade, privacidade, regras e segurança. A implementação e os riscos de produção estão registrados em [[17-DIAGNOSTICO-E-PLANO-DE-PRODUCAO-2026-07-27]].
 

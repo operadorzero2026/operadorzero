@@ -25,6 +25,7 @@ import {
   X,
 } from 'lucide-react'
 import {
+  ApiClientError,
   getCurrentSession,
   getOperations,
   getOperatorProfile,
@@ -32,7 +33,6 @@ import {
   getTeamSummary,
   login,
   logout,
-  prepareGoogleLogin,
   register,
   resendVerification,
   requestPasswordRecovery,
@@ -59,10 +59,6 @@ type AuthMode = 'login' | 'signup' | 'recovery' | 'reset'
 const AUTH_ENABLED = import.meta.env.VITE_AUTH_ENABLED === 'true'
 const IS_STAGING = import.meta.env.PROD && import.meta.env.VITE_APP_ENV !== 'production'
 
-function GoogleMark() {
-  return <svg aria-hidden="true" viewBox="0 0 24 24"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.91h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.33 2.98-7.4Z"/><path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.42l-3.24-2.5c-.9.6-2.05.96-3.38.96-2.6 0-4.81-1.76-5.6-4.13H3.05v2.6A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.4 13.91a6 6 0 0 1 0-3.82v-2.6H3.05a10 10 0 0 0 0 9.02l3.35-2.6Z"/><path fill="#EA4335" d="M12 5.96c1.47 0 2.79.5 3.83 1.5L18.7 4.6A9.64 9.64 0 0 0 12 2a10 10 0 0 0-8.95 5.49l3.35 2.6c.79-2.37 3-4.13 5.6-4.13Z"/></svg>
-}
-
 function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, initialNotice = '' }: {
   mode: AuthMode
   onClose: () => void
@@ -73,7 +69,7 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
 }) {
   const [showPassword, setShowPassword] = useState(false)
   const [notice, setNotice] = useState(initialNotice)
-  const [pendingAction, setPendingAction] = useState<'form' | 'google' | null>(null)
+  const [pendingAction, setPendingAction] = useState<'form' | null>(null)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [verificationEmail, setVerificationEmail] = useState('')
   const isRecovery = mode === 'recovery'
@@ -88,22 +84,17 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
     window.addEventListener('keydown', onKeyDown)
     return () => { document.body.classList.remove('modal-open'); window.removeEventListener('keydown', onKeyDown) }
   }, [onClose])
-  useEffect(() => {
-    const resumeAfterGoogle = (event: PageTransitionEvent) => {
-      if (!event.persisted) return
-      setPendingAction(null)
-      setNotice('O acesso com Google foi cancelado. Você pode tentar novamente.')
-    }
-    window.addEventListener('pageshow', resumeAfterGoogle)
-    return () => window.removeEventListener('pageshow', resumeAfterGoogle)
-  }, [])
-
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!AUTH_ENABLED) { setNotice('Autenticação indisponível neste ambiente.'); return }
     const data = new FormData(event.currentTarget)
     const email = String(data.get('email') ?? '').trim().toLowerCase()
     const password = String(data.get('password') ?? '')
+    const passwordConfirmation = String(data.get('passwordConfirmation') ?? '')
+    if ((mode === 'signup' || isReset) && password !== passwordConfirmation) {
+      setNotice('As senhas devem ser iguais.')
+      return
+    }
     setPendingAction('form')
     setNotice('')
     try {
@@ -112,16 +103,17 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
         setNotice('Se o e-mail estiver cadastrado, você receberá as instruções de recuperação.')
       } else if (isReset) {
         if (!resetToken) throw new Error('Link de recuperação inválido.')
-        await resetPassword(resetToken, password)
+        await resetPassword(resetToken, password, passwordConfirmation)
         setNotice('Senha alterada. Volte para entrar com a nova senha.')
       } else if (mode === 'signup') {
-        await register(String(data.get('displayName') ?? '').trim(), email, password, termsAccepted)
+        await register(String(data.get('displayName') ?? '').trim(), email, password, passwordConfirmation, termsAccepted)
         setVerificationEmail(email)
-        setNotice('Cadastro recebido. Confira também o Lixo Eletrônico. Se a mensagem não aparecer, use Reenviar confirmação.')
+        setNotice('Cadastro realizado. Enviamos um link de confirmação para o seu e-mail. Confira também o Lixo Eletrônico.')
       } else {
         onAuthenticated(await login(email, password))
       }
     } catch (error) {
+      if (error instanceof ApiClientError && error.code === 'EMAIL_NOT_VERIFIED') setVerificationEmail(email)
       setNotice(isRecovery ? 'Se o e-mail estiver cadastrado, você receberá as instruções de recuperação.' : error instanceof Error ? error.message : 'Não foi possível concluir a solicitação.')
     } finally {
       setPendingAction(null)
@@ -141,18 +133,6 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
     }
   }
 
-  const continueWithGoogle = async () => {
-    if (mode === 'signup' && !termsAccepted) { setNotice('Aceite os Termos de Uso e a Política de Privacidade para criar a conta.'); return }
-    setPendingAction('google')
-    setNotice('Abrindo o Google para continuar. Se o servidor estiver iniciando, isso pode levar até dois minutos.')
-    try {
-      window.location.assign(await prepareGoogleLogin(mode === 'signup' && termsAccepted))
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Login com Google indisponível.')
-      setPendingAction(null)
-    }
-  }
-
   return <div className="auth-overlay" role="presentation" onMouseDown={event => event.target === event.currentTarget && onClose()}>
     <section className="auth-panel" role="dialog" aria-modal="true" aria-labelledby="auth-title">
       <div className="auth-visual" aria-hidden="true"><Brand/><p>Jogue. Registre.<br/>Ranqueie. Evolua.</p><span>OPERADOR ZERO</span></div>
@@ -161,17 +141,17 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
         {(isRecovery || isReset) && <button className="auth-back" onClick={() => onModeChange('login')}><ArrowLeft size={16}/> Voltar para entrar</button>}
         <div className="auth-heading"><p className="eyebrow"><span/>{isRecovery || isReset ? 'Recuperação por e-mail' : 'Acesso à plataforma'}</p><h2 id="auth-title">{title}</h2><p>{description}</p></div>
         {!AUTH_ENABLED && <p className="auth-unavailable"><ShieldAlert size={17}/> Autenticação remota temporariamente indisponível.</p>}
-        {!isRecovery && !isReset && <><button className="google-button" type="button" disabled={pendingAction !== null || !AUTH_ENABLED} aria-busy={pendingAction === 'google'} onClick={continueWithGoogle}><GoogleMark/> {pendingAction === 'google' ? 'Conectando ao Google...' : 'Continuar com Google'}</button><div className="auth-divider"><span/> ou use seu e-mail <span/></div></>}
-        <form className="auth-form" onSubmit={submit}>
+        <form className="auth-form" onSubmit={submit} onInput={() => notice && setNotice('')}>
           {mode === 'signup' && <label><span>Nome de exibição</span><div><Users/><input name="displayName" autoComplete="name" maxLength={80} required placeholder="Como devemos chamar você?"/></div></label>}
           {!isReset && <label><span>E-mail</span><div><Mail/><input name="email" type="email" autoComplete="email" maxLength={254} required placeholder="voce@exemplo.com.br"/></div></label>}
           {!isRecovery && <label><span>{isReset ? 'Nova senha' : 'Senha'}</span><div><LockKeyhole/><input name="password" type={showPassword ? 'text' : 'password'} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength={12} maxLength={128} required placeholder={mode === 'signup' || isReset ? '12+ caracteres, maiúscula, minúscula e número' : 'Sua senha'}/><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? <EyeOff/> : <Eye/>}</button></div></label>}
+          {(mode === 'signup' || isReset) && <label><span>Confirmar senha</span><div><LockKeyhole/><input name="passwordConfirmation" type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={12} maxLength={128} required placeholder="Digite a senha novamente"/></div></label>}
           {mode === 'login' && <button className="forgot-link" type="button" onClick={() => onModeChange('recovery')}>Esqueci minha senha</button>}
           {mode === 'signup' && <label className="terms-check"><input type="checkbox" required checked={termsAccepted} onChange={event => setTermsAccepted(event.target.checked)}/><span>Li e aceito os Termos de Uso e a Política de Privacidade.</span></label>}
           <button className="button auth-submit" type="submit" disabled={pendingAction !== null || !AUTH_ENABLED}>{pendingAction === 'form' ? 'Aguarde...' : isRecovery ? 'Enviar instruções' : isReset ? 'Salvar nova senha' : mode === 'login' ? 'Entrar com e-mail' : 'Criar conta com e-mail'} {pendingAction === null && <ArrowRight size={17}/>}</button>
         </form>
         {notice && <p className="auth-notice" role="status">{notice}</p>}
-        {mode === 'signup' && verificationEmail && <button className="forgot-link" type="button" disabled={pendingAction !== null} onClick={resendConfirmation}>Reenviar confirmação</button>}
+        {(mode === 'signup' || mode === 'login') && verificationEmail && <button className="forgot-link" type="button" disabled={pendingAction !== null} onClick={resendConfirmation}>Reenviar e-mail de confirmação</button>}
         {!isRecovery && !isReset && <p className="auth-switch">{mode === 'login' ? 'Ainda não tem conta?' : 'Já possui uma conta?'} <button onClick={() => onModeChange(mode === 'login' ? 'signup' : 'login')}>{mode === 'login' ? 'Criar conta' : 'Entrar'}</button></p>}
       </div>
     </section>
@@ -281,30 +261,17 @@ export default function App() {
       const params = new URLSearchParams(window.location.search)
       const action = params.get('action')
       const token = params.get('token')
-      const oauth = params.get('auth')
-      const oauthCode = params.get('code')
-      if (action || oauth) window.history.replaceState({}, document.title, window.location.pathname + window.location.hash)
+      if (action) window.history.replaceState({}, document.title, window.location.pathname + window.location.hash)
       try {
         if (action === 'verify-email' && token) {
           await verifyEmail(token)
           if (active) { setAuthNotice('E-mail confirmado. Entre com sua senha para continuar.'); setAuthMode('login') }
         } else if (action === 'reset-password' && token && active) {
           setResetTokenValue(token); setAuthMode('reset')
-        } else if (oauth === 'error' && active) {
-          const message = oauthCode === 'ACCOUNT_LINK_REQUIRED'
-            ? 'Este e-mail já existe. Entre com senha para vincular o Google com segurança.'
-            : oauthCode === 'TERMS_REQUIRED'
-              ? 'Esta conta Google ainda não está cadastrada. Selecione Criar conta, aceite os Termos e tente novamente.'
-              : 'Não foi possível concluir o acesso com Google.'
-          setAuthNotice(message); setAuthMode('login')
         }
         const session = await getCurrentSession()
         if (active) {
           setCurrentUser(session)
-          if (oauth === 'success' && !session) {
-            setAuthNotice('O Google confirmou o acesso, mas a sessão não foi restaurada. Tente novamente ou use e-mail e senha.')
-            setAuthMode('login')
-          }
         }
       } catch (error) {
         if (active) { setAuthNotice(error instanceof Error ? error.message : 'Não foi possível validar o acesso.'); setAuthMode('login') }
@@ -348,10 +315,10 @@ export default function App() {
     <main>
       <section className="hero" id="inicio"><div className="hero-art" aria-hidden="true"><img src="/operador-zero-identity.jpeg" alt=""/></div><div className="hero-shade"/><div className="hero-content"><p className="eyebrow reveal reveal--1"><span/> A plataforma do airsoft brasileiro</p><h1 className="reveal reveal--2">O airsoft brasileiro<br/><em>em um só lugar.</em></h1><p className="hero-copy reveal reveal--3">Encontre eventos, equipes, campos e operadores de todo o Brasil. Crie seu perfil e participe da comunidade.</p><div className="hero-actions reveal reveal--4"><button className="button" onClick={() => setAuthMode('login')}>Entrar <ArrowRight size={18}/></button><button className="text-button link-button" onClick={() => setAuthMode('signup')}>Criar perfil gratuito</button></div></div><div className="hero-index"><span>01</span><i/><small>AIRSOFT BRASIL</small></div></section>
       <section className="operations section" id="operacoes"><div className="section-heading"><div><p className="eyebrow"><span/> Agenda pública</p><h2>Operações publicadas</h2></div></div><div className="public-empty-state"><CalendarDays/><h3>Nenhuma operação publicada ainda</h3><p>As próximas operações da comunidade aparecerão aqui.</p></div></section>
-      <section className="manifesto" id="como-funciona"><div className="manifesto-copy"><p className="eyebrow"><span/> Sua jornada</p><h2>Jogue. Registre.<br/><em>Evolua.</em></h2><p>Crie sua identidade, encontre a comunidade da sua região e construa seu histórico no airsoft.</p></div><div className="steps"><div><UserRound/><span>01</span><div className="step-content"><h3>Cadastre-se</h3><p>Entre com Google ou use seu e-mail e senha.</p></div></div><div><CalendarDays/><span>02</span><div className="step-content"><h3>Participe</h3><p>Encontre equipes e operações perto de você.</p></div></div><div><Trophy/><span>03</span><div className="step-content"><h3>Evolua</h3><p>Acompanhe sua trajetória e suas conquistas.</p></div></div></div></section>
+      <section className="manifesto" id="como-funciona"><div className="manifesto-copy"><p className="eyebrow"><span/> Sua jornada</p><h2>Jogue. Registre.<br/><em>Evolua.</em></h2><p>Crie sua identidade, encontre a comunidade da sua região e construa seu histórico no airsoft.</p></div><div className="steps"><div><UserRound/><span>01</span><div className="step-content"><h3>Cadastre-se</h3><p>Crie sua conta com e-mail e senha e confirme seu endereço.</p></div></div><div><CalendarDays/><span>02</span><div className="step-content"><h3>Participe</h3><p>Encontre equipes e operações perto de você.</p></div></div><div><Trophy/><span>03</span><div className="step-content"><h3>Evolua</h3><p>Acompanhe sua trajetória e suas conquistas.</p></div></div></div></section>
       <section className="community community--link" id="comunidade" role="link" tabIndex={0} onClick={() => navigate('/comunidade')} onKeyDown={event => (event.key === 'Enter' || event.key === ' ') && navigate('/comunidade')}><div><Users/><p className="eyebrow">Comunidade Operador Zero</p><h2>Conecte-se com quem vive o esporte.</h2><p>Compartilhe experiências, encontre equipes e acompanhe o airsoft da sua região.</p><span className="button">Abrir comunidade <ArrowRight size={18}/></span></div></section>
       <section className="trust-section" id="sobre"><div><p className="eyebrow"><span/> Plataforma gratuita</p><h2>Organize sua jornada no airsoft.</h2><p>Crie seu perfil, encontre operações, forme equipes e participe da comunidade sem cobrança pela plataforma.</p></div><div className="trust-grid"><article id="termos"><h3>Termos de Uso</h3><p>Ao criar uma conta, você concorda em usar a plataforma com respeito, legalidade e informações verdadeiras.</p></article><article id="privacidade"><h3>Privacidade</h3><p>Você controla as informações que compartilha com outros operadores e equipes.</p></article><article id="regras"><h3>Regras da Comunidade</h3><p>Fair play, convivência respeitosa, segurança e procedência legal dos equipamentos são obrigatórios.</p></article><article id="seguranca"><h3>Segurança e denúncias</h3><p>Suspeitas de abuso ou falha podem ser comunicadas pelo canal oficial de atendimento.</p><a href="mailto:operadorzerosac@gmail.com">operadorzerosac@gmail.com</a></article></div></section>
-      <section className="cta" id="convite"><p className="eyebrow"><span/> Sua identidade</p><h2>Comece pelo<br/>seu cadastro.</h2><p>Entre com Google ou crie uma conta com e-mail e senha.</p><button className="button" onClick={() => setAuthMode('signup')}>Criar minha conta <ArrowRight size={18}/></button></section>
+      <section className="cta" id="convite"><p className="eyebrow"><span/> Sua identidade</p><h2>Comece pelo<br/>seu cadastro.</h2><p>Crie sua conta com e-mail e senha e confirme o cadastro pelo link recebido.</p><button className="button" onClick={() => setAuthMode('signup')}>Criar minha conta <ArrowRight size={18}/></button></section>
     </main>
     <footer><Brand compact/><p>Airsoft é esporte. Respeito, segurança e fair play sempre.</p><div><a href="#sobre">Sobre</a><a href="#operacoes">Eventos</a><a href="/comunidade" onClick={event => { event.preventDefault(); navigate('/comunidade') }}>Comunidade</a><a href="#termos">Termos</a><a href="#privacidade">Privacidade</a><a href="#seguranca">Segurança</a><a href="mailto:operadorzerosac@gmail.com">Contato</a><button onClick={() => setAuthMode('login')}>Entrar</button><button onClick={() => setAuthMode('signup')}>Criar conta</button></div><small>© 2026 OPERADOR ZERO</small></footer>
     {authModal}

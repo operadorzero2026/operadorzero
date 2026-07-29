@@ -9,7 +9,7 @@ Status em 2026-07-22: **fundacao e identidade base implementadas; produto ainda 
 | Web React/Vite/TypeScript | Funcional como prototipo local | SPA servida por CDN | Integrar API real |
 | API principal | Esqueleto Spring Boot criado | Monolito modular Java 21 | Implementar casos de uso |
 | Dados | Cenarios locais/simulados | PostgreSQL + Flyway | Migrar modulo a modulo |
-| Autenticacao e autorizacao | Cadastro/login/recuperacao/sessao e OIDC implementados; modulos sem autorizacao real | Sessao segura, MFA admin e RBAC/objeto por modulo | Homologar provedores e implementar autorizacao de negocio |
+| Autenticacao e autorizacao | Cadastro/login/confirmacao/recuperacao/sessao por e-mail implementados | Sessao segura, MFA admin e RBAC/objeto por modulo | Homologar e-mail e implementar autorizacao de negocio |
 | Cache e controles efemeros | Redis integrado ao rate limit de identidade | Redis privado para limites, locks e filas leves | Homologar indisponibilidade e monitoramento |
 | Arquivos | Sem pipeline confiavel | S3 compativel, quarentena e antivirus | Critico antes de uploads |
 | E-mail | Adaptador Resend por API HTTPS com idempotencia implementado | Dominio transacional com SPF/DKIM/DMARC, bounce e webhooks | Chave, DNS e homologacao externa |
@@ -27,12 +27,12 @@ O backend sera um **monolito modular**, evitando dois backends principais e micr
 
 - Mantida: React, Vite, TypeScript e componentes atuais.
 - Adicionada: Java 21, Spring Boot 3.5, Spring Security, JPA, Bean Validation, PostgreSQL, Flyway, Redis, OpenAPI, Actuator/Prometheus e logs JSON.
-- Planejada: provedor OIDC, S3 compativel, antivirus, e-mail, OpenTelemetry, WAF/CDN e gerenciador de segredos.
+- Planejada: S3 compativel, antivirus, e-mail, OpenTelemetry, WAF/CDN e gerenciador de segredos.
 
 ## Fases e migracoes
 
 1. Fundacao: API, configuracao, migrations, health, logs e regras de seguranca. **Iniciada**.
-2. Identidade: cadastro, Google/e-mail, verificacao, recuperacao, MFA administrativo, sessoes e RBAC.
+2. Identidade: cadastro por e-mail, verificacao, recuperacao, MFA administrativo, sessoes e RBAC.
 3. Perfil/equipes/operacoes: trocar armazenamento local por APIs e importar dados validos.
 4. Ranking/conquistas: eventos imutaveis, aprovacao e recalculo auditavel.
 5. Classificados/comunidade/chat: moderacao, denuncia, recurso, retencao, busca e notificacoes.
@@ -40,7 +40,7 @@ O backend sera um **monolito modular**, evitando dois backends principais e micr
 7. Destaques gratuitos: curadoria administrativa, vigencia, rotacao e auditoria.
 8. Operacao: CI/CD, restauracao comprovada, SLOs, alertas, testes de carga e seguranca.
 
-Migrations existentes: `V1` identidade/RBAC/auditoria, `V2` perfil/privacidade, `V3` tokens/sessoes/OIDC e `V4` remocao auditada do papel financeiro descontinuado. As proximas devem ser aditivas, revisadas, testadas em copia anonima e acompanhadas de rollback operacional; nunca usar `ddl-auto=update`.
+Migrations existentes: `V1` identidade/RBAC/auditoria, `V2` perfil/privacidade, `V3` tokens/sessoes historicos, `V4` remocao do papel financeiro e `V17` aposentadoria segura da autenticacao social. As proximas devem ser revisadas, testadas em copia anonima e acompanhadas de rollback operacional; nunca usar `ddl-auto=update`.
 
 ## Riscos e custos
 

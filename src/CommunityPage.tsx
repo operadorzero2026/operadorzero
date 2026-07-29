@@ -300,7 +300,7 @@ function CreatePostView({ user, onNavigate, onRequireAuth }: Omit<CommunityProps
     }).catch(error => setNotice(error instanceof Error ? error.message : 'Não foi possível carregar as categorias.'))
   }, [])
 
-  if (!user) return <main className="oz-community-page"><div className="oz-community-auth-required"><LockKeyhole /><h1>Entre para publicar</h1><p>Você pode ler a comunidade sem uma conta. Para criar conteúdo, entre com Google ou e-mail.</p><button className="oz-community-primary" onClick={onRequireAuth}>Entrar para continuar</button></div></main>
+  if (!user) return <main className="oz-community-page"><div className="oz-community-auth-required"><LockKeyhole /><h1>Entre para publicar</h1><p>Você pode ler a comunidade sem uma conta. Para criar conteúdo, entre com e-mail e senha.</p><button className="oz-community-primary" onClick={onRequireAuth}>Entrar para continuar</button></div></main>
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()

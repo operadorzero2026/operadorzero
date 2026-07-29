@@ -47,13 +47,6 @@ public class IdentityRepository {
             """, Map.of("tokenHash", tokenHash, "now", dbTime(now)));
     }
 
-    public Optional<UserAccount> findByOidc(String issuer, String subject) {
-        return single(ACCOUNT_SELECT + """
-             JOIN user_oidc_identity oi ON oi.user_id = u.id
-             WHERE oi.issuer = :issuer AND oi.subject = :subject
-            """, Map.of("issuer", issuer, "subject", subject));
-    }
-
     private Optional<UserAccount> single(String sql, Map<String, ?> parameters) {
         try {
             UserAccount base = jdbc.queryForObject(sql, parameters, this::mapAccountWithoutRoles);
@@ -178,36 +171,6 @@ public class IdentityRepository {
     public void revokeSession(String tokenHash, Instant now) {
         jdbc.update("UPDATE user_session SET revoked_at = :now WHERE token_hash = :tokenHash AND revoked_at IS NULL",
             Map.of("now", dbTime(now), "tokenHash", tokenHash));
-    }
-
-    public void linkOidc(long userId, String issuer, String subject, String email, Instant now) {
-        jdbc.update("""
-            INSERT INTO user_oidc_identity(user_id, provider, issuer, subject, email_at_link, linked_at)
-            VALUES (:userId, 'google', :issuer, :subject, :email, :now)
-            """, Map.of("userId", userId, "issuer", issuer, "subject", subject, "email", email,
-                "now", dbTime(now)));
-    }
-
-    public void saveGoogleIntent(String tokenHash, String termsVersion, String privacyVersion, Instant now, Instant expiresAt) {
-        jdbc.update("""
-            INSERT INTO oauth_registration_intent(token_hash, terms_version, privacy_version, accepted_at, expires_at)
-            VALUES (:tokenHash, :termsVersion, :privacyVersion, :now, :expiresAt)
-            """, Map.of("tokenHash", tokenHash, "termsVersion", termsVersion, "privacyVersion", privacyVersion,
-                "now", dbTime(now), "expiresAt", dbTime(expiresAt)));
-    }
-
-    public int deleteStaleGoogleIntents(Instant now) {
-        return jdbc.update("""
-            DELETE FROM oauth_registration_intent
-            WHERE expires_at <= :now OR consumed_at IS NOT NULL
-            """, Map.of("now", dbTime(now)));
-    }
-
-    public boolean consumeGoogleIntent(String tokenHash, Instant now) {
-        return jdbc.update("""
-            UPDATE oauth_registration_intent SET consumed_at = :now
-            WHERE token_hash = :tokenHash AND consumed_at IS NULL AND expires_at > :now
-            """, Map.of("tokenHash", tokenHash, "now", dbTime(now))) == 1;
     }
 
     public void recordAudit(Long actorUserId, String action, String entityType, UUID entityPublicId,

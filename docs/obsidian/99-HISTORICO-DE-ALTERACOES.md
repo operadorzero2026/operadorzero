@@ -2015,3 +2015,37 @@
 
 ### Pendências
 - Autorizar a ativação do WSL em uma janela administrativa e reiniciar o Windows para habilitar o daemon local do Docker.
+
+## 2026-07-29 - Autenticação exclusiva por e-mail e senha
+
+### Arquivos alterados
+- `src/App.tsx`, `src/api.ts`, `src/CommunityPage.tsx`
+- `services/api/src/main/java/br/com/operadorzero/identity/*`
+- `services/api/src/main/java/br/com/operadorzero/shared/config/SecurityConfig.java`
+- `services/api/src/main/resources/db/migration/V17__retire_social_authentication.sql`
+- `services/api/pom.xml`, `application.yml`, `application-prod.yml`
+- `render.yaml`, `vercel.json`, `.env.example`
+- testes, scripts de validação e documentação de autenticação/deploy
+
+### O que foi feito
+- Removido o login social do frontend, backend, dependências, rotas, configuração e testes.
+- Cadastro passou a exigir confirmação da senha; login diferencia conta pendente e conta antiga sem senha.
+- Mantidos Argon2id, tokens opacos com hash, cookie `HttpOnly`, CSRF, rate limit Redis e respostas neutras de recuperação/reenvio.
+- Removida a espera oculta de até três minutos antes de cada ação de autenticação.
+- Adicionados templates HTML/texto para confirmação, recuperação e aviso de senha alterada.
+- A migration `V17` preserva usuários/perfis, registra auditoria, revoga sessões antigas e remove tabelas exclusivas do mecanismo aposentado.
+
+### Motivo
+- Corrigir o congelamento percebido no cadastro/login e simplificar o acesso oficial para e-mail e senha.
+
+### Impacto
+- Frontend, backend, banco, Redis, Resend, Render e Vercel. Usuários antigos sem senha devem usar **Esqueci minha senha**.
+
+### Testes
+- Baseline antes da alteração: `npm run check` aprovado; `mvn -B clean verify` aprovado com 69 testes.
+- Após a alteração: `mvn -B test` aprovado com 65 testes; validações frontend e browser registradas na entrega.
+
+### Pendências
+- Aplicar `V17` somente após backup/preflight do PostgreSQL remoto.
+- Remover manualmente do Render as variáveis antigas de autenticação social e revogar a credencial no provedor.
+- Executar E2E de envio/abertura dos e-mails no ambiente publicado depois do deploy autorizado.
