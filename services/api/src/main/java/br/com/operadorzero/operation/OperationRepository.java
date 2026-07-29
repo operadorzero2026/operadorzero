@@ -231,7 +231,7 @@ public class OperationRepository {
             INSERT INTO operation_participant(operation_id,user_id,status,operation_team_id,operation_squad_id,requested_at,updated_at)
             SELECT o.id,:userId,
               CASE WHEN tc.total >= ot.capacity OR (o.participant_limit IS NOT NULL AND oc.total >= o.participant_limit)
-                        OR (:operationSquadId IS NOT NULL AND sc.total >= os.capacity) THEN 'WAITING_LIST'
+                        OR (CAST(:operationSquadId AS uuid) IS NOT NULL AND sc.total >= os.capacity) THEN 'WAITING_LIST'
                    WHEN o.organizer_user_id = :userId THEN 'APPROVED'
                    WHEN o.approval_required THEN 'REQUESTED' ELSE 'APPROVED' END,
               ot.id,os.id,:now,:now
@@ -245,11 +245,11 @@ public class OperationRepository {
             CROSS JOIN LATERAL (SELECT count(*) total FROM operation_participant p
               WHERE p.operation_squad_id = os.id AND p.status IN ('REQUESTED','APPROVED','CONFIRMED','CHECKED_IN')) sc
             WHERE o.public_id=:id AND o.deleted_at IS NULL AND o.status IN ('PUBLISHED','REGISTRATION_OPEN','FULL')
-              AND (:operationSquadId IS NULL OR os.id IS NOT NULL)
-              AND (o.game_size = 'SMALL' OR :operationSquadId IS NOT NULL)
-              AND (o.game_size <> 'SMALL' OR :operationSquadId IS NULL)
+              AND (CAST(:operationSquadId AS uuid) IS NULL OR os.id IS NOT NULL)
+              AND (o.game_size = 'SMALL' OR CAST(:operationSquadId AS uuid) IS NOT NULL)
+              AND (o.game_size <> 'SMALL' OR CAST(:operationSquadId AS uuid) IS NULL)
               AND ((tc.total < ot.capacity AND (o.participant_limit IS NULL OR oc.total < o.participant_limit)
-                    AND (:operationSquadId IS NULL OR sc.total < os.capacity)) OR o.waiting_list_enabled)
+                    AND (CAST(:operationSquadId AS uuid) IS NULL OR sc.total < os.capacity)) OR o.waiting_list_enabled)
             ON CONFLICT (operation_id,user_id) DO UPDATE
               SET status=EXCLUDED.status, operation_team_id=EXCLUDED.operation_team_id, operation_squad_id=EXCLUDED.operation_squad_id,
                   requested_at=EXCLUDED.requested_at, updated_at=EXCLUDED.updated_at

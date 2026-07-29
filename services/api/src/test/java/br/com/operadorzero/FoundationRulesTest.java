@@ -141,4 +141,15 @@ class FoundationRulesTest {
             "p.operation_team_id=s.operation_team_id", "p.operation_squad_id IS NULL");
         assertThat(v21).doesNotContain("DELETE FROM", "TRUNCATE", "DROP TABLE");
     }
+
+    @Test
+    void participationQueryTypesNullableSquadUuidAndApprovesOrganizer() throws Exception {
+        String repository = Files.readString(Path.of(
+            "src/main/java/br/com/operadorzero/operation/OperationRepository.java"));
+
+        assertThat(repository).contains("CAST(:operationSquadId AS uuid) IS NULL",
+            "CAST(:operationSquadId AS uuid) IS NOT NULL",
+            "WHEN o.organizer_user_id = :userId THEN 'APPROVED'");
+        assertThat(repository).doesNotContain(":operationSquadId IS NULL", ":operationSquadId IS NOT NULL");
+    }
 }

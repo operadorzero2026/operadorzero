@@ -2257,3 +2257,5 @@
 - O chat geral passou a ocupar toda a largura da central da operação.
 - A migration `V21__backfill_legacy_operation_squads.sql` cria esquadrões compatíveis para operações antigas e vincula participantes legados ao esquadrão do próprio time.
 - A seleção informa claramente quando um time ainda não possui esquadrão disponível.
+- Corrigida a tipagem explícita do UUID opcional do esquadrão na consulta PostgreSQL de inscrição; a falha impedia tanto usuários quanto organizadores de ingressar.
+- Mantida a aprovação automática do organizador quando ele escolhe um time e, quando aplicável, um esquadrão.
