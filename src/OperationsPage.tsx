@@ -6,9 +6,11 @@ import {
   getFields,
   getMaps,
   getOperationRoster,
+  getOperationStructure,
   getOperations,
   Operation,
   OperationRoster,
+  OperationStructure,
   operationCoverUrl,
   publishOperation,
   requestOperationParticipation,
@@ -16,6 +18,7 @@ import {
   VenueField,
   VenueMap,
 } from './api'
+import { OperationCommandCenter } from './OperationCommandCenter'
 
 const modalityLabels: Record<string, string> = {
   ELIMINATION: 'Mata-mata',
@@ -52,7 +55,10 @@ export function OperationsPage() {
     [pending, setPending] = useState(''),
     [selected, setSelected] = useState<Operation | null>(null),
     [roster, setRoster] = useState<OperationRoster | null>(null),
-    [selectedTeam, setSelectedTeam] = useState('')
+    [structure, setStructure] = useState<OperationStructure | null>(null),
+    [selectedTeam, setSelectedTeam] = useState(''),
+    [selectedSquad, setSelectedSquad] = useState(''),
+    [coverPreview, setCoverPreview] = useState('')
   const load = useCallback(async (q = '') => {
     try {
       setItems((await getOperations(q)).items)
@@ -87,6 +93,7 @@ export function OperationsPage() {
         modality: d.get('modality'),
         customModality: d.get('customModality'),
         rules: d.get('rules'),
+        gameSize: d.get('gameSize'),
         participantLimit: Number(d.get('participantLimit')),
         teamLimit: d.get('teamLimit') ? Number(d.get('teamLimit')) : null,
         registrationPrice: Number(d.get('registrationPrice') || 0),
@@ -102,6 +109,7 @@ export function OperationsPage() {
       if (publishNow) await publishOperation(created.id)
       setFeedback(publishNow ? 'Operação publicada com inscrições abertas.' : 'Operação salva como rascunho.')
       setShowCreate(false)
+      setCoverPreview('')
       await load('')
     } catch (err) {
       setFeedback(
@@ -129,20 +137,23 @@ export function OperationsPage() {
   const openOperation = async (item: Operation) => {
     setSelected(item)
     setRoster(null)
+    setStructure(null)
     setSelectedTeam('')
+    setSelectedSquad('')
     try {
-      const result = await getOperationRoster(item.id)
+      const [result, structureResult] = await Promise.all([getOperationRoster(item.id),getOperationStructure(item.id)])
       setRoster(result)
+      setStructure(structureResult)
       setSelectedTeam(result.currentUserTeamId || result.teams.find(team => team.participantCount < team.capacity)?.id || result.teams[0]?.id || '')
     } catch (err) {
       setFeedback(err instanceof Error ? err.message : 'Não foi possível carregar os participantes.')
     }
   }
-  const participate = async (item: Operation, cancel = false, operationTeamId = '') => {
+  const participate = async (item: Operation, cancel = false, operationTeamId = '', operationSquadId = '') => {
     setPending(item.id)
     try {
       if (cancel) await cancelOperationParticipation(item.id)
-      else await requestOperationParticipation(item.id, operationTeamId)
+      else await requestOperationParticipation(item.id, operationTeamId, operationSquadId || null)
       setFeedback(
         cancel ? 'Participação cancelada.' : 'Solicitação registrada.',
       )
@@ -279,12 +290,25 @@ export function OperationsPage() {
                 <input name="customModality" maxLength={100} />
               </label>
               <label>
+                <span>Imagem de capa</span>
+                <input type="file" name="cover" accept="image/png,image/jpeg" onChange={event=>{const file=event.target.files?.[0];setCoverPreview(file?URL.createObjectURL(file):'')}} />
+                {coverPreview&&<img className="operation-cover-preview" src={coverPreview} alt="Prévia da capa"/>}
+              </label>
+              <label>
+                <span>Tamanho do jogo</span>
+                <select name="gameSize" defaultValue="SMALL" required>
+                  <option value="SMALL">Pequeno · até 50 jogadores e 2 times</option>
+                  <option value="MEDIUM">Médio · até 100 jogadores e 2 a 4 times</option>
+                  <option value="LARGE">Grande · estrutura ampliada</option>
+                </select>
+              </label>
+              <label>
                 <span>Vagas</span>
-                <input type="number" name="participantLimit" min={1} required />
+                <input type="number" name="participantLimit" min={1} defaultValue={50} required />
               </label>
               <label>
                 <span>Limite de equipes</span>
-                <input type="number" name="teamLimit" min={1} />
+                <input type="number" name="teamLimit" min={2} defaultValue={2} required />
               </label>
               <label>
                 <span>Inscrição informada (R$)</span>
@@ -373,7 +397,7 @@ export function OperationsPage() {
           <div className="operation-list">
             {items.map((item) => (
               <article key={item.id} onClick={() => void openOperation(item)} role="button" tabIndex={0}>
-                {item.hasCover && <img className="operation-card-cover" src={operationCoverUrl(item.id,item.coverVersion)} alt={`Capa de ${item.name}`} />}
+                {item.hasCover ? <img className="operation-card-cover" src={operationCoverUrl(item.id,item.coverVersion)} alt={`Capa de ${item.name}`} />:<div className="operation-card-cover operation-cover-placeholder"><Target/><span>Operador Zero</span></div>}
                 <div>
                   <small>{statusLabels[item.status] || item.status}</small>
                   <h3>{item.name}</h3>
@@ -388,7 +412,7 @@ export function OperationsPage() {
                     · {item.presentationTime.slice(0, 5)}
                   </p>
                   <p>
-                    <Users /> {item.participantCount}/{item.participantLimit}{' '}
+                    <Users /> {item.participantCount}/{item.participantLimit ?? 'sem limite'}{' '}
                     participantes
                   </p>
                 </div>
@@ -434,22 +458,24 @@ export function OperationsPage() {
         <div className="classified-modal-backdrop" role="presentation" onClick={() => setSelected(null)}>
           <section className="classified-modal operation-detail-modal" role="dialog" aria-modal="true" aria-label={`Detalhes de ${selected.name}`} onClick={(event) => event.stopPropagation()}>
             <button type="button" className="classified-modal-close" aria-label="Fechar" onClick={() => setSelected(null)}><X /></button>
-            {selected.hasCover && <img className="operation-detail-cover" src={operationCoverUrl(selected.id,selected.coverVersion)} alt={`Capa de ${selected.name}`} />}
+            {selected.hasCover ? <img className="operation-detail-cover" src={operationCoverUrl(selected.id,selected.coverVersion)} alt={`Capa de ${selected.name}`} />:<div className="operation-detail-cover operation-cover-placeholder"><Target/><span>Operador Zero</span></div>}
             <small>{statusLabels[selected.status] || selected.status}</small>
             <h2>{selected.name}</h2>
             <p>{selected.description}</p>
-            <div className="operation-roster-summary"><span><MapPin /> {selected.fieldName} · {selected.city}/{selected.stateCode}</span><span><Users /> {selected.participantCount}/{selected.participantLimit} participantes</span></div>
+            <div className="operation-roster-summary"><span><MapPin /> {selected.fieldName} · {selected.city}/{selected.stateCode}</span><span><Users /> {selected.participantCount}/{selected.participantLimit ?? 'sem limite'} participantes</span></div>
             {!roster ? <p>Carregando times e participantes…</p> : <>
               <div className="operation-team-grid">
                 {roster.teams.map(team => <article key={team.id} className={selectedTeam === team.id ? 'active' : ''}>
-                  <label><input type="radio" name="operationTeam" value={team.id} checked={selectedTeam === team.id} onChange={() => setSelectedTeam(team.id)} disabled={Boolean(roster.currentUserTeamId)} /><strong>{team.name}</strong><small>{team.participantCount}/{team.capacity} inscritos</small></label>
+                  <label><input type="radio" name="operationTeam" value={team.id} checked={selectedTeam === team.id} onChange={() => {setSelectedTeam(team.id);setSelectedSquad('')}} disabled={Boolean(roster.currentUserTeamId)} /><strong>{team.name}</strong><small>{team.participantCount}/{team.capacity} inscritos</small></label>
                   <div>{roster.participants.filter(person => person.operationTeamId === team.id).map(person => <p key={person.operatorId}><span className="operator-avatar">{person.callsign.charAt(0).toUpperCase()}</span><b>{person.callsign}</b><small>{person.status === 'WAITING_LIST' ? 'Lista de espera' : person.displayName}</small></p>)}</div>
+                  {selectedTeam===team.id&&structure?.gameSize!=='SMALL'&&<div className="operation-squad-choice"><b>Esquadrão opcional</b><label><input type="radio" name="operationSquad" checked={!selectedSquad} onChange={()=>setSelectedSquad('')}/> Sem esquadrão</label>{structure?.teams.find(t=>t.id===team.id)?.squads.map(s=><label key={s.id}><input type="radio" name="operationSquad" value={s.id} checked={selectedSquad===s.id} disabled={s.status!=='OPEN'||s.participantCount>=s.capacity} onChange={()=>setSelectedSquad(s.id)}/>{s.name} · {s.participantCount}/{s.capacity}</label>)}</div>}
                 </article>)}
               </div>
               {roster.participants.length === 0 && <p className="module-empty">Ainda não há participantes inscritos.</p>}
-              {!roster.currentUserTeamId && <button className="module-primary" disabled={!selectedTeam || pending === selected.id} onClick={() => void participate(selected, false, selectedTeam)}>{pending === selected.id ? 'Inscrevendo…' : 'Inscrever-se no time escolhido'}</button>}
+              {!roster.currentUserTeamId && <button className="module-primary" disabled={!selectedTeam || pending === selected.id} onClick={() => void participate(selected, false, selectedTeam, selectedSquad)}>{pending === selected.id ? 'Inscrevendo…' : 'Inscrever-se no time escolhido'}</button>}
               {roster.currentUserTeamId && <p className="module-feedback">Você já está inscrito em {roster.teams.find(team => team.id === roster.currentUserTeamId)?.name || 'um time'}.</p>}
             </>}
+            <OperationCommandCenter operation={selected}/>
           </section>
         </div>
       )}

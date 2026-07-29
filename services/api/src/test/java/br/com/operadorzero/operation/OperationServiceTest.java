@@ -44,12 +44,12 @@ class OperationServiceTest {
         UUID operationId = UUID.randomUUID();
         UUID operationTeamId = UUID.randomUUID();
         Instant now = Instant.parse("2026-07-28T12:00:00Z");
-        when(repository.requestParticipation(operationId, operationTeamId, user.internalId(), now)).thenReturn(1);
+        when(repository.requestParticipation(operationId, operationTeamId, null, user.internalId(), now)).thenReturn(1);
         OperationService service = new OperationService(repository, mock(AuditEventRepository.class),
             Clock.fixed(now, ZoneOffset.UTC));
 
         var response = service.requestParticipation(user, operationId,
-            new OperationDtos.ParticipationRequest(operationTeamId));
+            new OperationDtos.ParticipationRequest(operationTeamId, null));
 
         assertThat(response.message()).isEqualTo("Solicitação registrada.");
     }

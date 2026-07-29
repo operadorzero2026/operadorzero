@@ -1,5 +1,9 @@
 # Módulos e fluxos
 
+## Atualização de Operações — 2026-07-29
+
+O fluxo persistente de [[09-OPERACOES]] inclui tamanho do jogo, times, esquadrões, funções locais, seleção transacional de vagas, chat geral e chat privado por time. O polling atualiza somente o canal aberto e não recarrega a página.
+
 O perfil principal, a busca global e os controles por campo estão definidos em [[13-MEU-OPERADOR]]. Esse módulo reutiliza operações, equipe, ranking e conquistas; não deve duplicar seus catálogos ou regras.
 
 ## Perfis e permissões

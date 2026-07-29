@@ -1,5 +1,15 @@
 # Operações
 
+## Estrutura persistente, comando e chats — 2026-07-29
+
+A migration `V18__operation_structure_roles_and_chat.sql` amplia o agregado sem alterar migrations aplicadas: define `SMALL`, `MEDIUM` e `LARGE`, enriquece `operation_team`, cria `operation_squad`, funções específicas da operação, canais geral/time, mensagens, denúncias e ações de moderação. Operações antigas são classificadas pela capacidade e pela quantidade real de times, sem excluir participantes.
+
+Inscrição e movimentação bloqueiam as linhas da operação, do time e do esquadrão antes de recontar vagas, evitando ocupação concorrente da última vaga. A redução de tamanho nunca remove dados automaticamente e informa as incompatibilidades. As funções locais não alteram RBAC global.
+
+O chat usa REST com polling controlado de cinco segundos, compatível com a arquitetura atual do Render. Toda mensagem é persistida no PostgreSQL com chave de idempotência; a leitura do chat de time revalida a participação atual no backend. O React renderiza mensagens como texto, o backend remove controles invisíveis, limita tamanho e aplica rate limit no Redis.
+
+A área de detalhe apresenta tamanho, ocupação, times, esquadrões, lideranças e canais. Capas seguem [[05-SEGURANCA-E-PRIVACIDADE]], com prévia local, substituição, remoção autenticada e imagem padrão quando ausentes.
+
 ## Organizador como participante — 2026-07-28
 
 Depois de publicar a operação, o organizador também pode abrir o detalhe, escolher um time e inscrever-se como jogador. A inscrição do organizador é aprovada automaticamente, mas continua sujeita à capacidade do time, ao limite total da operação, à lista de espera e à unicidade por usuário. A função de organizador permanece independente da participação esportiva.

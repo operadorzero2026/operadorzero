@@ -1,5 +1,9 @@
 # Frontend web
 
+## Central responsiva de Operações — 2026-07-29
+
+O detalhe de [[09-OPERACOES]] carrega estrutura e comunicação reais da API. Exibe capa ou fallback, tamanho, ocupação, times, esquadrões e chats; atualiza o canal ativo por polling de cinco segundos. O cadastro mostra prévia raster e exige tamanho do jogo. A grade se reduz para uma coluna em telas móveis.
+
 ## Capa das operações — 2026-07-28
 
 O formulário existente de criação aceita uma capa opcional e informa limites antes do envio. Capas persistidas aparecem com recorte responsivo na agenda e como imagem principal no modal de detalhe. Operações sem capa preservam o layout textual existente, sem imagem simulada.

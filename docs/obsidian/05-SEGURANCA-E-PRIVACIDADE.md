@@ -1,5 +1,9 @@
 # Segurança e privacidade
 
+## Controles dos chats de operação — 2026-07-29
+
+Os endpoints de canal validam operação e participação a cada requisição. O identificador do time enviado pelo cliente nunca concede acesso: integrantes só consultam o time atualmente associado no banco; organizador e administrador local são exceções auditadas. Mensagens são texto limitado, renderizado sem HTML, possuem idempotência, exclusão lógica, denúncia e rate limit Redis. Movimentações e inscrições usam transação e bloqueio pessimista.
+
 ## Organizador participante — 2026-07-28
 
 O papel de organizador não concede uma segunda identidade nem contorna as regras de inscrição. Quando participa da própria operação, o mesmo usuário autenticado ocupa uma única vaga em um time válido, respeita capacidade e lista de espera e pode cancelar a própria participação. A aprovação automática limita-se ao organizador vinculado pelo backend àquela operação.

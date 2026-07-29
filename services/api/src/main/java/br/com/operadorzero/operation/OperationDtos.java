@@ -40,6 +40,7 @@ public final class OperationDtos {
         @NotBlank @Size(max = 40) String modality,
         @Size(max = 100) String customModality,
         @Size(max = 6000) String rules,
+        @NotBlank @Size(max = 8) String gameSize,
         @NotNull @Positive Integer participantLimit,
         @Positive @Max(20) Integer teamLimit,
         @NotNull @PositiveOrZero BigDecimal registrationPrice,
@@ -53,8 +54,9 @@ public final class OperationDtos {
     ) {}
 
     public record UpdateStatusRequest(@NotBlank @Size(max = 32) String status, @Size(max = 500) String reason) {}
-    public record ParticipationRequest(@NotNull UUID operationTeamId) {}
-    public record OperationTeamResponse(UUID id, String name, int capacity, long participantCount) {}
+    public record ParticipationRequest(@NotNull UUID operationTeamId, UUID operationSquadId) {}
+    public record OperationTeamResponse(UUID id, String name, String acronym, String color, String description,
+                                        int capacity, long participantCount, String status) {}
     public record ParticipantResponse(UUID operatorId, String callsign, String displayName, String status,
                                       UUID operationTeamId, String operationTeamName) {}
     public record OperationRosterResponse(List<OperationTeamResponse> teams, List<ParticipantResponse> participants,
@@ -63,7 +65,7 @@ public final class OperationDtos {
     public record OperationSummary(
         UUID id, String name, String description, UUID fieldId, String fieldName, UUID mapId, String mapName,
         String city, String stateCode, LocalDate operationDate, LocalTime presentationTime, LocalTime startTime,
-        LocalTime endTime, String modality, String status, int participantLimit, long participantCount,
+        LocalTime endTime, String modality, String status, String gameSize, Integer participantLimit, long participantCount,
         BigDecimal registrationPrice, String participantStatus, boolean managedByCurrentUser,
         boolean hasCover, long coverVersion
     ) {}
@@ -72,7 +74,7 @@ public final class OperationDtos {
         UUID id, String name, String description, UUID organizerId, String organizerCallsign,
         UUID fieldId, String fieldName, UUID mapId, String mapName, String city, String stateCode,
         LocalDate operationDate, LocalTime presentationTime, LocalTime startTime, LocalTime endTime,
-        String modality, String customModality, String rules, int participantLimit, Integer teamLimit,
+        String modality, String customModality, String rules, String gameSize, Integer participantLimit, Integer teamLimit,
         BigDecimal registrationPrice, String paymentMethods, int minimumAge, String requiredEquipment,
         Integer fpsLimit, String entryMode, boolean approvalRequired, boolean waitingListEnabled,
         String status, long participantCount, String participantStatus, boolean managedByCurrentUser, long version,

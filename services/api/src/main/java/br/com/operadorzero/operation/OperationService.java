@@ -30,6 +30,7 @@ public class OperationService {
     private static final Set<String> ENTRY_MODES = Set.of("INDIVIDUAL", "TEAM", "BOTH", "INVITATION");
     private static final Set<String> STATUSES = Set.of("DRAFT", "PUBLISHED", "REGISTRATION_OPEN", "FULL",
         "CONFIRMATION_PENDING", "IN_PROGRESS", "FINISHED", "CANCELLED");
+    private static final Set<String> GAME_SIZES = Set.of("SMALL", "MEDIUM", "LARGE");
     private final OperationRepository repository;
     private final AuditEventRepository audit;
     private final Clock clock;
@@ -59,6 +60,7 @@ public class OperationService {
     @Transactional
     public OperationResponse create(AuthenticatedUser user, SaveOperationRequest request) {
         validateTimes(request);
+        String gameSize = validateSize(request);
         String modality = allowed(request.modality(), MODALITIES, "INVALID_MODALITY", "Selecione uma modalidade válida.");
         if ("CUSTOM".equals(modality) && (request.customModality() == null || request.customModality().isBlank())) {
             throw BusinessException.badRequest("CUSTOM_MODALITY_REQUIRED", "Informe a modalidade personalizada.");
@@ -69,7 +71,7 @@ public class OperationService {
         if (request.mapId() != null) mapId = repository.activeMap(request.mapId(), field.id())
             .orElseThrow(() -> BusinessException.badRequest("MAP_FIELD_MISMATCH", "O mapa não pertence ao campo selecionado."));
         Instant now = clock.instant();
-        UUID id = repository.create(user.internalId(), field, mapId, request, modality, entryMode, now);
+        UUID id = repository.create(user.internalId(), field, mapId, request, modality, entryMode, gameSize, now);
         repository.createTeams(id, user.internalId());
         audit.record(user.internalId(), "OPERATION_CREATED", "OPERATION", id, null, now);
         return detail(user, id);
@@ -97,7 +99,7 @@ public class OperationService {
     @Transactional
     public MessageResponse requestParticipation(AuthenticatedUser user, UUID id, ParticipationRequest request) {
         Instant now = clock.instant();
-        if (repository.requestParticipation(id, request.operationTeamId(), user.internalId(), now) != 1) {
+        if (repository.requestParticipation(id, request.operationTeamId(), request.operationSquadId(), user.internalId(), now) != 1) {
             throw BusinessException.conflict("PARTICIPATION_UNAVAILABLE", "A inscrição não está disponível para este time.");
         }
         audit.record(user.internalId(), "OPERATION_PARTICIPATION_REQUESTED", "OPERATION", id, null, now);
@@ -130,11 +132,33 @@ public class OperationService {
         return repository.cover(id, user.internalId())
             .orElseThrow(() -> BusinessException.notFound("Imagem de capa nÃ£o encontrada."));
     }
+    @Transactional
+    public MessageResponse removeCover(AuthenticatedUser user, UUID id) {
+        Instant now = clock.instant();
+        if (repository.removeCover(id, user.internalId()) != 1) throw BusinessException.notFound("Imagem de capa não encontrada.");
+        audit.record(user.internalId(), "OPERATION_COVER_REMOVED", "OPERATION", id, null, now);
+        return new MessageResponse("Imagem de capa removida.");
+    }
 
     private void validateTimes(SaveOperationRequest request) {
         if (!request.presentationTime().isBefore(request.startTime()) || !request.startTime().isBefore(request.endTime())) {
             throw BusinessException.badRequest("INVALID_OPERATION_TIME", "A apresentação deve ocorrer antes do início, e o término após o início.");
         }
+    }
+    private String validateSize(SaveOperationRequest request) {
+        String size = allowed(request.gameSize(), GAME_SIZES, "INVALID_GAME_SIZE", "Selecione um tamanho de jogo válido.");
+        int limit = request.participantLimit();
+        int teams = request.teamLimit() == null ? 2 : request.teamLimit();
+        if ("SMALL".equals(size) && (limit > 50 || teams != 2)) {
+            throw BusinessException.badRequest("SMALL_OPERATION_LIMITS", "Jogo pequeno aceita até 50 jogadores e exatamente 2 times.");
+        }
+        if ("MEDIUM".equals(size) && (limit > 100 || teams < 2 || teams > 4)) {
+            throw BusinessException.badRequest("MEDIUM_OPERATION_LIMITS", "Jogo médio aceita até 100 jogadores e entre 2 e 4 times.");
+        }
+        if ("LARGE".equals(size) && teams < 2) {
+            throw BusinessException.badRequest("LARGE_OPERATION_TEAMS", "Jogo grande deve começar com pelo menos 2 times.");
+        }
+        return size;
     }
     private String allowed(String value, Set<String> values, String code, String message) {
         String normalized = value == null ? "" : value.trim().toUpperCase(Locale.ROOT);

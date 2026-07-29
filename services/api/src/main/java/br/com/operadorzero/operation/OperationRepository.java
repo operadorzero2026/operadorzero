@@ -29,7 +29,7 @@ public class OperationRepository {
         return jdbc.query("""
             SELECT o.public_id, o.name, o.description, f.public_id field_public_id, f.name field_name,
                    m.public_id map_public_id, m.name map_name, o.city, o.state_code, o.operation_date,
-                   o.presentation_time, o.start_time, o.end_time, o.modality, o.status, o.participant_limit,
+                   o.presentation_time, o.start_time, o.end_time, o.modality, o.status, o.game_size, o.participant_limit,
                    o.registration_price, COALESCE(pc.total, 0) participant_count, mine.status participant_status,
                    o.organizer_user_id = :userId managed_by_current_user,
                    oc.operation_id IS NOT NULL has_cover, COALESCE(oc.version, 0) cover_version
@@ -55,8 +55,8 @@ public class OperationRepository {
                 row.getObject("map_public_id", UUID.class), row.getString("map_name"), row.getString("city"),
                 row.getString("state_code"), row.getDate("operation_date").toLocalDate(),
                 row.getTime("presentation_time").toLocalTime(), row.getTime("start_time").toLocalTime(),
-                row.getTime("end_time").toLocalTime(), row.getString("modality"), row.getString("status"),
-                row.getInt("participant_limit"), row.getLong("participant_count"),
+                row.getTime("end_time").toLocalTime(), row.getString("modality"), row.getString("status"), row.getString("game_size"),
+                (Integer) row.getObject("participant_limit"), row.getLong("participant_count"),
                 row.getBigDecimal("registration_price"), row.getString("participant_status"),
                 row.getBoolean("managed_by_current_user"), row.getBoolean("has_cover"), row.getLong("cover_version")));
     }
@@ -96,16 +96,16 @@ public class OperationRepository {
     }
 
     public UUID create(long userId, FieldRef field, Long mapId, SaveOperationRequest request, String modality,
-                       String entryMode, Instant now) {
+                       String entryMode, String gameSize, Instant now) {
         return jdbc.queryForObject("""
             INSERT INTO airsoft_operation(organizer_user_id, field_id, map_id, name, description, city, state_code,
               operation_date, presentation_time, start_time, end_time, modality, custom_modality, rules,
-              participant_limit, team_limit, registration_price, payment_methods, minimum_age, required_equipment,
+              game_size, command_roles_enabled, participant_limit, team_limit, registration_price, payment_methods, minimum_age, required_equipment,
               fps_limit, entry_mode, approval_required, waiting_list_enabled, created_at, updated_at)
             VALUES (:userId,:fieldId,:mapId,:name,:description,:city,:stateCode,:date,:presentation,:start,:end,
-              :modality,:customModality,:rules,:participantLimit,:teamLimit,:price,:paymentMethods,:minimumAge,
+              :modality,:customModality,:rules,:gameSize,(:gameSize <> 'SMALL'),:participantLimit,:teamLimit,:price,:paymentMethods,:minimumAge,
               :requiredEquipment,:fpsLimit,:entryMode,:approvalRequired,:waitingListEnabled,:now,:now) RETURNING public_id
-            """, saveParams(userId, field, mapId, request, modality, entryMode, now), UUID.class);
+            """, saveParams(userId, field, mapId, request, modality, entryMode, gameSize, now), UUID.class);
     }
 
     public int updateStatus(UUID operationId, long userId, String status, Instant now) {
@@ -130,7 +130,7 @@ public class OperationRepository {
 
     public OperationRosterResponse roster(UUID operationId, long userId) {
         List<OperationTeamResponse> teams = jdbc.query("""
-            SELECT ot.public_id, ot.name, ot.capacity,
+            SELECT ot.public_id, ot.name, ot.acronym, ot.color, ot.description, ot.capacity, ot.status,
                    count(op.id) FILTER (WHERE op.status IN ('REQUESTED','APPROVED','CONFIRMED','CHECKED_IN')) participant_count
             FROM operation_team ot
             JOIN airsoft_operation o ON o.id = ot.operation_id
@@ -139,7 +139,8 @@ public class OperationRepository {
               AND (o.status <> 'DRAFT' OR o.organizer_user_id = :userId)
             GROUP BY ot.id ORDER BY ot.sort_order
             """, Map.of("operationId", operationId, "userId", userId), (r, i) -> new OperationTeamResponse(
-                r.getObject("public_id", UUID.class), r.getString("name"), r.getInt("capacity"), r.getLong("participant_count")));
+                r.getObject("public_id", UUID.class), r.getString("name"), r.getString("acronym"), r.getString("color"),
+                r.getString("description"), r.getInt("capacity"), r.getLong("participant_count"), r.getString("status")));
         List<ParticipantResponse> participants = jdbc.query("""
             SELECT p.public_id operator_id, p.callsign, p.display_name, op.status,
                    ot.public_id operation_team_id, ot.name operation_team_name
@@ -174,27 +175,40 @@ public class OperationRepository {
             """, Map.of("now", Timestamp.from(now), "id", operationId, "userId", userId));
     }
 
-    public int requestParticipation(UUID operationId, UUID operationTeamId, long userId, Instant now) {
+    public int requestParticipation(UUID operationId, UUID operationTeamId, UUID operationSquadId, long userId, Instant now) {
+        if (jdbc.queryForList("SELECT id FROM airsoft_operation WHERE public_id=:id FOR UPDATE", Map.of("id", operationId), Long.class).isEmpty()) return 0;
+        if (jdbc.queryForList("SELECT id FROM operation_team WHERE public_id=:id FOR UPDATE", Map.of("id", operationTeamId), Long.class).isEmpty()) return 0;
+        if (operationSquadId != null) {
+            if (jdbc.queryForList("SELECT id FROM operation_squad WHERE public_id=:id FOR UPDATE", Map.of("id", operationSquadId), Long.class).isEmpty()) return 0;
+        }
         return jdbc.update("""
-            INSERT INTO operation_participant(operation_id,user_id,status,operation_team_id,requested_at,updated_at)
+            INSERT INTO operation_participant(operation_id,user_id,status,operation_team_id,operation_squad_id,requested_at,updated_at)
             SELECT o.id,:userId,
-              CASE WHEN tc.total >= ot.capacity OR oc.total >= o.participant_limit THEN 'WAITING_LIST'
+              CASE WHEN tc.total >= ot.capacity OR (o.participant_limit IS NOT NULL AND oc.total >= o.participant_limit)
+                        OR (:operationSquadId IS NOT NULL AND sc.total >= os.capacity) THEN 'WAITING_LIST'
                    WHEN o.organizer_user_id = :userId THEN 'APPROVED'
                    WHEN o.approval_required THEN 'REQUESTED' ELSE 'APPROVED' END,
-              ot.id,:now,:now
+              ot.id,os.id,:now,:now
             FROM airsoft_operation o
-            JOIN operation_team ot ON ot.operation_id = o.id AND ot.public_id = :operationTeamId
+            JOIN operation_team ot ON ot.operation_id = o.id AND ot.public_id = :operationTeamId AND ot.status='OPEN'
+            LEFT JOIN operation_squad os ON os.operation_team_id=ot.id AND os.public_id=:operationSquadId AND os.status='OPEN'
             CROSS JOIN LATERAL (SELECT count(*) total FROM operation_participant p
               WHERE p.operation_team_id = ot.id AND p.status IN ('REQUESTED','APPROVED','CONFIRMED','CHECKED_IN')) tc
             CROSS JOIN LATERAL (SELECT count(*) total FROM operation_participant p
               WHERE p.operation_id = o.id AND p.status IN ('REQUESTED','APPROVED','CONFIRMED','CHECKED_IN')) oc
+            CROSS JOIN LATERAL (SELECT count(*) total FROM operation_participant p
+              WHERE p.operation_squad_id = os.id AND p.status IN ('REQUESTED','APPROVED','CONFIRMED','CHECKED_IN')) sc
             WHERE o.public_id=:id AND o.status IN ('PUBLISHED','REGISTRATION_OPEN','FULL')
-              AND ((tc.total < ot.capacity AND oc.total < o.participant_limit) OR o.waiting_list_enabled)
+              AND (:operationSquadId IS NULL OR os.id IS NOT NULL)
+              AND (o.game_size <> 'SMALL' OR :operationSquadId IS NULL)
+              AND ((tc.total < ot.capacity AND (o.participant_limit IS NULL OR oc.total < o.participant_limit)
+                    AND (:operationSquadId IS NULL OR sc.total < os.capacity)) OR o.waiting_list_enabled)
             ON CONFLICT (operation_id,user_id) DO UPDATE
-              SET status=EXCLUDED.status, operation_team_id=EXCLUDED.operation_team_id,
+              SET status=EXCLUDED.status, operation_team_id=EXCLUDED.operation_team_id, operation_squad_id=EXCLUDED.operation_squad_id,
                   requested_at=EXCLUDED.requested_at, updated_at=EXCLUDED.updated_at
               WHERE operation_participant.status IN ('CANCELLED','REJECTED')
-            """, Map.of("id", operationId, "operationTeamId", operationTeamId, "userId", userId, "now", Timestamp.from(now)));
+            """, new MapSqlParameterSource().addValue("id", operationId).addValue("operationTeamId", operationTeamId)
+                .addValue("operationSquadId", operationSquadId).addValue("userId", userId).addValue("now", Timestamp.from(now)));
     }
 
     public int cancelParticipation(UUID operationId, long userId, Instant now) {
@@ -227,6 +241,12 @@ public class OperationRepository {
             (r, i) -> new CoverRow(r.getString("content_type"), r.getBytes("image_data")))
             .stream().findFirst();
     }
+    public int removeCover(UUID operationId, long userId) {
+        return jdbc.update("""
+            DELETE FROM operation_cover c USING airsoft_operation o
+            WHERE c.operation_id=o.id AND o.public_id=:operationId AND o.organizer_user_id=:userId
+            """, Map.of("operationId",operationId,"userId",userId));
+    }
 
     private MapSqlParameterSource params(long userId, OperationFilter f) {
         String q = normalize(f.q());
@@ -238,12 +258,13 @@ public class OperationRepository {
     }
 
     private MapSqlParameterSource saveParams(long userId, FieldRef f, Long mapId, SaveOperationRequest r,
-                                              String modality, String entryMode, Instant now) {
+                                              String modality, String entryMode, String gameSize, Instant now) {
         return new MapSqlParameterSource().addValue("userId", userId).addValue("fieldId", f.id()).addValue("mapId", mapId)
             .addValue("name", normalize(r.name())).addValue("description", normalize(r.description()))
             .addValue("city", f.city()).addValue("stateCode", f.stateCode()).addValue("date", r.operationDate())
             .addValue("presentation", r.presentationTime()).addValue("start", r.startTime()).addValue("end", r.endTime())
             .addValue("modality", modality).addValue("customModality", nullable(r.customModality())).addValue("rules", nullable(r.rules()))
+            .addValue("gameSize", gameSize)
             .addValue("participantLimit", r.participantLimit()).addValue("teamLimit", r.teamLimit())
             .addValue("price", r.registrationPrice()).addValue("paymentMethods", nullable(r.paymentMethods()))
             .addValue("minimumAge", r.minimumAge()).addValue("requiredEquipment", nullable(r.requiredEquipment()))
@@ -257,7 +278,7 @@ public class OperationRepository {
             r.getString("field_name"), r.getObject("map_public_id", UUID.class), r.getString("map_name"), r.getString("city"),
             r.getString("state_code"), r.getDate("operation_date").toLocalDate(), r.getTime("presentation_time").toLocalTime(),
             r.getTime("start_time").toLocalTime(), r.getTime("end_time").toLocalTime(), r.getString("modality"),
-            r.getString("custom_modality"), r.getString("rules"), r.getInt("participant_limit"), (Integer) r.getObject("team_limit"),
+            r.getString("custom_modality"), r.getString("rules"), r.getString("game_size"), (Integer) r.getObject("participant_limit"), (Integer) r.getObject("team_limit"),
             r.getBigDecimal("registration_price"), r.getString("payment_methods"), r.getInt("minimum_age"),
             r.getString("required_equipment"), (Integer) r.getObject("fps_limit"), r.getString("entry_mode"),
             r.getBoolean("approval_required"), r.getBoolean("waiting_list_enabled"), r.getString("status"),

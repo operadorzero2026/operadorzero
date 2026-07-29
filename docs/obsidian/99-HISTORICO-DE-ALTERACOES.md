@@ -1,5 +1,32 @@
 # Histórico de alterações
 
+## 2026-07-29 - Estrutura completa e comunicação de Operações
+
+### Arquivos alterados
+- `services/api/src/main/resources/db/migration/V18__operation_structure_roles_and_chat.sql`
+- `services/api/src/main/java/br/com/operadorzero/operation/*`
+- `services/api/src/test/java/br/com/operadorzero/operation/*`
+- `src/api.ts`, `src/OperationsPage.tsx`, `src/OperationCommandCenter.tsx`, `src/functional-modules.css`
+- notas [[04-MODULOS-E-FLUXOS]], [[05-SEGURANCA-E-PRIVACIDADE]], [[06-FRONTEND-WEB]] e [[09-OPERACOES]]
+
+### O que foi feito
+- tamanhos pequeno, médio e grande, times, esquadrões e funções locais;
+- inscrição e movimentação com bloqueio transacional;
+- chat geral e por time com persistência, idempotência, moderação, denúncias, paginação, polling e rate limit;
+- prévia, fallback e remoção de capa.
+
+### Motivo
+- permitir organização operacional real sem estados somente visuais.
+
+### Impacto
+- frontend, backend, PostgreSQL e Redis.
+
+### Testes
+- build React e testes Maven executados; Testcontainers indisponível porque Docker não está instalado nesta estação.
+
+### Pendências
+- aplicar a V18 primeiro em staging com backup e validar o fluxo real antes de produção.
+
 ## 2026-07-29 - Diagnóstico e correção da latência de login
 
 ### Arquivos alterados
