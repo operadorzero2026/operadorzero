@@ -131,4 +131,14 @@ class FoundationRulesTest {
             "GROUP BY t.id,t.sort_order,cp.public_id"
         );
     }
+
+    @Test
+    void legacyOperationSquadMigrationPreservesParticipantsAndCreatesPrivateDestinations() throws Exception {
+        String v21 = Files.readString(Path.of(
+            "src/main/resources/db/migration/V21__backfill_legacy_operation_squads.sql"));
+
+        assertThat(v21).contains("INSERT INTO operation_squad", "UPDATE operation_participant",
+            "p.operation_team_id=s.operation_team_id", "p.operation_squad_id IS NULL");
+        assertThat(v21).doesNotContain("DELETE FROM", "TRUNCATE", "DROP TABLE");
+    }
 }

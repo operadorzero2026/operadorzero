@@ -125,3 +125,4 @@ As consultas PostgreSQL de times e esquadrões agrupam explicitamente as colunas
 - Toda operação possui chat geral. Cada esquadrão possui um canal privado, autorizado novamente no backend a cada leitura ou envio.
 - Integrantes de outro esquadrão não conseguem consultar histórico nem enviar mensagens no canal adversário.
 - Canais privados antigos de time permanecem somente como histórico no banco, sem endpoint público.
+- Operações médias e grandes já publicadas antes desta regra recebem um esquadrão inicial por time; participantes antigos são vinculados ao esquadrão do próprio time para que o ingresso e a privacidade continuem funcionais.

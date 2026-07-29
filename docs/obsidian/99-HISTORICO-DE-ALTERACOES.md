@@ -2251,3 +2251,9 @@
 - Chats privados por time foram substituídos por canais privados por esquadrão, com autorização server-side e preservação dos canais antigos como histórico inacessível.
 - Migration adicionada: `V20__squad_private_chat_channels.sql`.
 - Validações executadas: `npm run check` e `mvn -B clean verify`.
+
+# 2026-07-29 - Chat geral horizontal e compatibilidade de inscrições
+
+- O chat geral passou a ocupar toda a largura da central da operação.
+- A migration `V21__backfill_legacy_operation_squads.sql` cria esquadrões compatíveis para operações antigas e vincula participantes legados ao esquadrão do próprio time.
+- A seleção informa claramente quando um time ainda não possui esquadrão disponível.

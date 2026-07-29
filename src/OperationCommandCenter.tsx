@@ -22,7 +22,7 @@ export function OperationCommandCenter({operation,initialStructure,onPublish}:{o
     {configuring&&<div className="module-feedback"><b>Etapa 2 de 2: organização</b><br/>Defina os nomes, capacidades e esquadrões. Depois de publicar, os jogadores apenas escolherão onde entrar e esta estrutura ficará bloqueada.<br/><button type="button" className="module-primary" disabled={busy} onClick={()=>void onPublish(operation)}>Publicar após concluir a estrutura</button></div>}
     {error&&<p className="module-feedback" role="alert">{error}</p>}
     <button type="button" className="module-secondary operation-chat-toggle" onClick={()=>setChatOpen(open=>!open)}><MessageCircle/> {chatOpen?'Fechar comunicação':'Abrir comunicação'}</button>
-    <div className={chatOpen?'operation-command-layout':'operation-command-layout structure-only'}><div>
+    <div className={chatOpen?(channel==='general'?'operation-command-layout general-chat':'operation-command-layout'):'operation-command-layout structure-only'}><div>
       <h4><Users/> Times e esquadrões</h4>
       <div className="operation-structure-grid">{structure.teams.map(team=><article key={team.id} style={{borderColor:team.color}}>
         <header><span className="team-color" style={{background:team.color}}/><div><b>{team.name}</b><small>{team.participantCount}/{team.capacity} · {team.status==='OPEN'?'aberto':'fechado'}</small></div></header>
@@ -32,7 +32,7 @@ export function OperationCommandCenter({operation,initialStructure,onPublish}:{o
         {configuring&&structure.gameSize!=='SMALL'&&<button onClick={()=>void addSquad(team.id)}><Plus/> Esquadrão</button>}
       </article>)}</div>
       {configuring&&<form className="operation-team-create" onSubmit={addTeam}><input name="name" placeholder="Nome do time" maxLength={80} required/><input name="acronym" placeholder="Sigla" maxLength={12}/><input name="color" type="color" defaultValue="#6f7839"/><input name="capacity" type="number" min={1} placeholder="Vagas" required/><button disabled={busy}><Plus/> Criar time</button></form>}
-    </div>{chatOpen&&<div className="operation-chat-panel"><h4><MessageCircle/> Comunicação</h4><select value={channel} onChange={e=>setChannel(e.target.value)}><option value="general">Chat geral da operação</option>{visibleSquads.map(s=><option key={s.id} value={s.id}>Esquadrão · {s.name} ({s.teamName})</option>)}</select>
+    </div>{chatOpen&&<div className={channel==='general'?'operation-chat-panel operation-chat-general':'operation-chat-panel'}><h4><MessageCircle/> Comunicação</h4><select value={channel} onChange={e=>setChannel(e.target.value)}><option value="general">Chat geral da operação</option>{visibleSquads.map(s=><option key={s.id} value={s.id}>Esquadrão · {s.name} ({s.teamName})</option>)}</select>
       <div className="operation-chat-messages">{chat?.items.slice().reverse().map(m=><p key={m.id} className={m.official?'official':''}><b>{m.author.callsign}</b><span>{m.body||'Mensagem removida'}</span><small>{new Date(m.createdAt).toLocaleString('pt-BR')}</small></p>)}{chat?.items.length===0&&<small>Nenhuma mensagem neste canal.</small>}</div>
       <form onSubmit={send}><textarea name="message" maxLength={2000} placeholder="Escreva uma mensagem" required/><button className="module-primary" disabled={busy||chat?.locked}>Enviar</button></form>
     </div>}</div>
