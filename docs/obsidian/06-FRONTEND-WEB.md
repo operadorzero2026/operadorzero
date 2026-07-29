@@ -1,5 +1,9 @@
 # Frontend web
 
+## Otimização do detalhe de Operações — 2026-07-29
+
+Ao abrir uma operação, a estrutura carregada pela página é reutilizada pela Central da Operação; a chamada duplicada a `/structure` foi removida. O chat passou a carregar somente após a ação `Abrir comunicação`, com polling de 15 segundos apenas enquanto estiver visível.
+
 ## Central responsiva de Operações — 2026-07-29
 
 O detalhe de [[09-OPERACOES]] carrega estrutura e comunicação reais da API. Exibe capa ou fallback, tamanho, ocupação, times, esquadrões e chats; atualiza o canal ativo por polling de cinco segundos. O cadastro mostra prévia raster e exige tamanho do jogo. A grade se reduz para uma coluna em telas móveis.

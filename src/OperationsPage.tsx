@@ -475,7 +475,7 @@ export function OperationsPage() {
               {!roster.currentUserTeamId && <button className="module-primary" disabled={!selectedTeam || pending === selected.id} onClick={() => void participate(selected, false, selectedTeam, selectedSquad)}>{pending === selected.id ? 'Inscrevendo…' : 'Inscrever-se no time escolhido'}</button>}
               {roster.currentUserTeamId && <p className="module-feedback">Você já está inscrito em {roster.teams.find(team => team.id === roster.currentUserTeamId)?.name || 'um time'}.</p>}
             </>}
-            <OperationCommandCenter operation={selected}/>
+            <OperationCommandCenter operation={selected} initialStructure={structure}/>
           </section>
         </div>
       )}

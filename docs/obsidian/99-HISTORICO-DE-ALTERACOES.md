@@ -1,5 +1,30 @@
 # Histórico de alterações
 
+## 2026-07-29 - Redução da latência ao abrir operações
+
+### Arquivos alterados
+- `src/OperationCommandCenter.tsx`
+- `src/OperationsPage.tsx`
+- `src/functional-modules.css`
+- [[06-FRONTEND-WEB]]
+
+### O que foi feito
+- removida consulta duplicada da estrutura;
+- chat carregado sob demanda;
+- polling alterado de 5 para 15 segundos e ativo somente com o chat aberto.
+
+### Motivo
+- evitar quatro requisições simultâneas e pressão desnecessária no pool do Render Free.
+
+### Impacto
+- abertura mais rápida do detalhe e menor uso de PostgreSQL e Redis.
+
+### Testes
+- `npm run check` e verificação em produção após deploy.
+
+### Pendências
+- acompanhar cold start inerente ao plano gratuito após períodos de inatividade.
+
 ## 2026-07-29 - Estrutura completa e comunicação de Operações
 
 ### Arquivos alterados
