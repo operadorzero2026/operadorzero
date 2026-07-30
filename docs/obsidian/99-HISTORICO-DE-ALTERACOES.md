@@ -1,5 +1,30 @@
 # Histórico de alterações
 
+## 2026-07-30 - Lista compacta e regional de operações
+
+### Arquivos alterados
+- `src/OperationsPage.tsx`
+- `src/styles.css`
+- `scripts/stage-two-scenarios.mjs`
+- [[06-FRONTEND-WEB]] e [[09-OPERACOES]]
+
+### O que foi feito
+- A listagem de operações foi simplificada para data, nome, cidade, UF e horário.
+- A ordenação prioriza cidade do operador, depois estado e data/horário.
+- O detalhe mantém capa e dados completos.
+
+### Motivo
+- Melhorar leitura e navegação em computador e celular conforme a referência visual.
+
+### Impacto
+- Frontend; sem alteração de API, banco ou dados.
+
+### Testes
+- `npm run check`.
+
+### Pendências
+- Nenhuma.
+
 ## 2026-07-30 - Identificação de operadores pela sigla da equipe
 
 ### Arquivos alterados

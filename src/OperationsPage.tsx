@@ -1,5 +1,5 @@
 import { CalendarClock, CalendarDays, MapPin, Pencil, Plus, Search, Target, Trash2, Users, X } from 'lucide-react'
-import { FormEvent, useCallback, useEffect, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   cancelOperationParticipation,
   createOperation,
@@ -9,6 +9,7 @@ import {
   getOperationRoster,
   getOperationStructure,
   getOperations,
+  getOperatorProfile,
   Operation,
   OperationRoster,
   OperationStructure,
@@ -65,11 +66,19 @@ export function OperationsPage() {
     [selectedSquad, setSelectedSquad] = useState(''),
     [coverPreview, setCoverPreview] = useState(''),
     [deleteReason, setDeleteReason] = useState(''),
-    [operationEditMode, setOperationEditMode] = useState(false)
+    [operationEditMode, setOperationEditMode] = useState(false),
+    [operatorLocation, setOperatorLocation] = useState({ city: '', stateCode: '' })
   const load = useCallback(async (q = '') => {
     try {
-      setItems((await getOperations(q)).items)
-      setFields((await getFields()).items)
+      const [operations, availableFields] = await Promise.all([getOperations(q), getFields()])
+      setItems(operations.items)
+      setFields(availableFields.items)
+      try {
+        const profile = await getOperatorProfile()
+        setOperatorLocation({ city: profile.city?.trim() || '', stateCode: profile.stateCode?.trim() || '' })
+      } catch {
+        setOperatorLocation({ city: '', stateCode: '' })
+      }
     } catch {
       setFeedback('Não foi possível carregar as operações.')
     }
@@ -77,6 +86,21 @@ export function OperationsPage() {
   useEffect(() => {
     void load()
   }, [load])
+  const orderedItems = useMemo(() => {
+    const city = operatorLocation.city.toLocaleLowerCase('pt-BR')
+    const stateCode = operatorLocation.stateCode.toLocaleUpperCase('pt-BR')
+    const proximity = (item: Operation) => {
+      if (city && item.city.trim().toLocaleLowerCase('pt-BR') === city) return 0
+      if (stateCode && item.stateCode.trim().toLocaleUpperCase('pt-BR') === stateCode) return 1
+      return 2
+    }
+    return [...items].sort((left, right) => {
+      const region = proximity(left) - proximity(right)
+      if (region) return region
+      const date = `${left.operationDate}T${left.presentationTime}`.localeCompare(`${right.operationDate}T${right.presentationTime}`)
+      return date || left.name.localeCompare(right.name, 'pt-BR')
+    })
+  }, [items, operatorLocation])
   const selectField = async (id: string) =>
     setMaps(id ? (await getMaps(id)).items : [])
   const submit = async (e: FormEvent<HTMLFormElement>) => {
@@ -442,61 +466,17 @@ export function OperationsPage() {
           </div>
         ) : (
           <div className="operation-list">
-            {items.map((item) => (
-              <article key={item.id} onClick={() => void openOperation(item)} role="button" tabIndex={0}>
-                {item.hasCover ? <img className="operation-card-cover" src={operationCoverUrl(item.id,item.coverVersion)} alt={`Capa de ${item.name}`} />:<div className="operation-card-cover operation-cover-placeholder"><Target/><span>Operador Zero</span></div>}
-                <div>
-                  <small>{statusLabels[item.status] || item.status}</small>
-                  <h3>{item.name}</h3>
-                  <p>
-                    <MapPin /> {item.fieldName} · {item.city}/{item.stateCode}
-                  </p>
-                  <p>
-                    <CalendarDays />{' '}
-                    {new Date(
-                      `${item.operationDate}T12:00:00`,
-                    ).toLocaleDateString('pt-BR')}{' '}
-                    · {item.presentationTime.slice(0, 5)}
-                  </p>
-                  <p>
-                    <Users /> {item.participantCount}/{item.participantLimit ?? 'sem limite'}{' '}
-                    participantes
-                  </p>
-                </div>
-                <div>
-                  <strong>
-                    {modalityLabels[item.modality] || item.modality}
-                  </strong>
-                  {item.registrationPrice > 0 && (
-                    <span>
-                      R${' '}
-                      {Number(item.registrationPrice)
-                        .toFixed(2)
-                        .replace('.', ',')}
-                    </span>
-                  )}
-                  {item.managedByCurrentUser && item.status === 'DRAFT' ? (
-                    <button className="module-primary" onClick={(event) => { event.stopPropagation(); void openOperation(item, true) }}>
-                      Configurar antes de publicar
-                    </button>
-                  ) : item.participantStatus &&
-                  item.participantStatus !== 'CANCELLED' ? (
-                    <button
-                      disabled={pending === item.id}
-                      onClick={(event) => { event.stopPropagation(); void participate(item, true) }}
-                    >
-                      Cancelar participação
-                    </button>
-                  ) : (
-                    <button
-                      disabled={pending === item.id}
-                      onClick={(event) => { event.stopPropagation(); void openOperation(item) }}
-                    >
-                      Ver detalhes e inscrever-se
-                    </button>
-                  )}
-                </div>
-              </article>
+            {orderedItems.map((item) => (
+              <button className="operation-list-row" key={item.id} type="button" onClick={() => void openOperation(item)}>
+                <time dateTime={item.operationDate}>
+                  <strong>{new Date(`${item.operationDate}T12:00:00`).toLocaleDateString('pt-BR', { day: '2-digit' })}</strong>
+                  <span>{new Date(`${item.operationDate}T12:00:00`).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase()}</span>
+                </time>
+                <span>
+                  <b>{item.name}</b>
+                  <small>{item.city} · {item.stateCode} · {item.presentationTime.slice(0, 5)}</small>
+                </span>
+              </button>
             ))}
           </div>
         )}

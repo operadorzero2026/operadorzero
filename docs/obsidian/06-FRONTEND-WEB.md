@@ -1,5 +1,9 @@
 # Frontend web
 
+## Lista compacta de operações — 2026-07-30
+
+A entrada de Operações apresenta somente data, nome, cidade, UF e horário em linhas compactas. Operações da cidade do operador aparecem primeiro, seguidas pelas do mesmo estado; em cada grupo, a data e o horário mais próximos prevalecem. Sem localização no perfil, a ordenação é cronológica. O clique abre o detalhe existente, onde a capa, briefing, participantes, estrutura e ações continuam disponíveis.
+
 ## Comunicação aberta no detalhe da operação — 2026-07-30
 
 O chat geral é carregado automaticamente e aparece antes da estrutura de times e esquadrões. O histórico utiliza rolagem interna e altura responsiva para preservar o tamanho do detalhe. A interface não bloqueia o envio do organizador quando ele possui a exceção administrativa prevista pelo backend.

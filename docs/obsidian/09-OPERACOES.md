@@ -1,5 +1,9 @@
 # Operações
 
+## Lista regional e detalhe completo — 2026-07-30
+
+A listagem inicial não exibe capas ou ações secundárias: usa linhas compactas ordenadas por cidade do operador, estado e data/horário. A capa e os demais dados permanecem no detalhe aberto ao clicar na operação.
+
 ## Identificação de participantes — 2026-07-30
 
 Inscritos e autores de mensagens aparecem como `CALLSIGN - SIGLA` da equipe ativa. Sem equipe ativa, aparece `CALLSIGN - SEM TIME`. O nome completo da equipe não é usado como sufixo da identidade.
