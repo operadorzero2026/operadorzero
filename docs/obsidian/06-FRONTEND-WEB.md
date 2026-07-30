@@ -1,5 +1,9 @@
 # Frontend web
 
+## Comunicação aberta no detalhe da operação — 2026-07-30
+
+O chat geral é carregado automaticamente e aparece antes da estrutura de times e esquadrões. O histórico utiliza rolagem interna e altura responsiva para preservar o tamanho do detalhe. A interface não bloqueia o envio do organizador quando ele possui a exceção administrativa prevista pelo backend.
+
 ## Detalhe de operação do organizador — 2026-07-30
 
 O detalhe de uma operação própria abre em modo de visualização, igual ao detalhe visto por participantes. Um botão **Editar operação** no topo alterna os controles administrativos sem remover da tela a leitura pública, a lista de participantes, a seleção de time e os chats. O modo é local à tela, não persiste no navegador e é encerrado ao salvar ou fechar.

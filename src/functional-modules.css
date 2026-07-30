@@ -745,3 +745,18 @@
 .operation-squad-choice{display:grid;gap:6px;padding:10px;border-top:1px solid #34382b}.operation-squad-choice label{display:flex;align-items:center;gap:6px}
 .operation-command-layout.structure-only{grid-template-columns:1fr}.operation-chat-toggle{display:flex;align-items:center;gap:7px;margin:0 0 14px auto}
 .operation-command-layout.general-chat{grid-template-columns:1fr}.operation-chat-general{grid-column:1/-1;width:100%}.operation-chat-general .operation-chat-messages{height:380px}
+
+/* O histórico do chat permanece contido e não aumenta o detalhe da operação. */
+.operation-command-layout.general-chat { grid-template-columns: 1fr; }
+.operation-chat-messages,
+.operation-chat-general .operation-chat-messages {
+  height: clamp(240px, 38vh, 380px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-right: 5px;
+}
+@media (max-width: 780px) {
+  .operation-chat-messages,
+  .operation-chat-general .operation-chat-messages { height: min(42vh, 300px); }
+}

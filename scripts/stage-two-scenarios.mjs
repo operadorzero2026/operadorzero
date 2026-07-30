@@ -24,6 +24,8 @@ assert.ok(teamPage.includes('image/png,image/jpeg') && teamPage.includes('2048 �
 assert.ok(operationsPage.includes('Editar operação') && operationsPage.includes('operationEditMode'))
 assert.ok(operationsPage.includes('selected.managedByCurrentUser && operationEditMode'))
 assert.ok(operationCommandCenter.includes('editMode&&structure.managedByCurrentUser'))
+assert.ok(!operationCommandCenter.includes('chatOpen') && !operationCommandCenter.includes('Abrir comunicação'))
+assert.ok(operationCommandCenter.includes('Boolean(chat?.locked)&&!structure.managedByCurrentUser'))
 assert.ok(security.includes('"/api/operators/**", "/api/teams/**"') && security.includes('.anyRequest().denyAll()'))
 
 const functionalSource = [api, operatorPage, operatorSearch, teamPage].join('\n')

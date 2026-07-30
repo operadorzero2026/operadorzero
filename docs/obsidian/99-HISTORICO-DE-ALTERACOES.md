@@ -1,5 +1,31 @@
 # Histórico de alterações
 
+## 2026-07-30 - Chat geral aberto e com rolagem própria
+
+### Arquivos alterados
+- `src/OperationCommandCenter.tsx`
+- `src/functional-modules.css`
+- `scripts/stage-two-scenarios.mjs`
+- [[06-FRONTEND-WEB]], [[09-OPERACOES]] e [[99-HISTORICO-DE-ALTERACOES]]
+
+### O que foi feito
+- removido o botão intermediário para abrir a comunicação;
+- chat geral passou a carregar aberto e antes da estrutura da operação;
+- histórico recebeu altura responsiva e rolagem própria;
+- organizador mantém o envio quando o canal possui bloqueio administrativo.
+
+### Motivo
+- tornar a comunicação imediatamente disponível sem esticar a página.
+
+### Impacto
+- frontend web de operações, sem alteração de banco ou contrato.
+
+### Testes
+- executar `npm run check`.
+
+### Pendências
+- nenhuma.
+
 ## 2026-07-30 - Correção da autorização do chat geral das operações
 
 ### Arquivos alterados
