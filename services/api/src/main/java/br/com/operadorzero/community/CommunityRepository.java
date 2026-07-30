@@ -69,6 +69,11 @@ public class CommunityRepository {
             ) media ON TRUE
             WHERE p.status = 'PUBLISHED'
               AND c.active = TRUE
+              AND (:userId = 0 OR NOT EXISTS (
+                  SELECT 1 FROM operator_block ob
+                  WHERE (ob.blocker_user_id=:userId AND ob.blocked_user_id=p.author_user_id)
+                     OR (ob.blocker_user_id=p.author_user_id AND ob.blocked_user_id=:userId)
+              ))
               AND (:query = '' OR lower(p.title) LIKE :likeQuery OR lower(p.body) LIKE :likeQuery
                    OR lower(op.callsign) LIKE :likeQuery OR lower(u.username) LIKE :likeQuery)
               AND (:category = '' OR c.slug = :category)

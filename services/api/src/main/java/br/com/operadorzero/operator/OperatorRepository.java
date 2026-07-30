@@ -202,6 +202,9 @@ public class OperatorRepository {
             LEFT JOIN operator_privacy_setting loc ON loc.operator_profile_id = p.id AND loc.field_code = 'LOCATION'
             LEFT JOIN operator_privacy_setting team_status ON team_status.operator_profile_id = p.id AND team_status.field_code = 'TEAM_STATUS'
             WHERE u.status = 'ACTIVE' AND u.id <> :viewerUserId
+              AND NOT EXISTS (SELECT 1 FROM operator_block ob
+                  WHERE (ob.blocker_user_id=:viewerUserId AND ob.blocked_user_id=u.id)
+                     OR (ob.blocker_user_id=u.id AND ob.blocked_user_id=:viewerUserId))
               AND (lower(u.username) LIKE :query ESCAPE '\\'
                 OR lower(p.callsign) LIKE :query ESCAPE '\\'
                 OR lower(p.display_name) LIKE :query ESCAPE '\\')
@@ -228,6 +231,9 @@ public class OperatorRepository {
                 LEFT JOIN operator_privacy_setting loc ON loc.operator_profile_id = p.id AND loc.field_code = 'LOCATION'
                 LEFT JOIN operator_privacy_setting team_status ON team_status.operator_profile_id = p.id AND team_status.field_code = 'TEAM_STATUS'
                 WHERE lower(u.username) = lower(:username) AND u.status = 'ACTIVE'
+                  AND NOT EXISTS (SELECT 1 FROM operator_block ob
+                      WHERE (ob.blocker_user_id=:viewerUserId AND ob.blocked_user_id=u.id)
+                         OR (ob.blocker_user_id=u.id AND ob.blocked_user_id=:viewerUserId))
                 """, Map.of("viewerUserId", viewerUserId, "username", username), this::mapSummary));
         } catch (EmptyResultDataAccessException exception) {
             return Optional.empty();

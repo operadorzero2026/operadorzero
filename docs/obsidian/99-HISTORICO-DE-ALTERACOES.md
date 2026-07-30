@@ -1,5 +1,56 @@
 # Histórico de alterações
 
+## 2026-07-30 - Operadores na navegação inferior móvel
+
+### Arquivos alterados
+- `src/App.tsx`
+- [[06-FRONTEND-WEB]]
+
+### O que foi feito
+- O atalho móvel Campos foi substituído por Operadores e passou a abrir `/operadores`.
+
+### Motivo
+- Priorizar a rede de operadores na navegação principal de celulares.
+
+### Impacto
+- Somente frontend; Campos continua disponível no menu desktop.
+
+### Testes
+- Build e cenário funcional do módulo Operadores.
+
+### Pendências
+- Nenhuma.
+
+## 2026-07-30 - Rede social funcional de operadores
+
+### Arquivos alterados
+- `src/OperatorsSocialPage.tsx`, `src/operators-social.css`, `src/App.tsx`, `src/api.ts`, `src/main.tsx`
+- `services/api/src/main/java/br/com/operadorzero/operator/OperatorSocial*`
+- `services/api/src/main/resources/db/migration/V22__operator_social_connections.sql`
+- testes frontend e backend
+- [[05-SEGURANCA-E-PRIVACIDADE]], [[06-FRONTEND-WEB]], [[13-MEU-OPERADOR]], [[14-COMUNIDADE]] e [[21-REDE-SOCIAL-DE-OPERADORES]]
+
+### O que foi feito
+- Feed real, busca, perfis públicos estáveis, amizades, solicitações, bloqueios e denúncias.
+- Publicações e interações reutilizam a Comunidade persistida, sem dados fictícios.
+- Migration aditiva com unicidade de relações, constraints, índices e fila de denúncias.
+
+### Motivo
+- Transformar o card Operadores em uma rede social funcional de airsoft preservando os módulos existentes.
+
+### Impacto
+- Frontend, backend e banco na próxima aplicação da migration; nenhuma alteração remota nesta entrega.
+
+### Testes
+- `npm run check`.
+- `mvn -B test`: 84 testes aprovados.
+- Inicialização local com PostgreSQL 16 e Redis; Flyway validou/aplicou as 22 migrations e o health check de prontidão retornou `UP`.
+- A validação em runtime identificou e corrigiu a injeção do `Clock` no `OperatorSocialService`.
+
+### Pendências
+- R2/S3 para vídeo, capas públicas, agregados completos e mensagens privadas.
+- Revisão visual autenticada após aplicar a migration em um PostgreSQL de teste.
+
 ## 2026-07-30 - Lista compacta e regional de operações
 
 ### Arquivos alterados
@@ -2419,3 +2470,37 @@
 - Padronizada a apresentação `NOME DO USUÁRIO - NOME DO TIME` na busca, nos inscritos de operações e nos comentários.
 - Usuários sem equipe ativa passam a aparecer com o sufixo `SEM TIME`.
 - Os contratos de inscritos e mensagens de operações agora retornam a equipe ativa do autor.
+## 2026-07-30 - Perfil social responsivo no módulo Operadores
+
+### Arquivos alterados
+- `src/OperatorsSocialPage.tsx`
+- `src/operators-social.css`
+- `src/api.ts`
+- `services/api/src/main/java/br/com/operadorzero/operator/OperatorSocialController.java`
+- `services/api/src/main/java/br/com/operadorzero/operator/OperatorSocialDtos.java`
+- `services/api/src/main/java/br/com/operadorzero/operator/OperatorSocialRepository.java`
+- `services/api/src/main/java/br/com/operadorzero/operator/OperatorSocialService.java`
+- `scripts/operator-social-scenarios.mjs`
+- `docs/obsidian/06-FRONTEND-WEB.md`
+- `docs/obsidian/21-REDE-SOCIAL-DE-OPERADORES.md`
+
+### O que foi feito
+- `/operadores` agora abre o perfil real do operador, fiel à referência em capa, avatar, ações, métricas, informações profissionais, abas e feed.
+- Desktop recebeu composição em três colunas; mobile recebeu hierarquia vertical e mídia 4:5.
+- Foi criado um resumo social agregado no backend com contagens, bio, equipe, equipamentos permitidos, operações e amigos em comum.
+- Informações ainda não persistidas, como nível e conquistas, usam estados vazios em vez de dados fictícios.
+
+### Motivo
+- Tornar o módulo Operadores uma área de perfil social funcional e visualmente coerente com a referência oficial.
+
+### Impacto
+- Frontend e backend; sem nova migration e sem alteração destrutiva de dados.
+
+### Testes
+- `npm run check` aprovado.
+- `mvn -B test` aprovado com 84 testes.
+- API local reiniciada na porta 8080; Flyway validou as 22 migrations existentes.
+
+### Pendências
+- Capturas autenticadas em todos os oito viewports dependem de uma sessão de navegador reutilizável; a nova sessão de automação não herdou a sessão autenticada já aberta.
+- Vídeos, XP e conquistas permanecem como contratos futuros e não foram simulados.

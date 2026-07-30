@@ -1,5 +1,7 @@
 # Comunidade
 
+As publicações reais também compõem o feed de [[21-REDE-SOCIAL-DE-OPERADORES]]. A mesma origem preserva votos únicos, favoritos, comentários, denúncias, idempotência e moderação sem duplicar tabelas ou regras.
+
 ## Identificação de autores — 2026-07-30
 
 Autores de publicações e comentários aparecem como `CALLSIGN - SIGLA` da equipe ativa ou `CALLSIGN - SEM TIME`.

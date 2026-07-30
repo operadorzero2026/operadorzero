@@ -146,6 +146,15 @@ export type CommunityReport = {
   status:string
   createdAt:string
 }
+export type OperatorConnectionStatus = { status:'NONE'|'PENDING_SENT'|'PENDING_RECEIVED'|'ACCEPTED'|'BLOCKED'; connectionId?:string|null }
+export type OperatorConnection = { id:string; operator:OperatorSummary; status:string; receivedByCurrentUser:boolean; updatedAt:string }
+export type OperatorProfileOverview = {
+  operator:OperatorSummary;bio?:string|null;preferredPosition?:string|null;teamRole?:string|null;ownProfile:boolean;hasPhoto:boolean;photoVersion:number;
+  publicationCount:number;friendCount:number;operationCount:number;rankingPosition?:number|null;achievementCount:number;
+  equipment:Array<{category:string;name:string}>;
+  recentOperations:Array<{id:string;name:string;date:string;city:string;stateCode:string;status:string;hasCover:boolean;coverVersion:number}>;
+  mutualFriends:OperatorSummary[]
+}
 
 type ApiError = { code?: string; message?: string; correlationId?: string; fields?: Array<{ field: string; message: string }> }
 
@@ -405,6 +414,19 @@ export const getReviewablePerformance = () => apiRequest<{items:PerformanceRecor
 export const savePerformance = (operationId:string,record:Record<string,unknown>) => apiRequest<PerformanceRecord>(`/api/performance/operations/${encodeURIComponent(operationId)}`,json('POST',record))
 export const reviewPerformance = (id:string,review:Record<string,unknown>) => apiRequest<PerformanceRecord>(`/api/performance/${encodeURIComponent(id)}/review`,json('PATCH',review))
 export const contestPerformance = (id:string,reason:string) => apiRequest<{message:string}>(`/api/performance/${encodeURIComponent(id)}/contests`,json('POST',{reason}))
+
+export const getOperatorConnections = (status:'ACCEPTED'|'PENDING'='ACCEPTED') => apiRequest<{items:OperatorConnection[]}>(`/api/operators/social/connections?status=${status}`)
+export const getBlockedOperators = () => apiRequest<{items:OperatorSummary[]}>('/api/operators/social/blocks')
+export const getOperatorConnectionStatus = (username:string) => apiRequest<OperatorConnectionStatus>(`/api/operators/social/${encodeURIComponent(username)}/connection`)
+export const getOperatorProfileOverview = (username:string) => apiRequest<OperatorProfileOverview>(`/api/operators/social/${encodeURIComponent(username)}/profile`)
+export const requestOperatorFriendship = (username:string) => apiRequest<OperatorConnectionStatus>(`/api/operators/social/${encodeURIComponent(username)}/requests`,json('POST',{}))
+export const acceptOperatorFriendship = (id:string) => apiRequest<{message:string}>(`/api/operators/social/requests/${encodeURIComponent(id)}/accept`,json('POST',{}))
+export const declineOperatorFriendship = (id:string) => apiRequest<{message:string}>(`/api/operators/social/requests/${encodeURIComponent(id)}/decline`,json('POST',{}))
+export const cancelOperatorFriendship = (id:string) => apiRequest<{message:string}>(`/api/operators/social/requests/${encodeURIComponent(id)}`,json('DELETE'))
+export const removeOperatorFriendship = (id:string) => apiRequest<{message:string}>(`/api/operators/social/connections/${encodeURIComponent(id)}`,json('DELETE'))
+export const blockOperator = (username:string) => apiRequest<{message:string}>(`/api/operators/social/${encodeURIComponent(username)}/block`,json('POST',{}))
+export const unblockOperator = (username:string) => apiRequest<{message:string}>(`/api/operators/social/${encodeURIComponent(username)}/block`,json('DELETE'))
+export const reportOperator = (username:string,reason:string,details:string) => apiRequest<{message:string}>(`/api/operators/social/${encodeURIComponent(username)}/reports`,json('POST',{reason,details}))
 
 export const getCommunityCategories = () => apiRequest<CommunityCategory[]>('/api/community/categories')
 export const getCommunityPosts = (filters:{query?:string;category?:string;sort?:string;page?:number;size?:number}={}) => {

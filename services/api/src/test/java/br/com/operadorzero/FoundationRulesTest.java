@@ -122,6 +122,15 @@ class FoundationRulesTest {
     }
 
     @Test
+    void operatorSocialMigrationIsAdditiveAndPreventsDuplicateActiveConnections() throws Exception {
+        String v22 = Files.readString(Path.of("src/main/resources/db/migration/V22__operator_social_connections.sql"));
+        assertThat(v22).contains("operator_friendship", "operator_block", "operator_profile_report",
+            "uq_operator_friendship_pair", "LEAST(requester_user_id, addressee_user_id)",
+            "GREATEST(requester_user_id, addressee_user_id)", "ck_operator_friendship_distinct");
+        assertThat(v22).doesNotContain("DROP TABLE", "TRUNCATE", "DELETE FROM app_user");
+    }
+
+    @Test
     void operationStructureQueriesGroupEveryExplicitOrderingColumn() throws Exception {
         String repository = Files.readString(Path.of(
             "src/main/java/br/com/operadorzero/operation/OperationStructureRepository.java"));

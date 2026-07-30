@@ -1,5 +1,9 @@
 # Frontend web
 
+O item lateral Operadores abre a rede social em `/operadores`, com abas responsivas e perfis estáveis em `/operadores/{username}`. O feed reutiliza dados reais de [[14-COMUNIDADE]] e não contém mocks. Consulte [[21-REDE-SOCIAL-DE-OPERADORES]].
+
+Na navegação inferior móvel, Operadores ocupa o atalho que anteriormente direcionava para Campos. O botão abre `/operadores`; o módulo Campos permanece disponível na navegação lateral para telas maiores.
+
 ## Lista compacta de operações — 2026-07-30
 
 A entrada de Operações apresenta somente data, nome, cidade, UF e horário em linhas compactas. Operações da cidade do operador aparecem primeiro, seguidas pelas do mesmo estado; em cada grupo, a data e o horário mais próximos prevalecem. Sem localização no perfil, a ordenação é cronológica. O clique abre o detalhe existente, onde a capa, briefing, participantes, estrutura e ações continuam disponíveis.
@@ -183,3 +187,6 @@ A criação de operação usa duas etapas: dados gerais e organização do rascu
 # Identificação de operadores
 
 Busca de usuários, listas de inscritos e comentários exibem a identidade no formato `NOME DO USUÁRIO - NOME DO TIME`. Operadores sem equipe ativa aparecem como `NOME DO USUÁRIO - SEM TIME`. A equipe ativa é fornecida pelo backend; a apresentação é centralizada no frontend.
+## Perfil social em Operadores
+
+A rota `/operadores` apresenta o perfil do usuário autenticado; perfis públicos usam `/operadores/{username}`. A composição responsiva, contratos e estados vazios estão documentados em [[21-REDE-SOCIAL-DE-OPERADORES]].

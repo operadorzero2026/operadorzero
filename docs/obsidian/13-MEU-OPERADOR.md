@@ -1,5 +1,7 @@
 # Meu Operador
 
+O perfil editável alimenta a rota pública e a busca da [[21-REDE-SOCIAL-DE-OPERADORES]]. Dados sujeitos à privacidade continuam filtrados no backend; ocultar visualmente no React não é controle de acesso.
+
 ## Tempo no airsoft e busca enriquecida — 2026-07-28
 
 O perfil aceita a data opcional de início no airsoft. O backend rejeita datas futuras, persiste `airsoft_started_at` e calcula o resumo em anos e meses com base no relógio do servidor. A busca autenticada combina o callsign, a equipe ativa real e o tempo calculado no formato `OPERADOR — EQUIPE — TEMPO NO AIRSOFT`; ausência de equipe ou data é informada sem excluir o operador dos resultados. O vínculo vem de [[10-MINHA-EQUIPE]] e não de texto livre informado pelo usuário.

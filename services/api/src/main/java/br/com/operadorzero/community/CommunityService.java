@@ -58,6 +58,16 @@ public class CommunityService {
         long userId = user == null ? 0L : user.internalId();
         boolean moderator = isModerator(user);
         String orderBy = switch (normalize(sort)) {
+            case "SOCIAL" -> """
+                CASE
+                  WHEN p.author_user_id = :userId THEN 0
+                  WHEN EXISTS (SELECT 1 FROM operator_friendship f WHERE f.status='ACCEPTED' AND ((f.requester_user_id=:userId AND f.addressee_user_id=p.author_user_id) OR (f.addressee_user_id=:userId AND f.requester_user_id=p.author_user_id))) THEN 1
+                  WHEN EXISTS (SELECT 1 FROM team_member viewer_tm JOIN team_member author_tm ON author_tm.team_id=viewer_tm.team_id AND author_tm.left_at IS NULL WHERE viewer_tm.user_id=:userId AND viewer_tm.left_at IS NULL AND author_tm.user_id=p.author_user_id) THEN 2
+                  WHEN EXISTS (SELECT 1 FROM operator_profile viewer_op WHERE viewer_op.user_id=:userId AND viewer_op.state_code=op.state_code AND viewer_op.city=op.city) THEN 3
+                  WHEN EXISTS (SELECT 1 FROM operator_profile viewer_op WHERE viewer_op.user_id=:userId AND viewer_op.state_code=op.state_code) THEN 4
+                  ELSE 5 END,
+                (COALESCE(votes.total,0) + COALESCE(comments.total,0) * 2) DESC, p.created_at DESC, p.id DESC
+                """;
             case "MOST_COMMENTED" -> "comment_count DESC, p.created_at DESC, p.id DESC";
             case "TOP" -> "vote_count DESC, p.created_at DESC, p.id DESC";
             default -> "p.created_at DESC, p.id DESC";

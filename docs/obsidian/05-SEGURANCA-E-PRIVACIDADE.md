@@ -1,5 +1,9 @@
 # Segurança e privacidade
 
+## Conexões entre operadores
+
+Solicitações e amizades são pares únicos no banco. Aceite/recusa exigem o destinatário; cancelamento e remoção exigem participante da relação. Bloqueios são bidirecionalmente considerados nas consultas, encerram relações ativas e permanecem separados das denúncias confidenciais. Consulte [[21-REDE-SOCIAL-DE-OPERADORES]].
+
 ## Controles dos chats de operação — 2026-07-29
 
 Os endpoints de canal validam a operação e a sessão a cada requisição. O chat geral aceita usuários autenticados com acesso à operação. Nos canais privados, o identificador do esquadrão enviado pelo cliente nunca concede acesso: integrantes só consultam o esquadrão atualmente associado no banco; organizador e administrador local são exceções auditadas. Mensagens são texto limitado, renderizado sem HTML, possuem idempotência, exclusão lógica, denúncia e rate limit Redis. Movimentações e inscrições usam transação e bloqueio pessimista.
