@@ -46,7 +46,8 @@ public final class OperationStructureDtos {
     public record ReportMessageRequest(@NotBlank @Size(max=500) String reason) {}
     public record ModerateMessageRequest(@NotBlank @Size(max=12) String action, @Size(max=500) String reason) {}
     public record ChannelStateRequest(boolean locked) {}
-    public record ChatAuthor(UUID id, String callsign, String displayName, String teamName, String avatarUrl) {}
+    public record ChatAuthor(UUID id, String callsign, String displayName, String teamName,
+                             String teamAcronym, String avatarUrl) {}
     public record ChatMessageResponse(UUID id, UUID channelId, ChatAuthor author, UUID parentMessageId,
                                       String body, String status, boolean official, String roleLabel,
                                       Instant createdAt, Instant updatedAt, boolean editableByCurrentUser) {}

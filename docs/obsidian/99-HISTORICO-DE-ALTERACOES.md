@@ -1,5 +1,29 @@
 # Histórico de alterações
 
+## 2026-07-30 - Identificação de operadores pela sigla da equipe
+
+### Arquivos alterados
+- `src/operator-label.ts` e `src/api.ts`
+- módulos backend `operator`, `operation` e `community`
+- `services/api/src/test/java/br/com/operadorzero/FoundationRulesTest.java`
+- [[09-OPERACOES]], [[10-MINHA-EQUIPE]] e [[14-COMUNIDADE]]
+
+### O que foi feito
+- A API passou a devolver a sigla da equipe ativa em busca, inscritos, comunidade e chat de operações.
+- O formatador compartilhado exibe `CALLSIGN - SIGLA` e usa `CALLSIGN - SEM TIME` sem equipe ativa.
+
+### Motivo
+- Padronizar a identificação pública solicitada sem expor nome civil nem depender de montagem diferente em cada tela.
+
+### Impacto
+- Backend, frontend e contratos de API; sem alteração de schema ou perda de dados.
+
+### Testes
+- `npm run check` e `mvn -B clean verify`.
+
+### Pendências
+- Nenhuma.
+
 ## 2026-07-30 - Correção do envio de mensagens no chat geral
 
 ### Arquivos alterados

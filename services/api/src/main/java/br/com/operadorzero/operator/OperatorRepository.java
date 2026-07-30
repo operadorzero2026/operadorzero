@@ -194,7 +194,7 @@ public class OperatorRepository {
                    CASE WHEN loc.visibility IN ('AUTHENTICATED','PUBLIC') THEN p.city END AS city,
                    CASE WHEN loc.visibility IN ('AUTHENTICATED','PUBLIC') THEN p.state_code END AS state_code,
                     CASE WHEN team_status.visibility IN ('AUTHENTICATED','PUBLIC') THEN p.recruitment_status END AS recruitment_status,
-                   t.name AS team_name, p.airsoft_started_at
+                   t.name AS team_name, t.acronym AS team_acronym, p.airsoft_started_at
             FROM operator_profile p
             JOIN app_user u ON u.id = p.user_id
             LEFT JOIN team_member tm ON tm.user_id = u.id AND tm.left_at IS NULL
@@ -220,7 +220,7 @@ public class OperatorRepository {
                        CASE WHEN u.id = :viewerUserId OR loc.visibility IN ('AUTHENTICATED','PUBLIC') THEN p.city END AS city,
                        CASE WHEN u.id = :viewerUserId OR loc.visibility IN ('AUTHENTICATED','PUBLIC') THEN p.state_code END AS state_code,
                         CASE WHEN u.id = :viewerUserId OR team_status.visibility IN ('AUTHENTICATED','PUBLIC') THEN p.recruitment_status END AS recruitment_status,
-                       t.name AS team_name, p.airsoft_started_at
+                       t.name AS team_name, t.acronym AS team_acronym, p.airsoft_started_at
                 FROM operator_profile p
                 JOIN app_user u ON u.id = p.user_id
                 LEFT JOIN team_member tm ON tm.user_id = u.id AND tm.left_at IS NULL
@@ -245,6 +245,7 @@ public class OperatorRepository {
         return new OperatorSummary(row.getObject("public_id", UUID.class), row.getString("username"),
             row.getString("display_name"), row.getString("callsign"), row.getString("city"),
             row.getString("state_code"), row.getString("recruitment_status"), row.getString("team_name"),
+            row.getString("team_acronym"),
             row.getObject("airsoft_started_at", LocalDate.class), null);
     }
 

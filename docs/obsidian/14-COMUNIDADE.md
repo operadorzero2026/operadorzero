@@ -1,5 +1,9 @@
 # Comunidade
 
+## Identificação de autores — 2026-07-30
+
+Autores de publicações e comentários aparecem como `CALLSIGN - SIGLA` da equipe ativa ou `CALLSIGN - SEM TIME`.
+
 Fórum funcional do Operador Zero para conteúdo exclusivamente relacionado ao airsoft. Conecta-se a [[13-MEU-OPERADOR]], [[10-MINHA-EQUIPE]], [[09-OPERACOES]], [[08-CLASSIFICADOS]], [[05-SEGURANCA-E-PRIVACIDADE]] e [[06-FRONTEND-WEB]].
 
 ## Estado funcional em 2026-07-28

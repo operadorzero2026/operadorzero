@@ -172,7 +172,8 @@ public class OperationRepository {
                 r.getObject("public_id", UUID.class), r.getString("name"), r.getString("acronym"), r.getString("color"),
                 r.getString("description"), r.getInt("capacity"), r.getLong("participant_count"), r.getString("status")));
         List<ParticipantResponse> participants = jdbc.query("""
-            SELECT p.public_id operator_id, p.callsign, p.display_name, user_team.name team_name, op.status,
+            SELECT p.public_id operator_id, p.callsign, p.display_name, user_team.name team_name,
+                   user_team.acronym team_acronym, op.status,
                    ot.public_id operation_team_id, ot.name operation_team_name
             FROM operation_participant op
             JOIN airsoft_operation o ON o.id = op.operation_id
@@ -186,6 +187,7 @@ public class OperationRepository {
             ORDER BY ot.sort_order NULLS LAST, lower(p.callsign), p.public_id
             """, Map.of("operationId", operationId, "userId", userId), (r, i) -> new ParticipantResponse(
                 r.getObject("operator_id", UUID.class), r.getString("callsign"), r.getString("display_name"), r.getString("team_name"),
+                r.getString("team_acronym"),
                 r.getString("status"), r.getObject("operation_team_id", UUID.class), r.getString("operation_team_name")));
         UUID currentTeamId = jdbc.query("""
             SELECT ot.public_id FROM operation_participant op

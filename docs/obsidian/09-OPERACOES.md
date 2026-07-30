@@ -1,5 +1,9 @@
 # Operações
 
+## Identificação de participantes — 2026-07-30
+
+Inscritos e autores de mensagens aparecem como `CALLSIGN - SIGLA` da equipe ativa. Sem equipe ativa, aparece `CALLSIGN - SEM TIME`. O nome completo da equipe não é usado como sufixo da identidade.
+
 ## Persistência de mensagens sem resposta — 2026-07-30
 
 O envio de uma mensagem raiz no chat tipa explicitamente o `parentMessageId` opcional como UUID na consulta PostgreSQL. Isso permite mensagens simples sem resposta e mantém a validação de que uma resposta, quando informada, pertence ao mesmo canal.

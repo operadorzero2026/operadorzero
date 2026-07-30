@@ -189,7 +189,7 @@ public class OperatorService {
 
     private OperatorSummary withExperience(OperatorSummary row) {
         return new OperatorSummary(row.id(), row.username(), row.displayName(), row.callsign(), row.city(), row.stateCode(),
-            row.recruitmentStatus(), row.teamName(), row.airsoftStartedAt(), experience(row.airsoftStartedAt()));
+            row.recruitmentStatus(), row.teamName(), row.teamAcronym(), row.airsoftStartedAt(), experience(row.airsoftStartedAt()));
     }
 
     private String experience(LocalDate startedAt) {

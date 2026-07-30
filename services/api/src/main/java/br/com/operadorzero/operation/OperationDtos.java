@@ -67,7 +67,8 @@ public final class OperationDtos {
     public record ParticipationRequest(@NotNull UUID operationTeamId, UUID operationSquadId) {}
     public record OperationTeamResponse(UUID id, String name, String acronym, String color, String description,
                                         int capacity, long participantCount, String status) {}
-    public record ParticipantResponse(UUID operatorId, String callsign, String displayName, String teamName, String status,
+    public record ParticipantResponse(UUID operatorId, String callsign, String displayName, String teamName,
+                                      String teamAcronym, String status,
                                       UUID operationTeamId, String operationTeamName) {}
     public record OperationRosterResponse(List<OperationTeamResponse> teams, List<ParticipantResponse> participants,
                                           UUID currentUserTeamId) {}

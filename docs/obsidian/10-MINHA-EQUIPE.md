@@ -1,5 +1,9 @@
 # Minha Equipe
 
+## Identificação pública pela sigla — 2026-07-30
+
+Busca de operadores, listas de inscritos e autores de publicações, comentários e mensagens usam o formato `CALLSIGN - SIGLA`. A sigla vem exclusivamente do vínculo ativo com equipe ativa; sem esse vínculo, a identificação é `CALLSIGN - SEM TIME`. O nome completo da equipe continua disponível somente nos contextos que precisam descrevê-la e não substitui a sigla na identidade compacta.
+
 ## Identificação na busca — 2026-07-28
 
 A busca de operadores usa exclusivamente o vínculo ativo de `team_member` com equipe `ACTIVE` para exibir o nome da equipe ao lado do callsign. Equipe antiga, arquivada ou vínculo encerrado não aparece como equipe atual. Veja [[13-MEU-OPERADOR]].

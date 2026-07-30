@@ -79,6 +79,7 @@ public final class OperatorDtos {
         String stateCode,
         String recruitmentStatus,
         String teamName,
+        String teamAcronym,
         LocalDate airsoftStartedAt,
         String airsoftExperience
     ) {}

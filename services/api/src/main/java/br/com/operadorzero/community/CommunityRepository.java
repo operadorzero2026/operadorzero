@@ -43,7 +43,7 @@ public class CommunityRepository {
         String sql = """
             SELECT p.public_id, p.title, p.body, p.created_at, p.comments_locked,
                    u.public_id author_public_id, u.username, op.display_name, op.callsign, op.city, op.state_code,
-                   team.name team_name,
+                   team.name team_name, team.acronym team_acronym,
                    c.public_id category_public_id, c.slug category_slug, c.name category_name,
                    COALESCE(votes.total, 0) vote_count, COALESCE(comments.total, 0) comment_count,
                    EXISTS(SELECT 1 FROM community_vote cv WHERE cv.post_id = p.id AND cv.user_id = :userId) voted,
@@ -99,7 +99,7 @@ public class CommunityRepository {
             PostResponse base = jdbc.queryForObject("""
                 SELECT p.public_id, p.title, p.body, p.created_at, p.updated_at, p.comments_locked,
                        u.public_id author_public_id, u.username, op.display_name, op.callsign, op.city, op.state_code,
-                       team.name team_name,
+                       team.name team_name, team.acronym team_acronym,
                        c.public_id category_public_id, c.slug category_slug, c.name category_name,
                        (SELECT count(*) FROM community_vote cv WHERE cv.post_id = p.id) vote_count,
                        (SELECT count(*) FROM community_comment cc WHERE cc.post_id = p.id AND cc.status = 'PUBLISHED') comment_count,
@@ -134,7 +134,7 @@ public class CommunityRepository {
         try {
             return Optional.ofNullable(jdbc.queryForObject("""
                 SELECT u.public_id author_public_id, u.username, op.display_name, op.callsign, op.city, op.state_code,
-                       team.name team_name
+                       team.name team_name, team.acronym team_acronym
                 FROM app_user u
                 JOIN operator_profile op ON op.user_id = u.id
                 LEFT JOIN team_member tm ON tm.user_id = u.id AND tm.left_at IS NULL
@@ -201,7 +201,7 @@ public class CommunityRepository {
             SELECT cc.public_id, p.public_id post_public_id, parent.public_id parent_public_id,
                    cc.body, cc.created_at,
                    u.public_id author_public_id, u.username, op.display_name, op.callsign, op.city, op.state_code,
-                   team.name team_name,
+                   team.name team_name, team.acronym team_acronym,
                    (cc.author_user_id = :userId OR :moderator) can_manage
             FROM community_comment cc
             JOIN community_post p ON p.id = cc.post_id
@@ -420,7 +420,7 @@ public class CommunityRepository {
         return new AuthorResponse(
             row.getObject("author_public_id", UUID.class), row.getString("username"),
             row.getString("display_name"), row.getString("callsign"), row.getString("city"),
-            row.getString("state_code"), row.getString("team_name"));
+            row.getString("state_code"), row.getString("team_name"), row.getString("team_acronym"));
     }
 
     private CategoryResponse mapCategory(ResultSet row) throws SQLException {

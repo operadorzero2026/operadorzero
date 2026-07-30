@@ -20,7 +20,8 @@ public final class CommunityDtos {
         String callsign,
         String city,
         String stateCode,
-        String teamName
+        String teamName,
+        String teamAcronym
     ) {}
 
     public record PostSummaryResponse(

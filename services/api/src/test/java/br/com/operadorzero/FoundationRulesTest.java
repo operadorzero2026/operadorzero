@@ -161,9 +161,27 @@ class FoundationRulesTest {
             "src/main/java/br/com/operadorzero/operation/OperationStructureRepository.java"));
 
         assertThat(operationRepository).contains("user_team.name team_name",
-            "membership.user_id=op.user_id", "r.getString(\"team_name\")");
+            "user_team.acronym team_acronym", "membership.user_id=op.user_id",
+            "r.getString(\"team_acronym\")");
         assertThat(structureRepository).contains("user_team.name team_name",
-            "membership.user_id=m.author_user_id", "r.getString(\"team_name\")");
+            "user_team.acronym team_acronym", "membership.user_id=m.author_user_id",
+            "r.getString(\"team_acronym\")");
+    }
+
+    @Test
+    void publicOperatorIdentityUsesActiveTeamAcronymWithNoTeamFallback() throws Exception {
+        String operatorRepository = Files.readString(Path.of(
+            "src/main/java/br/com/operadorzero/operator/OperatorRepository.java"));
+        String communityRepository = Files.readString(Path.of(
+            "src/main/java/br/com/operadorzero/community/CommunityRepository.java"));
+        String formatter = Files.readString(Path.of("../../src/operator-label.ts"));
+
+        assertThat(operatorRepository).contains("t.acronym AS team_acronym", "tm.left_at IS NULL",
+            "t.status = 'ACTIVE'");
+        assertThat(communityRepository).contains("team.acronym team_acronym", "tm.left_at IS NULL",
+            "team.status = 'ACTIVE'");
+        assertThat(formatter).contains("operator.teamAcronym?.trim() || 'SEM TIME'");
+        assertThat(formatter).doesNotContain("operator.teamName?.trim() || 'SEM TIME'");
     }
 
     @Test
