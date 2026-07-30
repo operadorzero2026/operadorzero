@@ -6,12 +6,14 @@
 - `src/OperationsPage.tsx`
 - `src/styles.css`
 - `scripts/stage-two-scenarios.mjs`
+- `.vercelignore`
 - [[06-FRONTEND-WEB]] e [[09-OPERACOES]]
 
 ### O que foi feito
 - A listagem de operações foi simplificada para data, nome, cidade, UF e horário.
 - A ordenação prioriza cidade do operador, depois estado e data/horário.
 - O detalhe mantém capa e dados completos.
+- A publicação Vercel ignora backend, documentação e artefatos locais que não pertencem ao bundle web.
 
 ### Motivo
 - Melhorar leitura e navegação em computador e celular conforme a referência visual.

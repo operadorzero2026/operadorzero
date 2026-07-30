@@ -1,0 +1,12 @@
+.agents
+.codex
+.github
+.playwright-cli
+docs
+output
+services
+dist
+node_modules
+*.md
+compose.dev.yml
+render.yaml
