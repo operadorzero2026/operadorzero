@@ -32,6 +32,7 @@ import {
   toggleCommunityVote,
   uploadCommunityImage,
 } from './api'
+import { operatorTeamLabel } from './operator-label'
 
 type CommunityProps = {
   path: string
@@ -262,7 +263,7 @@ function FeedView({ user, onNavigate, onRequireAuth }: Omit<CommunityProps, 'pat
           </div>
           <div className="oz-community-post-content">
             <div className="oz-community-post-meta">
-              <button onClick={event => { event.stopPropagation(); onNavigate(`/comunidade/operadores/${post.author.username}`) }}><Avatar author={post.author} /><b>{post.author.callsign || post.author.displayName}</b></button>
+              <button onClick={event => { event.stopPropagation(); onNavigate(`/comunidade/operadores/${post.author.username}`) }}><Avatar author={post.author} /><b>{operatorTeamLabel(post.author)}</b></button>
               <span>{post.category.name}</span><time>{relativeDate(post.createdAt)}</time>
             </div>
             <h3>{post.title}</h3>
@@ -365,7 +366,7 @@ function CommentThread({ comments, parentId, user, onReply, onReport, onDelete, 
     {children.map(comment => <article className="oz-community-comment" key={comment.id}>
       <Avatar author={comment.author} />
       <div>
-        <header><button onClick={() => onAuthor(comment.author)}>{comment.author.callsign || comment.author.displayName}</button><time>{relativeDate(comment.createdAt)}</time></header>
+        <header><button onClick={() => onAuthor(comment.author)}>{operatorTeamLabel(comment.author)}</button><time>{relativeDate(comment.createdAt)}</time></header>
         <p>{comment.description}</p>
         <footer>
           <button onClick={() => onReply(comment)}><MessageCircle /> Responder</button>
@@ -464,7 +465,7 @@ function PostDetailView({ postId, user, onNavigate, onRequireAuth }: Omit<Commun
     <article className="oz-community-detail">
       <header>
         <span>{post.category.name}</span>
-        <button onClick={() => onNavigate(`/comunidade/operadores/${post.author.username}`)}><Avatar author={post.author} /><b>{post.author.callsign || post.author.displayName}</b></button>
+        <button onClick={() => onNavigate(`/comunidade/operadores/${post.author.username}`)}><Avatar author={post.author} /><b>{operatorTeamLabel(post.author)}</b></button>
         <time>{relativeDate(post.createdAt)}</time>
       </header>
       <h1>{post.title}</h1>
@@ -496,7 +497,7 @@ function PostDetailView({ postId, user, onNavigate, onRequireAuth }: Omit<Commun
     <section className="oz-community-comments">
       <header><div><p className="oz-community-kicker">CONVERSA</p><h2>{comments.length} {comments.length === 1 ? 'comentário' : 'comentários'}</h2></div>{post.commentsLocked && <span><LockKeyhole /> Comentários bloqueados</span>}</header>
       {!post.commentsLocked && <form onSubmit={submitComment}>
-        {replyTo && <p>Respondendo a <b>{replyTo.author.callsign || replyTo.author.displayName}</b><button type="button" onClick={() => setReplyTo(null)}><X /></button></p>}
+        {replyTo && <p>Respondendo a <b>{operatorTeamLabel(replyTo.author)}</b><button type="button" onClick={() => setReplyTo(null)}><X /></button></p>}
         <textarea value={comment} onFocus={() => !user && onRequireAuth()} onChange={event => setComment(event.target.value)} required maxLength={3000} placeholder={user ? 'Contribua com respeito e mantenha o assunto da conversa.' : 'Entre para comentar.'} />
         <button className="oz-community-primary" disabled={pending || !comment.trim()}>{pending ? 'Publicando…' : <><Send /> Comentar</>}</button>
       </form>}
@@ -532,7 +533,7 @@ function AuthorView({ username, onNavigate }: { username: string; onNavigate: (p
 
   return <main className="oz-community-page oz-community-author-page">
     <button className="oz-community-back" onClick={() => onNavigate('/comunidade')}><ArrowLeft /> Voltar para a comunidade</button>
-    <section className="oz-community-author-header"><Avatar author={author} large /><div><p className="oz-community-kicker">OPERADOR</p><h1>{author.callsign || author.displayName}</h1><span>@{author.username}{author.teamName ? ` · ${author.teamName}` : ''}{author.city ? ` · ${author.city}, ${author.stateCode}` : ''}</span></div></section>
+    <section className="oz-community-author-header"><Avatar author={author} large /><div><p className="oz-community-kicker">OPERADOR</p><h1>{operatorTeamLabel(author)}</h1><span>@{author.username}{author.city ? ` · ${author.city}, ${author.stateCode}` : ''}</span></div></section>
     <section className="oz-community-author-posts"><header><h2>Publicações</h2><span>{posts.length}</span></header>
       {posts.length === 0 ? <p>Este operador ainda não publicou na comunidade.</p> : posts.map(post => <button key={post.id} onClick={() => onNavigate(`/comunidade/publicacoes/${post.id}`)}><span>{post.category.name}</span><b>{post.title}</b><ChevronRight /></button>)}
     </section>

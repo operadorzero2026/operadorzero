@@ -1,6 +1,7 @@
 import { Search, UserRound, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { getOperatorPublicProfile, type OperatorSummary, searchOperators } from './api'
+import { operatorTeamLabel } from './operator-label'
 
 type OperatorSearchProps = {
   onSelect?: (operator: OperatorSummary) => void
@@ -75,7 +76,7 @@ export function OperatorSearch({ onSelect, compact = false }: OperatorSearchProp
               </span>
               <div>
                 <b>
-                  {operator.callsign} — {operator.teamName || 'Sem equipe'} — {operator.airsoftExperience ? `${operator.airsoftExperience} no airsoft` : 'tempo não informado'}
+                  {operatorTeamLabel(operator)}
                 </b>
                 <small>
                   @{operator.username}
@@ -93,12 +94,12 @@ export function OperatorSearch({ onSelect, compact = false }: OperatorSearchProp
           </button>
           <span className="operator-avatar">{selected.callsign.charAt(0).toUpperCase()}</span>
           <small>OPERADOR</small>
-          <h2>{selected.callsign}</h2>
+          <h2>{operatorTeamLabel(selected)}</h2>
           <p>
             {selected.displayName} · @{selected.username}
           </p>
           <p>
-            {selected.teamName || 'Sem equipe'} · {selected.airsoftExperience ? `${selected.airsoftExperience} no airsoft` : 'Tempo no airsoft não informado'}
+            {selected.airsoftExperience ? `${selected.airsoftExperience} no airsoft` : 'Tempo no airsoft não informado'}
           </p>
           {selected.city && (
             <p>

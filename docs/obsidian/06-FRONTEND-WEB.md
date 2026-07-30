@@ -167,3 +167,7 @@ Os botões **Esquadrão** e **Criar time** usam fundo oliva claro com texto escu
 # Operações em duas etapas
 
 A criação de operação usa duas etapas: dados gerais e organização do rascunho. A central exibe edição de times e esquadrões somente antes da publicação. Após publicar, a interface apresenta seleção das opções existentes e comunicação geral ou privada do esquadrão atual.
+
+# Identificação de operadores
+
+Busca de usuários, listas de inscritos e comentários exibem a identidade no formato `NOME DO USUÁRIO - NOME DO TIME`. Operadores sem equipe ativa aparecem como `NOME DO USUÁRIO - SEM TIME`. A equipe ativa é fornecida pelo backend; a apresentação é centralizada no frontend.

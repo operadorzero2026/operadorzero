@@ -152,4 +152,17 @@ class FoundationRulesTest {
             "WHEN o.organizer_user_id = :userId THEN 'APPROVED'");
         assertThat(repository).doesNotContain(":operationSquadId IS NULL", ":operationSquadId IS NOT NULL");
     }
+
+    @Test
+    void operationParticipantsAndChatAuthorsIncludeActiveUserTeam() throws Exception {
+        String operationRepository = Files.readString(Path.of(
+            "src/main/java/br/com/operadorzero/operation/OperationRepository.java"));
+        String structureRepository = Files.readString(Path.of(
+            "src/main/java/br/com/operadorzero/operation/OperationStructureRepository.java"));
+
+        assertThat(operationRepository).contains("user_team.name team_name",
+            "membership.user_id=op.user_id", "r.getString(\"team_name\")");
+        assertThat(structureRepository).contains("user_team.name team_name",
+            "membership.user_id=m.author_user_id", "r.getString(\"team_name\")");
+    }
 }

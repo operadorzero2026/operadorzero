@@ -21,6 +21,7 @@ import {
   VenueMap,
 } from './api'
 import { OperationCommandCenter } from './OperationCommandCenter'
+import { operatorTeamLabel } from './operator-label'
 
 const modalityLabels: Record<string, string> = {
   ELIMINATION: 'Mata-mata',
@@ -529,7 +530,7 @@ export function OperationsPage() {
               <div className="operation-team-grid">
                 {roster.teams.map(team => <article key={team.id} className={selectedTeam === team.id ? 'active' : ''}>
                   <label><input type="radio" name="operationTeam" value={team.id} checked={selectedTeam === team.id} onChange={() => {setSelectedTeam(team.id);setSelectedSquad('')}} disabled={Boolean(roster.currentUserTeamId)} /><strong>{team.name}</strong><small>{team.participantCount}/{team.capacity} inscritos</small></label>
-                  <div>{roster.participants.filter(person => person.operationTeamId === team.id).map(person => <p key={person.operatorId}><span className="operator-avatar">{person.callsign.charAt(0).toUpperCase()}</span><b>{person.callsign}</b><small>{person.status === 'WAITING_LIST' ? 'Lista de espera' : person.displayName}</small></p>)}</div>
+                  <div>{roster.participants.filter(person => person.operationTeamId === team.id).map(person => <p key={person.operatorId}><span className="operator-avatar">{person.callsign.charAt(0).toUpperCase()}</span><b>{operatorTeamLabel(person)}</b><small>{person.status === 'WAITING_LIST' ? 'Lista de espera' : person.displayName}</small></p>)}</div>
                   {selectedTeam===team.id&&structure?.gameSize!=='SMALL'&&<div className="operation-squad-choice"><b>Escolha obrigatória do esquadrão</b>{structure?.teams.find(t=>t.id===team.id)?.squads.map(s=><label key={s.id}><input type="radio" name="operationSquad" value={s.id} checked={selectedSquad===s.id} disabled={s.status!=='OPEN'||s.participantCount>=s.capacity} onChange={()=>setSelectedSquad(s.id)}/>{s.name} · {s.participantCount}/{s.capacity}</label>)}{structure?.teams.find(t=>t.id===team.id)?.squads.length===0&&<small className="module-feedback">Este time ainda não possui esquadrão disponível. O organizador precisa concluir a estrutura.</small>}</div>}
                 </article>)}
               </div>

@@ -2259,3 +2259,9 @@
 - A seleção informa claramente quando um time ainda não possui esquadrão disponível.
 - Corrigida a tipagem explícita do UUID opcional do esquadrão na consulta PostgreSQL de inscrição; a falha impedia tanto usuários quanto organizadores de ingressar.
 - Mantida a aprovação automática do organizador quando ele escolhe um time e, quando aplicável, um esquadrão.
+
+# 2026-07-30 - Identidade do usuário acompanhada do time
+
+- Padronizada a apresentação `NOME DO USUÁRIO - NOME DO TIME` na busca, nos inscritos de operações e nos comentários.
+- Usuários sem equipe ativa passam a aparecer com o sufixo `SEM TIME`.
+- Os contratos de inscritos e mensagens de operações agora retornam a equipe ativa do autor.

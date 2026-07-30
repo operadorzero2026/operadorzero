@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { MessageCircle, Plus, Radio, Shield, Users } from 'lucide-react'
 import { createOperationSquad, createOperationTeam, getOperationChat, Operation, OperationChatPage, OperationStructure, sendOperationChat, updateOperationSquad, updateOperationTeam } from './api'
+import { operatorTeamLabel } from './operator-label'
 
 const sizeLabel={SMALL:'Pequeno',MEDIUM:'Médio',LARGE:'Grande'}
 export function OperationCommandCenter({operation,initialStructure,onPublish}:{operation:Operation;initialStructure:OperationStructure|null;onPublish:(operation:Operation)=>Promise<void>}){
@@ -33,7 +34,7 @@ export function OperationCommandCenter({operation,initialStructure,onPublish}:{o
       </article>)}</div>
       {configuring&&<form className="operation-team-create" onSubmit={addTeam}><input name="name" placeholder="Nome do time" maxLength={80} required/><input name="acronym" placeholder="Sigla" maxLength={12}/><input name="color" type="color" defaultValue="#6f7839"/><input name="capacity" type="number" min={1} placeholder="Vagas" required/><button disabled={busy}><Plus/> Criar time</button></form>}
     </div>{chatOpen&&<div className={channel==='general'?'operation-chat-panel operation-chat-general':'operation-chat-panel'}><h4><MessageCircle/> Comunicação</h4><select value={channel} onChange={e=>setChannel(e.target.value)}><option value="general">Chat geral da operação</option>{visibleSquads.map(s=><option key={s.id} value={s.id}>Esquadrão · {s.name} ({s.teamName})</option>)}</select>
-      <div className="operation-chat-messages">{chat?.items.slice().reverse().map(m=><p key={m.id} className={m.official?'official':''}><b>{m.author.callsign}</b><span>{m.body||'Mensagem removida'}</span><small>{new Date(m.createdAt).toLocaleString('pt-BR')}</small></p>)}{chat?.items.length===0&&<small>Nenhuma mensagem neste canal.</small>}</div>
+      <div className="operation-chat-messages">{chat?.items.slice().reverse().map(m=><p key={m.id} className={m.official?'official':''}><b>{operatorTeamLabel(m.author)}</b><span>{m.body||'Mensagem removida'}</span><small>{new Date(m.createdAt).toLocaleString('pt-BR')}</small></p>)}{chat?.items.length===0&&<small>Nenhuma mensagem neste canal.</small>}</div>
       <form onSubmit={send}><textarea name="message" maxLength={2000} placeholder="Escreva uma mensagem" required/><button className="module-primary" disabled={busy||chat?.locked}>Enviar</button></form>
     </div>}</div>
   </section>

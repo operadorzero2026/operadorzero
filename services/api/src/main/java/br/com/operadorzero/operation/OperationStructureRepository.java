@@ -196,15 +196,18 @@ public class OperationStructureRepository {
         var params=new MapSqlParameterSource().addValue("channel",c.id()).addValue("user",userId).addValue("limit",limit+1)
             .addValue("before",before==null?null:Timestamp.from(before));
         List<ChatMessageResponse> all=jdbc.query("""
-            SELECT m.public_id,c.public_id channel_id,p.public_id author_id,p.callsign,p.display_name,m2.public_id parent_id,
+            SELECT m.public_id,c.public_id channel_id,p.public_id author_id,p.callsign,p.display_name,user_team.name team_name,m2.public_id parent_id,
               CASE WHEN m.status IN ('DELETED','HIDDEN') THEN '' ELSE m.body END body,m.status,m.official,m.created_at,m.updated_at,
               m.author_user_id=:user AND m.status IN ('VISIBLE','EDITED') AND m.created_at > now()-interval '15 minutes' editable
             FROM operation_chat_message m JOIN operation_chat_channel c ON c.id=m.channel_id
-            JOIN operator_profile p ON p.user_id=m.author_user_id LEFT JOIN operation_chat_message m2 ON m2.id=m.parent_message_id
+            JOIN operator_profile p ON p.user_id=m.author_user_id
+            LEFT JOIN team_member membership ON membership.user_id=m.author_user_id AND membership.left_at IS NULL
+            LEFT JOIN team user_team ON user_team.id=membership.team_id AND user_team.status='ACTIVE'
+            LEFT JOIN operation_chat_message m2 ON m2.id=m.parent_message_id
             WHERE m.channel_id=:channel AND (CAST(:before AS timestamptz) IS NULL OR m.created_at<:before)
             ORDER BY m.created_at DESC,m.id DESC LIMIT :limit
             """,params,(r,i)->new ChatMessageResponse(r.getObject("public_id",UUID.class),r.getObject("channel_id",UUID.class),
-                new ChatAuthor(r.getObject("author_id",UUID.class),r.getString("callsign"),r.getString("display_name"),null),
+                new ChatAuthor(r.getObject("author_id",UUID.class),r.getString("callsign"),r.getString("display_name"),r.getString("team_name"),null),
                 r.getObject("parent_id",UUID.class),r.getString("body"),r.getString("status"),r.getBoolean("official"),null,
                 r.getTimestamp("created_at").toInstant(),r.getTimestamp("updated_at").toInstant(),r.getBoolean("editable")));
         boolean more=all.size()>limit; if(more) all=all.subList(0,limit);
