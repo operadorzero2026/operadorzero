@@ -90,8 +90,9 @@ public class OperationStructureService {
     private OperationAccess managed(UUID id,AuthenticatedUser user,boolean lock){OperationAccess a=access(id,user,lock);if(!a.owner()&&!a.operationAdmin())throw BusinessException.forbidden("Você não pode administrar esta operação.");return a;}
     private OperationAccess draftManaged(UUID id,AuthenticatedUser user,boolean lock){OperationAccess a=managed(id,user,lock);if(!"DRAFT".equals(a.status()))throw BusinessException.conflict("STRUCTURE_ALREADY_PUBLISHED","Times, esquadrões e funções devem ser definidos antes da publicação.");return a;}
     private ChatAccess chatAccess(OperationAccess a,AuthenticatedUser user,UUID teamId,boolean send){ChatAccess c;try{c=repository.chatAccess(a,user.internalId(),teamId);}catch(EmptyResultDataAccessException ex){throw BusinessException.notFound("Canal não encontrado.");}
-        boolean manager=a.owner()||a.operationAdmin();if(teamId==null){if(send&&!c.participant()&&!manager)throw BusinessException.forbidden("Somente inscritos podem enviar mensagens.");if(!send&&!c.participant()&&!c.publicRead()&&!manager)throw BusinessException.forbidden("Chat restrito aos inscritos.");}
-        else if(!c.squadMember()&&!manager)throw BusinessException.forbidden("Este chat é privado para integrantes do esquadrão.");return c;}
+        boolean manager=a.owner()||a.operationAdmin();
+        if(teamId!=null&&!c.squadMember()&&!manager)throw BusinessException.forbidden("Este chat é privado para integrantes do esquadrão.");
+        return c;}
     private void validateTeamCapacity(OperationAccess a,StructureResponse s,int newCapacity,UUID replacing){int total=s.teams().stream().filter(t->!t.id().equals(replacing)).mapToInt(TeamStructureResponse::capacity).sum()+newCapacity;if(a.participantLimit()!=null&&total>a.participantLimit())throw BusinessException.conflict("TEAM_CAPACITY_EXCEEDS_OPERATION","A soma das capacidades dos times ultrapassa o limite global.");}
     private String sanitize(String value){String text=value.trim().replaceAll("[\\p{Cntrl}&&[^\\n\\t]]","");if(text.isBlank())throw BusinessException.badRequest("EMPTY_MESSAGE","A mensagem não pode estar vazia.");return text;}
 }

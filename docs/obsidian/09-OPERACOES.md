@@ -1,5 +1,9 @@
 # Operações
 
+## Chat geral acessível aos usuários autenticados — 2026-07-30
+
+O chat geral pode ser lido e utilizado por qualquer usuário autenticado que consiga acessar a operação, mesmo antes de escolher um time ou concluir a inscrição. Bloqueio do canal, rate limit, sanitização e moderação continuam ativos. Os canais privados permanecem restritos ao integrante do próprio esquadrão, ao organizador e aos administradores locais autorizados.
+
 ## Visualização e edição do organizador — 2026-07-30
 
 Ao abrir a própria operação pela agenda, o organizador recebe a mesma visualização pública usada pelos participantes: capa, briefing, ocupação, times, esquadrões, inscrição e comunicação permanecem no fluxo principal. O botão **Editar operação**, fixado no topo do detalhe, ativa explicitamente os controles administrativos já existentes.

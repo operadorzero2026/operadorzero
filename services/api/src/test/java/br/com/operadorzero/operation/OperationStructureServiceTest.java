@@ -1,6 +1,7 @@
 package br.com.operadorzero.operation;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -18,6 +19,27 @@ import org.junit.jupiter.api.Test;
 class OperationStructureServiceTest {
     private final AuthenticatedUser user = new AuthenticatedUser(10L, UUID.randomUUID(), "operator@example.test",
         "operator", "Operator", "Zero", List.of("OPERATOR"));
+
+    @Test
+    void authenticatedNonParticipantCanUseGeneralChat() {
+        OperationStructureRepository repository = mock(OperationStructureRepository.class);
+        OperationChatRateLimiter rateLimiter = mock(OperationChatRateLimiter.class);
+        UUID operationId = UUID.randomUUID();
+        UUID channelId = UUID.randomUUID();
+        UUID messageId = UUID.randomUUID();
+        var access = new OperationAccess(1L, operationId, 99L, "REGISTRATION_OPEN", "MEDIUM", 100, true, false, false, false);
+        var channel = new ChatAccess(2L, channelId, "GENERAL", "OPEN", false, false, true);
+        var request = new OperationStructureDtos.SendMessageRequest("Mensagem geral", null, UUID.randomUUID(), false);
+        when(repository.access(operationId, user.internalId(), false)).thenReturn(Optional.of(access));
+        when(repository.chatAccess(access, user.internalId(), null)).thenReturn(channel);
+        when(rateLimiter.allow(user.internalId(), channelId)).thenReturn(true);
+        when(repository.send(channel, user.internalId(), request, "Mensagem geral", Clock.systemUTC().instant())).thenReturn(messageId);
+        OperationStructureService service = new OperationStructureService(repository, rateLimiter,
+            mock(AuditEventRepository.class), Clock.systemUTC());
+
+        assertThatCode(() -> service.chat(user, operationId, null, 30, null)).doesNotThrowAnyException();
+        assertThatCode(() -> service.send(user, operationId, null, request)).doesNotThrowAnyException();
+    }
 
     @Test
     void memberCannotReadAnotherSquadsChat() {

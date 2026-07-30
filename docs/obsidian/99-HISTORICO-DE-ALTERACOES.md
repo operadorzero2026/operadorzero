@@ -1,5 +1,29 @@
 # Histórico de alterações
 
+## 2026-07-30 - Correção da autorização do chat geral das operações
+
+### Arquivos alterados
+- `services/api/src/main/java/br/com/operadorzero/operation/OperationStructureService.java`
+- `services/api/src/test/java/br/com/operadorzero/operation/OperationStructureServiceTest.java`
+- [[05-SEGURANCA-E-PRIVACIDADE]], [[09-OPERACOES]] e [[99-HISTORICO-DE-ALTERACOES]]
+
+### O que foi feito
+- o chat geral passou a aceitar leitura e envio por qualquer usuário autenticado com acesso à operação;
+- canais privados continuam protegidos pela participação real no esquadrão;
+- teste automatizado cobre usuário autenticado ainda não inscrito.
+
+### Motivo
+- a interface oferecia o chat geral a todos, mas o backend bloqueava usuários antes da inscrição.
+
+### Impacto
+- backend e autorização do chat de operações, sem alteração de banco.
+
+### Testes
+- executar `mvn -B clean verify` e `npm run check`.
+
+### Pendências
+- nenhuma.
+
 ## 2026-07-30 - Visualização pública com edição explícita para o organizador
 
 ### Arquivos alterados

@@ -2,7 +2,7 @@
 
 ## Controles dos chats de operação — 2026-07-29
 
-Os endpoints de canal validam operação e participação a cada requisição. O identificador do time enviado pelo cliente nunca concede acesso: integrantes só consultam o time atualmente associado no banco; organizador e administrador local são exceções auditadas. Mensagens são texto limitado, renderizado sem HTML, possuem idempotência, exclusão lógica, denúncia e rate limit Redis. Movimentações e inscrições usam transação e bloqueio pessimista.
+Os endpoints de canal validam a operação e a sessão a cada requisição. O chat geral aceita usuários autenticados com acesso à operação. Nos canais privados, o identificador do esquadrão enviado pelo cliente nunca concede acesso: integrantes só consultam o esquadrão atualmente associado no banco; organizador e administrador local são exceções auditadas. Mensagens são texto limitado, renderizado sem HTML, possuem idempotência, exclusão lógica, denúncia e rate limit Redis. Movimentações e inscrições usam transação e bloqueio pessimista.
 
 ## Organizador participante — 2026-07-28
 
