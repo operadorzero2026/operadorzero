@@ -1,5 +1,33 @@
 # Histórico de alterações
 
+## 2026-07-30 - Visualização pública com edição explícita para o organizador
+
+### Arquivos alterados
+- `src/OperationsPage.tsx`
+- `src/OperationCommandCenter.tsx`
+- `src/functional-modules.css`
+- `scripts/stage-two-scenarios.mjs`
+- [[06-FRONTEND-WEB]], [[09-OPERACOES]] e [[99-HISTORICO-DE-ALTERACOES]]
+
+### O que foi feito
+- operações próprias agora abrem no mesmo modo de visualização dos participantes;
+- o botão `Editar operação` no topo libera os controles administrativos existentes;
+- salvar, encerrar a edição ou fechar o detalhe restaura o modo de visualização;
+- a configuração de times e esquadrões de rascunhos respeita o mesmo modo explícito.
+
+### Motivo
+- separar a experiência de consulta da operação das ações administrativas do organizador.
+
+### Impacto
+- frontend web de operações, sem alteração de contrato ou banco.
+
+### Testes
+- cenário estático adicionado ao conjunto `test:stage-two`;
+- executar `npm run check`.
+
+### Pendências
+- nenhuma.
+
 ## 2026-07-29 - Login resiliente após suspensão ou deploy do Render
 
 ### Arquivos alterados

@@ -1,5 +1,9 @@
 # Frontend web
 
+## Detalhe de operação do organizador — 2026-07-30
+
+O detalhe de uma operação própria abre em modo de visualização, igual ao detalhe visto por participantes. Um botão **Editar operação** no topo alterna os controles administrativos sem remover da tela a leitura pública, a lista de participantes, a seleção de time e os chats. O modo é local à tela, não persiste no navegador e é encerrado ao salvar ou fechar.
+
 ## Retomada resiliente no login — 2026-07-29
 
 O preparo CSRF é reutilizado por no máximo cinco minutos. Depois disso, uma nova consulta idempotente desperta e valida a API antes do envio de senha, evitando que um token mantido em memória contorne a retomada do Render gratuito. Login, cadastro, confirmação e recuperação possuem limite de 45 segundos para tolerar trocas transitórias de instância, enquanto as demais chamadas continuam com timeout curto.

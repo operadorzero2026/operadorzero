@@ -4,7 +4,7 @@ import { createOperationSquad, createOperationTeam, getOperationChat, Operation,
 import { operatorTeamLabel } from './operator-label'
 
 const sizeLabel={SMALL:'Pequeno',MEDIUM:'Médio',LARGE:'Grande'}
-export function OperationCommandCenter({operation,initialStructure,onPublish}:{operation:Operation;initialStructure:OperationStructure|null;onPublish:(operation:Operation)=>Promise<void>}){
+export function OperationCommandCenter({operation,initialStructure,editMode,onPublish}:{operation:Operation;initialStructure:OperationStructure|null;editMode:boolean;onPublish:(operation:Operation)=>Promise<void>}){
   const [structure,setStructure]=useState<OperationStructure|null>(initialStructure),[chat,setChat]=useState<OperationChatPage|null>(null),[channel,setChannel]=useState<string>('general'),[chatOpen,setChatOpen]=useState(false),[error,setError]=useState(''),[busy,setBusy]=useState(false)
   const loadChat=useCallback(async()=>{try{setChat(await getOperationChat(operation.id,channel==='general'?null:channel))}catch(e){setChat(null);setError(e instanceof Error?e.message:'Chat indisponível.')}},[operation.id,channel])
   useEffect(()=>setStructure(initialStructure),[initialStructure]);useEffect(()=>{if(!chatOpen)return;void loadChat();const timer=window.setInterval(()=>void loadChat(),15000);return()=>window.clearInterval(timer)},[chatOpen,loadChat])
@@ -15,7 +15,7 @@ export function OperationCommandCenter({operation,initialStructure,onPublish}:{o
   const send=async(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const form=e.currentTarget,d=new FormData(form),body=String(d.get('message')||'');if(!body.trim())return;setBusy(true);try{await sendOperationChat(operation.id,body,channel==='general'?null:channel);form.reset();await loadChat()}catch(x){setError(x instanceof Error?x.message:'Não foi possível enviar.')}finally{setBusy(false)}}
   if(!structure)return <p>Carregando organização da operação…</p>
   const limit=structure.participantLimit
-  const configuring=structure.managedByCurrentUser&&structure.operationStatus==='DRAFT'
+  const configuring=editMode&&structure.managedByCurrentUser&&structure.operationStatus==='DRAFT'
   const visibleSquads=structure.teams.flatMap(team=>team.squads.map(squad=>({...squad,teamName:team.name}))).filter(squad=>structure.managedByCurrentUser||squad.id===structure.currentUserSquadId)
   return <section className="operation-command-center">
     <header><div><small>CENTRAL DA OPERAÇÃO</small><h3>{sizeLabel[structure.gameSize]}</h3></div><strong>{structure.participantCount}/{limit??'sem limite'}</strong></header>

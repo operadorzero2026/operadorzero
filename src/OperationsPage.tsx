@@ -1,4 +1,4 @@
-import { CalendarClock, CalendarDays, MapPin, Plus, Search, Target, Trash2, Users, X } from 'lucide-react'
+import { CalendarClock, CalendarDays, MapPin, Pencil, Plus, Search, Target, Trash2, Users, X } from 'lucide-react'
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import {
   cancelOperationParticipation,
@@ -64,7 +64,8 @@ export function OperationsPage() {
     [selectedTeam, setSelectedTeam] = useState(''),
     [selectedSquad, setSelectedSquad] = useState(''),
     [coverPreview, setCoverPreview] = useState(''),
-    [deleteReason, setDeleteReason] = useState('')
+    [deleteReason, setDeleteReason] = useState(''),
+    [operationEditMode, setOperationEditMode] = useState(false)
   const load = useCallback(async (q = '') => {
     try {
       setItems((await getOperations(q)).items)
@@ -114,7 +115,7 @@ export function OperationsPage() {
       setShowCreate(false)
       setCoverPreview('')
       await load('')
-      await openOperation(created)
+      await openOperation(created, true)
     } catch (err) {
       setFeedback(
         err instanceof Error
@@ -139,8 +140,9 @@ export function OperationsPage() {
       setPending('')
     }
   }
-  const openOperation = async (item: Operation) => {
+  const openOperation = async (item: Operation, startEditing = false) => {
     setSelected(item)
+    setOperationEditMode(startEditing && item.managedByCurrentUser)
     setRoster(null)
     setStructure(null)
     setRosterError('')
@@ -174,6 +176,7 @@ export function OperationsPage() {
         reason: data.get('reason'), version: selected.version ?? 0,
       })
       setSelected(updated)
+      setOperationEditMode(false)
       setFeedback('Data, horários e briefing atualizados.')
       await load(query)
     } catch (err) {
@@ -188,6 +191,7 @@ export function OperationsPage() {
     try {
       await deleteOperation(selected.id, deleteReason.trim())
       setSelected(null)
+      setOperationEditMode(false)
       setDeleteReason('')
       setFeedback('Operação excluída com segurança.')
       await load(query)
@@ -472,7 +476,7 @@ export function OperationsPage() {
                     </span>
                   )}
                   {item.managedByCurrentUser && item.status === 'DRAFT' ? (
-                    <button className="module-primary" onClick={(event) => { event.stopPropagation(); void openOperation(item) }}>
+                    <button className="module-primary" onClick={(event) => { event.stopPropagation(); void openOperation(item, true) }}>
                       Configurar antes de publicar
                     </button>
                   ) : item.participantStatus &&
@@ -498,16 +502,17 @@ export function OperationsPage() {
         )}
       </section>
       {selected && (
-        <div className="classified-modal-backdrop" role="presentation" onClick={() => setSelected(null)}>
+        <div className="classified-modal-backdrop" role="presentation" onClick={() => { setSelected(null); setOperationEditMode(false) }}>
           <section className="classified-modal operation-detail-modal" role="dialog" aria-modal="true" aria-label={`Detalhes de ${selected.name}`} onClick={(event) => event.stopPropagation()}>
-            <button type="button" className="classified-modal-close" aria-label="Fechar" onClick={() => setSelected(null)}><X /></button>
+            <button type="button" className="classified-modal-close" aria-label="Fechar" onClick={() => { setSelected(null); setOperationEditMode(false) }}><X /></button>
+            {selected.managedByCurrentUser && <button type="button" className="module-secondary operation-edit-toggle" aria-pressed={operationEditMode} onClick={() => setOperationEditMode(active => !active)}><Pencil /> {operationEditMode ? 'Encerrar edição' : 'Editar operação'}</button>}
             {selected.hasCover ? <img className="operation-detail-cover" src={operationCoverUrl(selected.id,selected.coverVersion)} alt={`Capa de ${selected.name}`} />:<div className="operation-detail-cover operation-cover-placeholder"><Target/><span>Operador Zero</span></div>}
             <small>{statusLabels[selected.status] || selected.status}</small>
             <h2>{selected.name}</h2>
             <p>{selected.description}</p>
             {selected.briefing && <section className="operation-briefing"><small>BRIEFING DO JOGO</small><p>{selected.briefing}</p></section>}
             <div className="operation-roster-summary"><span><MapPin /> {selected.fieldName} · {selected.city}/{selected.stateCode}</span><span><Users /> {selected.participantCount}/{selected.participantLimit ?? 'sem limite'} participantes</span></div>
-            {selected.managedByCurrentUser && <section className="operation-organizer-tools">
+            {selected.managedByCurrentUser && operationEditMode && <section className="operation-organizer-tools">
               <header><CalendarClock/><div><small>ORGANIZAÇÃO</small><h3>Editar data e briefing</h3><p>Remarque a operação ou atualize as instruções apresentadas aos jogadores.</p></div></header>
               <form className="module-form" onSubmit={updateManagedOperation} key={`${selected.id}-${selected.version ?? 0}`}>
                 <div className="form-grid">
@@ -538,7 +543,7 @@ export function OperationsPage() {
               {!roster.currentUserTeamId && <button className="module-primary" disabled={!selectedTeam || (structure?.gameSize!=='SMALL'&&!selectedSquad) || pending === selected.id} onClick={() => void participate(selected, false, selectedTeam, selectedSquad)}>{pending === selected.id ? 'Inscrevendo…' : 'Entrar no time e esquadrão escolhidos'}</button>}
               {roster.currentUserTeamId && <p className="module-feedback">Você já está inscrito em {roster.teams.find(team => team.id === roster.currentUserTeamId)?.name || 'um time'}.</p>}
             </>}
-            {structureError ? <p className="module-feedback" role="alert">{structureError} <button type="button" onClick={() => void openOperation(selected)}>Tentar novamente</button></p> : <OperationCommandCenter operation={selected} initialStructure={structure} onPublish={publish}/>}
+            {structureError ? <p className="module-feedback" role="alert">{structureError} <button type="button" onClick={() => void openOperation(selected)}>Tentar novamente</button></p> : <OperationCommandCenter operation={selected} initialStructure={structure} editMode={operationEditMode} onPublish={publish}/>}
           </section>
         </div>
       )}

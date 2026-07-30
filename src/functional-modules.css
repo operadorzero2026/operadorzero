@@ -167,6 +167,19 @@
   background: rgba(183, 185, 94, 0.055);
 }
 .operation-briefing p { white-space: pre-wrap; color: #d8d9d1; line-height: 1.65; }
+.operation-edit-toggle {
+  position: absolute;
+  z-index: 3;
+  top: 18px;
+  left: 18px;
+  background: rgba(9, 11, 8, 0.9);
+  backdrop-filter: blur(8px);
+}
+.operation-edit-toggle[aria-pressed="true"] {
+  background: #b7b95e;
+  color: #0e100d;
+}
+.operation-edit-toggle svg { width: 17px; }
 .operation-organizer-tools > header { display: flex; align-items: flex-start; gap: 14px; }
 .operation-organizer-tools > header svg { flex: 0 0 auto; color: #b7b95e; }
 .operation-organizer-tools h3 { margin: 2px 0 5px; }
@@ -177,6 +190,13 @@
 .operation-delete-zone button { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 11px 17px; border: 1px solid #b8645c; background: transparent; color: #f0b6b0; font-weight: 800; cursor: pointer; }
 .operation-delete-zone button:disabled { opacity: 0.55; cursor: wait; }
 .operation-delete-zone > small { display: block; margin-top: 9px; color: #92958d; }
+@media (max-width: 620px) {
+  .operation-edit-toggle {
+    top: 12px;
+    left: 12px;
+    padding: 9px 12px;
+  }
+}
 .module-state {
   padding: 54px 0;
   text-align: center;

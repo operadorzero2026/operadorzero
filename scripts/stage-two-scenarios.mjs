@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
-const [api, app, operatorPage, operatorSearch, teamPage, security] = await Promise.all([
+const [api, app, operatorPage, operatorSearch, teamPage, operationsPage, operationCommandCenter, security] = await Promise.all([
   readFile(new URL('../src/api.ts', import.meta.url), 'utf8'),
   readFile(new URL('../src/App.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/OperatorPage.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/OperatorSearch.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/TeamPage.tsx', import.meta.url), 'utf8'),
+  readFile(new URL('../src/OperationsPage.tsx', import.meta.url), 'utf8'),
+  readFile(new URL('../src/OperationCommandCenter.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../services/api/src/main/java/br/com/operadorzero/shared/config/SecurityConfig.java', import.meta.url), 'utf8'),
 ])
 
@@ -19,6 +21,9 @@ assert.ok(operatorSearch.includes('searchOperators') && operatorSearch.includes(
 assert.ok(teamPage.includes('getTeamWorkspace') && teamPage.includes('acceptTeamInvitation'))
 assert.ok(api.includes('uploadTeamLogo') && api.includes('body instanceof FormData'))
 assert.ok(teamPage.includes('image/png,image/jpeg') && teamPage.includes('2048 × 2048'))
+assert.ok(operationsPage.includes('Editar operação') && operationsPage.includes('operationEditMode'))
+assert.ok(operationsPage.includes('selected.managedByCurrentUser && operationEditMode'))
+assert.ok(operationCommandCenter.includes('editMode&&structure.managedByCurrentUser'))
 assert.ok(security.includes('"/api/operators/**", "/api/teams/**"') && security.includes('.anyRequest().denyAll()'))
 
 const functionalSource = [api, operatorPage, operatorSearch, teamPage].join('\n')

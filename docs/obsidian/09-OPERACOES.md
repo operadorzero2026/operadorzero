@@ -1,5 +1,11 @@
 # Operações
 
+## Visualização e edição do organizador — 2026-07-30
+
+Ao abrir a própria operação pela agenda, o organizador recebe a mesma visualização pública usada pelos participantes: capa, briefing, ocupação, times, esquadrões, inscrição e comunicação permanecem no fluxo principal. O botão **Editar operação**, fixado no topo do detalhe, ativa explicitamente os controles administrativos já existentes.
+
+Somente no modo de edição aparecem o formulário de data, horários e briefing, a exclusão segura e, em rascunhos, a configuração de times e esquadrões e a ação de publicação. Salvar, fechar o detalhe ou encerrar a edição devolve a tela ao modo de visualização. A autorização continua validada no backend; o estado visual não substitui o controle de propriedade da operação.
+
 ## Remarcação, briefing e exclusão segura — 2026-07-29
 
 O organizador pode editar data, horários e briefing pelo detalhe da própria operação. `PATCH /api/operations/{id}` exige motivo, data presente ou futura, sequência válida dos horários e a versão atual do registro; conflitos de edição simultânea retornam `409` sem sobrescrever dados. O briefing é texto simples de até 12.000 caracteres e nunca é renderizado como HTML.
