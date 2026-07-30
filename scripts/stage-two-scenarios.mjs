@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
-const [api, app, operatorPage, operatorSearch, teamPage, operationsPage, operationCommandCenter, security] = await Promise.all([
+const [api, app, operatorPage, operatorSearch, operatorLabel, teamPage, operationsPage, operationCommandCenter, security] = await Promise.all([
   readFile(new URL('../src/api.ts', import.meta.url), 'utf8'),
   readFile(new URL('../src/App.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/OperatorPage.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/OperatorSearch.tsx', import.meta.url), 'utf8'),
+  readFile(new URL('../src/operator-label.ts', import.meta.url), 'utf8'),
   readFile(new URL('../src/TeamPage.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/OperationsPage.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/OperationCommandCenter.tsx', import.meta.url), 'utf8'),
@@ -18,6 +19,8 @@ for (const route of ['/api/operators/me', '/api/operators/search', '/api/teams/w
 assert.ok(app.includes('<OperatorPage') && app.includes('<TeamPage') && app.includes('<OperatorSearch'))
 assert.ok(operatorPage.includes('getOperatorProfile') && operatorPage.includes('updateOperatorProfile'))
 assert.ok(operatorSearch.includes('searchOperators') && operatorSearch.includes('350'))
+assert.ok(operatorLabel.includes("operator.teamAcronym?.trim() || 'SEM TIME'"))
+assert.ok(!operatorLabel.includes("operator.teamName?.trim() || 'SEM TIME'"))
 assert.ok(teamPage.includes('getTeamWorkspace') && teamPage.includes('acceptTeamInvitation'))
 assert.ok(api.includes('uploadTeamLogo') && api.includes('body instanceof FormData'))
 assert.ok(teamPage.includes('image/png,image/jpeg') && teamPage.includes('2048 × 2048'))

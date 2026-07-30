@@ -6,6 +6,7 @@
 - `src/operator-label.ts` e `src/api.ts`
 - módulos backend `operator`, `operation` e `community`
 - `services/api/src/test/java/br/com/operadorzero/FoundationRulesTest.java`
+- `scripts/stage-two-scenarios.mjs`
 - [[09-OPERACOES]], [[10-MINHA-EQUIPE]] e [[14-COMUNIDADE]]
 
 ### O que foi feito

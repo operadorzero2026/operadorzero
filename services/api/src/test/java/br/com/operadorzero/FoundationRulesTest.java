@@ -174,14 +174,10 @@ class FoundationRulesTest {
             "src/main/java/br/com/operadorzero/operator/OperatorRepository.java"));
         String communityRepository = Files.readString(Path.of(
             "src/main/java/br/com/operadorzero/community/CommunityRepository.java"));
-        String formatter = Files.readString(Path.of("../../src/operator-label.ts"));
-
         assertThat(operatorRepository).contains("t.acronym AS team_acronym", "tm.left_at IS NULL",
             "t.status = 'ACTIVE'");
         assertThat(communityRepository).contains("team.acronym team_acronym", "tm.left_at IS NULL",
             "team.status = 'ACTIVE'");
-        assertThat(formatter).contains("operator.teamAcronym?.trim() || 'SEM TIME'");
-        assertThat(formatter).doesNotContain("operator.teamName?.trim() || 'SEM TIME'");
     }
 
     @Test
