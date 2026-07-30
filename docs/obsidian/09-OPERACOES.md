@@ -1,5 +1,9 @@
 # Operações
 
+## Persistência de mensagens sem resposta — 2026-07-30
+
+O envio de uma mensagem raiz no chat tipa explicitamente o `parentMessageId` opcional como UUID na consulta PostgreSQL. Isso permite mensagens simples sem resposta e mantém a validação de que uma resposta, quando informada, pertence ao mesmo canal.
+
 ## Chat geral aberto por padrão — 2026-07-30
 
 O detalhe da operação carrega imediatamente o chat geral, sem botão intermediário. As mensagens ocupam uma área de altura limitada com rolagem própria em computador e celular, sem alongar continuamente a página. Todos os usuários autenticados com acesso à operação podem enviar mensagens, inclusive o organizador; quando o canal estiver bloqueado, a exceção administrativa do organizador continua disponível conforme a autorização do backend.

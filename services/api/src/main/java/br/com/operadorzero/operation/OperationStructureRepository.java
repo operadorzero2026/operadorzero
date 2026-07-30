@@ -218,7 +218,7 @@ public class OperationStructureRepository {
             INSERT INTO operation_chat_message(channel_id,author_user_id,parent_message_id,body,official,idempotency_key,created_at,updated_at)
             SELECT :channel,:user,parent.id,:body,:official,:key,:now,:now FROM (SELECT 1) seed
             LEFT JOIN operation_chat_message parent ON parent.public_id=:parent AND parent.channel_id=:channel
-            WHERE :parent IS NULL OR parent.id IS NOT NULL
+            WHERE CAST(:parent AS uuid) IS NULL OR parent.id IS NOT NULL
             ON CONFLICT(author_user_id,idempotency_key) DO UPDATE SET updated_at=operation_chat_message.updated_at
             RETURNING public_id
             """,new MapSqlParameterSource().addValue("channel",c.id()).addValue("user",userId).addValue("parent",r.parentMessageId())

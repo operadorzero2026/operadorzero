@@ -1,5 +1,29 @@
 # Histórico de alterações
 
+## 2026-07-30 - Correção do envio de mensagens no chat geral
+
+### Arquivos alterados
+- `services/api/src/main/java/br/com/operadorzero/operation/OperationStructureRepository.java`
+- `services/api/src/test/java/br/com/operadorzero/FoundationRulesTest.java`
+- [[09-OPERACOES]] e [[99-HISTORICO-DE-ALTERACOES]]
+
+### O que foi feito
+- o parâmetro opcional da mensagem respondida passou a ser tipado como UUID no PostgreSQL;
+- mensagens raiz agora são persistidas sem erro de tipo;
+- proteção automatizada impede o retorno da consulta ambígua.
+
+### Motivo
+- o PostgreSQL não conseguia inferir o tipo de `parentMessageId` nulo e devolvia erro 500 ao enviar uma mensagem simples.
+
+### Impacto
+- backend do chat de operações, sem migration ou perda de dados.
+
+### Testes
+- executar `mvn -B clean verify`.
+
+### Pendências
+- nenhuma.
+
 ## 2026-07-30 - Chat geral aberto e com rolagem própria
 
 ### Arquivos alterados

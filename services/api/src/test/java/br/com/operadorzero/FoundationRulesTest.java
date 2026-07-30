@@ -165,4 +165,13 @@ class FoundationRulesTest {
         assertThat(structureRepository).contains("user_team.name team_name",
             "membership.user_id=m.author_user_id", "r.getString(\"team_name\")");
     }
+
+    @Test
+    void generalChatInsertTypesNullableParentMessageUuid() throws Exception {
+        String repository = Files.readString(Path.of(
+            "src/main/java/br/com/operadorzero/operation/OperationStructureRepository.java"));
+
+        assertThat(repository).contains("CAST(:parent AS uuid) IS NULL");
+        assertThat(repository).doesNotContain("WHERE :parent IS NULL");
+    }
 }
