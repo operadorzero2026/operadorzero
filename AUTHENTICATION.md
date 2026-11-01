@@ -36,6 +36,12 @@ A conta Google é reconhecida somente pelo par imutável `(issuer, subject)` em 
 
 O estado temporário (pedido de autorização com `state`, `nonce` e `code_verifier`, liberação de uso único e intenção de vínculo) fica no Redis com TTL de 10 a 15 minutos; o navegador guarda apenas tokens opacos em cookies `HttpOnly`, `Secure` e `SameSite=Lax`. Não há sessão HTTP. O client secret fica somente no `.env` do servidor e nunca usa prefixo `VITE_`. Contas criadas pelo Google não têm senha; podem definir uma por **Esqueci minha senha**.
 
+## Verificação em duas etapas (MFA)
+
+- `POST /api/auth/mfa/setup`: gera a chave TOTP (cifrada no banco com AES-GCM, chave derivada de `AUTH_HASH_KEY`) e devolve a chave e o `otpauth://` uma única vez.
+- `POST /api/auth/mfa/enable`, `/verify` e `/disable` recebem o código de 6 dígitos (rate limit de 6 por 15 min; cada código vale uma vez).
+- Papéis `ADMIN` e `MODERATOR` só valem em sessões que confirmaram o código; nas demais, o filtro de sessão os remove e a sessão informa `mfaRequired`.
+
 ## Senhas, tokens e sessões
 
 Senhas usam Argon2id. Tokens de confirmação, recuperação e sessão são aleatórios; apenas HMAC-SHA-256 com `AUTH_HASH_KEY` é persistido. Tokens são de uso único e expiram conforme `AUTH_TOKEN_DURATION`.

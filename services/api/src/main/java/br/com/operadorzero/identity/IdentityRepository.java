@@ -118,6 +118,58 @@ public class IdentityRepository {
             Map.of("userId", userId, "provider", provider)) > 0;
     }
 
+    public record MfaRow(String secretCiphertext, boolean enabled, long lastUsedStep) {}
+
+    public Optional<MfaRow> findMfa(long userId) {
+        return jdbc.query("SELECT secret_ciphertext, enabled_at, last_used_step FROM user_mfa_totp WHERE user_id = :userId",
+            Map.of("userId", userId), (rs, row) -> new MfaRow(rs.getString("secret_ciphertext"),
+                rs.getTimestamp("enabled_at") != null, rs.getLong("last_used_step"))).stream().findFirst();
+    }
+
+    /** Grava (ou troca) um segredo ainda nao confirmado; nunca substitui um segredo ja ativo. */
+    public void savePendingMfa(long userId, String secretCiphertext, Instant now) {
+        jdbc.update("""
+            INSERT INTO user_mfa_totp(user_id, secret_ciphertext, enabled_at, last_used_step, created_at, updated_at)
+            VALUES (:userId, :secret, NULL, 0, :now, :now)
+            ON CONFLICT (user_id) DO UPDATE SET secret_ciphertext = EXCLUDED.secret_ciphertext, last_used_step = 0,
+              updated_at = EXCLUDED.updated_at
+            WHERE user_mfa_totp.enabled_at IS NULL
+            """, Map.of("userId", userId, "secret", secretCiphertext, "now", dbTime(now)));
+    }
+
+    public boolean enableMfa(long userId, long step, Instant now) {
+        return jdbc.update("""
+            UPDATE user_mfa_totp SET enabled_at = :now, last_used_step = :step, updated_at = :now
+            WHERE user_id = :userId AND enabled_at IS NULL AND last_used_step < :step
+            """, Map.of("userId", userId, "step", step, "now", dbTime(now))) == 1;
+    }
+
+    /** Consome o passo do codigo; falha se ele (ou um posterior) ja foi usado. */
+    public boolean useMfaStep(long userId, long step, Instant now) {
+        return jdbc.update("""
+            UPDATE user_mfa_totp SET last_used_step = :step, updated_at = :now
+            WHERE user_id = :userId AND enabled_at IS NOT NULL AND last_used_step < :step
+            """, Map.of("userId", userId, "step", step, "now", dbTime(now))) == 1;
+    }
+
+    public void disableMfa(long userId, Instant now) {
+        jdbc.update("DELETE FROM user_mfa_totp WHERE user_id = :userId", Map.of("userId", userId));
+        jdbc.update("UPDATE user_session SET mfa_verified_at = NULL WHERE user_id = :userId AND revoked_at IS NULL",
+            Map.of("userId", userId));
+    }
+
+    public void markSessionMfaVerified(String tokenHash, Instant now) {
+        jdbc.update("UPDATE user_session SET mfa_verified_at = :now WHERE token_hash = :tokenHash AND revoked_at IS NULL",
+            Map.of("tokenHash", tokenHash, "now", dbTime(now)));
+    }
+
+    public boolean sessionMfaVerified(String tokenHash) {
+        Boolean verified = jdbc.queryForObject(
+            "SELECT EXISTS(SELECT 1 FROM user_session WHERE token_hash = :tokenHash AND mfa_verified_at IS NOT NULL)",
+            Map.of("tokenHash", tokenHash), Boolean.class);
+        return Boolean.TRUE.equals(verified);
+    }
+
     public boolean usernameExists(String username) {
         Boolean exists = jdbc.queryForObject(
             "SELECT EXISTS(SELECT 1 FROM app_user WHERE lower(username) = lower(:username))",

@@ -49,6 +49,18 @@ public final class AuthException extends RuntimeException {
             "Entrar com Google esta indisponivel no momento. Use e-mail e senha.");
     }
 
+    public static AuthException mfaAlreadyEnabled() {
+        return new AuthException(HttpStatus.CONFLICT, "MFA_ALREADY_ENABLED", "A verificacao em duas etapas ja esta ativa.");
+    }
+
+    public static AuthException mfaSetupRequired() {
+        return new AuthException(HttpStatus.CONFLICT, "MFA_SETUP_REQUIRED", "Configure a verificacao em duas etapas antes de continuar.");
+    }
+
+    public static AuthException invalidMfaCode() {
+        return new AuthException(HttpStatus.BAD_REQUEST, "INVALID_MFA_CODE", "Codigo invalido ou ja utilizado. Use o codigo atual do aplicativo autenticador.");
+    }
+
     public static AuthException invalidGoogleMode() {
         return new AuthException(HttpStatus.BAD_REQUEST, "INVALID_GOOGLE_MODE", "Modo de acesso invalido.");
     }

@@ -5,6 +5,8 @@ import br.com.operadorzero.identity.AuthDtos.EmailRequest;
 import br.com.operadorzero.identity.AuthDtos.GoogleStartRequest;
 import br.com.operadorzero.identity.AuthDtos.GoogleStartResponse;
 import br.com.operadorzero.identity.AuthDtos.LoginRequest;
+import br.com.operadorzero.identity.AuthDtos.MfaCodeRequest;
+import br.com.operadorzero.identity.AuthDtos.MfaSetupResponse;
 import br.com.operadorzero.identity.AuthDtos.MessageResponse;
 import br.com.operadorzero.identity.AuthDtos.PasswordResetRequest;
 import br.com.operadorzero.identity.AuthDtos.RegisterRequest;
@@ -32,10 +34,12 @@ public class AuthController {
 
     private final AuthService service;
     private final GoogleAuthService google;
+    private final MfaService mfa;
 
-    public AuthController(AuthService service, GoogleAuthService google) {
+    public AuthController(AuthService service, GoogleAuthService google, MfaService mfa) {
         this.service = service;
         this.google = google;
+        this.mfa = mfa;
     }
 
     @GetMapping("/csrf")
@@ -61,7 +65,9 @@ public class AuthController {
     SessionResponse login(@Valid @RequestBody LoginRequest body, HttpServletRequest request, HttpServletResponse response) {
         UserAccount account = service.login(body.email(), body.password(), request, response);
         google.completePendingLink(account, request, response);
-        return SessionResponse.from(account, google.isLinked(account.id()));
+        // Sessao recem-criada ainda nao confirmou o segundo fator.
+        return SessionResponse.from(account, MfaService.withoutPrivilegedRoles(account.roles()), google.isLinked(account.id()),
+            mfa.isEnabled(account.id()));
     }
 
     @PostMapping("/google/start")
@@ -69,6 +75,30 @@ public class AuthController {
                                     @AuthenticationPrincipal AuthenticatedUser principal,
                                     HttpServletRequest request, HttpServletResponse response) {
         return new GoogleStartResponse(google.start(body.mode(), body.termsAccepted(), principal, request, response));
+    }
+
+    @PostMapping("/mfa/setup")
+    MfaSetupResponse mfaSetup(@AuthenticationPrincipal AuthenticatedUser principal) {
+        MfaService.Setup setup = mfa.setup(principal);
+        return new MfaSetupResponse(setup.secret(), setup.otpauthUri());
+    }
+
+    @PostMapping("/mfa/enable")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void mfaEnable(@AuthenticationPrincipal AuthenticatedUser principal, @Valid @RequestBody MfaCodeRequest body, HttpServletRequest request) {
+        mfa.enable(principal, body.code(), request);
+    }
+
+    @PostMapping("/mfa/verify")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void mfaVerify(@AuthenticationPrincipal AuthenticatedUser principal, @Valid @RequestBody MfaCodeRequest body, HttpServletRequest request) {
+        mfa.verify(principal, body.code(), request);
+    }
+
+    @PostMapping("/mfa/disable")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void mfaDisable(@AuthenticationPrincipal AuthenticatedUser principal, @Valid @RequestBody MfaCodeRequest body, HttpServletRequest request) {
+        mfa.disable(principal, body.code(), request);
     }
 
     @DeleteMapping("/google/link")
@@ -105,7 +135,7 @@ public class AuthController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(service.findAccount(principal)
-            .map(account -> SessionResponse.from(account, google.isLinked(account.id())))
+            .map(account -> SessionResponse.from(account, principal.roles(), google.isLinked(account.id()), mfa.isEnabled(account.id())))
             .orElseThrow(AuthException::sessionRequired));
     }
 

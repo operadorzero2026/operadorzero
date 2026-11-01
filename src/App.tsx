@@ -36,6 +36,10 @@ import {
   login,
   startGoogle,
   unlinkGoogle,
+  setupMfa,
+  enableMfa,
+  verifyMfa,
+  disableMfa,
   logout,
   register,
   resendVerification,
@@ -270,6 +274,36 @@ function GoogleAccountPanel({ user, onUserUpdated }: { user: SessionUser; onUser
   </section>
 }
 
+function MfaPanel({ user, onUserUpdated }: { user: SessionUser; onUserUpdated: (user: SessionUser) => void }) {
+  const [setup, setSetup] = useState<{ secret: string; otpauthUri: string } | null>(null)
+  const [code, setCode] = useState('')
+  const [pending, setPending] = useState(false)
+  const [message, setMessage] = useState('')
+  const refresh = async () => { const session = await getCurrentSession(); if (session) onUserUpdated(session) }
+  const run = async (action: () => Promise<unknown>, success: string) => {
+    setPending(true); setMessage('')
+    try { await action(); setCode(''); setMessage(success); await refresh() } catch (error) { setMessage(error instanceof Error ? error.message : 'Não foi possível concluir.') } finally { setPending(false) }
+  }
+  const codeField = <label><span>Código de 6 dígitos</span><input inputMode="numeric" autoComplete="one-time-code" pattern="\d{6}" maxLength={6} value={code} onChange={event => setCode(event.target.value.replace(/\D/g, ''))} placeholder="000000"/></label>
+  return <section className="google-account mfa-panel" aria-labelledby="mfa-title">
+    <ShieldAlert/>
+    <div><h2 id="mfa-title">Verificação em duas etapas</h2>
+      {user.mfaEnabled ? <p>Ativa. Ferramentas de moderação e administração pedem o código do aplicativo autenticador uma vez por sessão.</p>
+        : <p>Proteja sua conta com um código do aplicativo autenticador (Google Authenticator, Microsoft Authenticator, Authy). É obrigatória para moderadores e administradores.</p>}
+      {user.mfaRequired && user.mfaEnabled && <form onSubmit={event => { event.preventDefault(); void run(() => verifyMfa(code), 'Código confirmado. Ferramentas administrativas liberadas nesta sessão.') }}>{codeField}<button className="button button--small" disabled={pending || code.length !== 6}>Confirmar código</button></form>}
+      {!user.mfaEnabled && !setup && <button className="button button--small" type="button" disabled={pending} onClick={() => { setPending(true); setMessage(''); setupMfa().then(setSetup).catch(error => setMessage(error instanceof Error ? error.message : 'Não foi possível iniciar.')).finally(() => setPending(false)) }}>Ativar</button>}
+      {!user.mfaEnabled && setup && <form onSubmit={event => { event.preventDefault(); void run(() => enableMfa(code), 'Verificação em duas etapas ativada.').then(() => setSetup(null)) }}>
+        <p>1. No aplicativo autenticador, adicione uma conta com a chave abaixo (ou <a href={setup.otpauthUri}>toque aqui no celular</a>).</p>
+        <p className="mfa-secret"><code>{setup.secret.match(/.{1,4}/g)?.join(' ')}</code></p>
+        <p>2. Digite o código que o aplicativo mostrar.</p>
+        {codeField}<button className="button button--small" disabled={pending || code.length !== 6}>Confirmar e ativar</button>
+      </form>}
+      {user.mfaEnabled && !user.mfaRequired && <details><summary>Desativar</summary><form onSubmit={event => { event.preventDefault(); if (window.confirm('Desativar a verificação em duas etapas? Ferramentas administrativas ficarão bloqueadas.')) void run(() => disableMfa(code), 'Verificação em duas etapas desativada.') }}>{codeField}<button className="text-button" disabled={pending || code.length !== 6}>Desativar</button></form></details>}
+      {message && <p role="status">{message}</p>}
+    </div>
+  </section>
+}
+
 function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommunity, user, googleNotice = '', onDismissGoogleNotice }: { path:string; onNavigate:(path:string)=>void; onLogout: () => Promise<boolean>; onUserUpdated: (user: SessionUser) => void; onNavigateCommunity: () => void; user: SessionUser; googleNotice?: string; onDismissGoogleNotice?: () => void }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [activeView, setActiveView] = useState(path.startsWith('/operadores') ? 'Operadores' : 'Visão geral')
@@ -305,8 +339,9 @@ function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommun
     <aside className="app-sidebar"><Brand compact/><nav aria-label="Navegação do operador">{dashboardNav.map(({ label, icon: Icon }) => <button onClick={() => label === 'Comunidade' ? onNavigateCommunity() : label === 'Operadores' ? onNavigate('/operadores') : (onNavigate('/'), setActiveView(label))} className={activeView === label ? 'active' : ''} key={label}><Icon/><span>{label}</span>{activeView === label && <i/>}</button>)}</nav><div className="sidebar-footer"><p>Jogue. Registre.<br/><b>Evolua.</b></p></div></aside>
     <div className="app-main">
       <header className="app-topbar"><OperatorSearch/><div className="profile-control"><button onClick={() => setProfileOpen(!profileOpen)} aria-expanded={profileOpen}><span className="profile-avatar">{initial}</span><span><b>{callsign}</b><small>@{user.username}</small></span><ChevronDown/></button>{profileOpen && <div className="profile-menu"><p>{user.email}</p><button disabled={logoutPending} onClick={async () => { setLogoutPending(true); setLogoutError(''); const completed = await onLogout(); setLogoutPending(false); if (!completed) setLogoutError('Não foi possível encerrar a sessão. Verifique sua conexão e tente novamente.') }}><LogOut/> {logoutPending ? 'Encerrando...' : 'Sair da conta'}</button>{logoutError && <small className="logout-error" role="alert">{logoutError}</small>}</div>}</div></header>
+      {user.mfaRequired && activeView !== 'Meu Operador' && <p className="auth-notice google-notice" role="status">{user.mfaEnabled ? 'Confirme o código da verificação em duas etapas para usar as ferramentas de moderação.' : 'Ative a verificação em duas etapas para usar as ferramentas de moderação.'} <button type="button" onClick={() => setActiveView('Meu Operador')}>Abrir Meu Operador</button></p>}
       {googleNotice && <p className="auth-notice google-notice" role="status">{googleNotice} <button type="button" onClick={onDismissGoogleNotice}>Fechar</button></p>}
-      {activeView === 'Operadores' ? <OperatorsSocialPage path={path.startsWith('/operadores')?path:'/operadores'} currentUsername={user.username} onNavigate={onNavigate} onEditProfile={()=>setActiveView('Meu Operador')}/> : activeView === 'Meu Operador' ? <><OperatorPage onUserUpdated={updated => onUserUpdated({ ...user, ...updated })}/><GoogleAccountPanel user={user} onUserUpdated={onUserUpdated}/></> : activeView === 'Minha equipe' ? <TeamPage/> : activeView === 'Operações' ? <OperationsPage/> : activeView === 'Campos' ? <VenuesPage mode="fields"/> : activeView === 'Mapas' ? <VenuesPage mode="maps"/> : activeView === 'Desempenho' ? <PerformancePage/> : activeView === 'Rankings' ? <RankingsPage/> : activeView !== 'Visão geral' ? <EmptyWorkspace area={activeView} onHome={() => setActiveView('Visão geral')}/> : <main className="dashboard real-dashboard">
+      {activeView === 'Operadores' ? <OperatorsSocialPage path={path.startsWith('/operadores')?path:'/operadores'} currentUsername={user.username} onNavigate={onNavigate} onEditProfile={()=>setActiveView('Meu Operador')}/> : activeView === 'Meu Operador' ? <><OperatorPage onUserUpdated={updated => onUserUpdated({ ...user, ...updated })}/><GoogleAccountPanel user={user} onUserUpdated={onUserUpdated}/><MfaPanel user={user} onUserUpdated={onUserUpdated}/></> : activeView === 'Minha equipe' ? <TeamPage/> : activeView === 'Operações' ? <OperationsPage/> : activeView === 'Campos' ? <VenuesPage mode="fields"/> : activeView === 'Mapas' ? <VenuesPage mode="maps"/> : activeView === 'Desempenho' ? <PerformancePage/> : activeView === 'Rankings' ? <RankingsPage/> : activeView !== 'Visão geral' ? <EmptyWorkspace area={activeView} onHome={() => setActiveView('Visão geral')}/> : <main className="dashboard real-dashboard">
         <section className="dashboard-welcome"><div><p>BEM-VINDO</p><h1>Olá, <em>{callsign}.</em></h1></div></section>
         <section className="operator-strip real-operator-strip"><div className="operator-identity"><span className="operator-avatar">{initial}</span><div><small>OPERADOR</small><h2>{callsign}</h2><p>{user.displayName} · @{user.username}</p></div></div><div><small>STATUS DO PERFIL</small><strong>ATIVO</strong><span>Conta disponível</span></div></section>
         <section className="real-dashboard-intro"><div><p className="eyebrow"><span/> SUA JORNADA</p><h2>Comece pelo que importa.</h2><p>Encontre operações, organize sua equipe e acompanhe sua participação na comunidade.</p></div></section>

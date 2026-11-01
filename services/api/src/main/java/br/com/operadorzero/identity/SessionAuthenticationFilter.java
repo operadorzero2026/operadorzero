@@ -31,11 +31,21 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         if (properties.enabled() && SecurityContextHolder.getContext().getAuthentication() == null) {
             cookies.sessionToken(request)
-                .flatMap(value -> repository.findBySessionHash(tokens.hash(value), Instant.now()))
+                .map(tokens::hash)
+                .flatMap(hash -> repository.findBySessionHash(hash, Instant.now()).map(account -> effective(account, hash)))
                 .map(AuthenticatedUser::from)
                 .ifPresent(principal -> SecurityContextHolder.getContext().setAuthentication(
                     UsernamePasswordAuthenticationToken.authenticated(principal, null, principal.getAuthorities())));
         }
         chain.doFilter(request, response);
+    }
+
+    /** Papeis ADMIN e MODERATOR so valem quando esta sessao confirmou o segundo fator. */
+    private UserAccount effective(UserAccount account, String sessionHash) {
+        if (!MfaService.hasPrivilegedRole(account.roles()) || repository.sessionMfaVerified(sessionHash)) {
+            return account;
+        }
+        return new UserAccount(account.id(), account.publicId(), account.email(), account.username(), account.passwordHash(),
+            account.status(), account.displayName(), account.callsign(), MfaService.withoutPrivilegedRoles(account.roles()));
     }
 }

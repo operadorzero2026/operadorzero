@@ -43,6 +43,11 @@ public final class TokenSupport {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
+    /** Chave de 32 bytes derivada de AUTH_HASH_KEY para um proposito especifico (ex.: cifrar segredos de MFA). */
+    public byte[] derivedKey(String purpose) {
+        return java.util.HexFormat.of().parseHex(hash("operador-zero:key:" + purpose));
+    }
+
     public String hash(String value) {
         try {
             Mac mac = Mac.getInstance(HMAC_ALGORITHM);

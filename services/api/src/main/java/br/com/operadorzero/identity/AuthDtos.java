@@ -51,11 +51,17 @@ public final class AuthDtos {
 
     public record CsrfResponse(String token, String headerName) {}
 
+    /** roles traz somente os papeis validos nesta sessao; mfaRequired indica papeis administrativos aguardando o codigo. */
     public record SessionResponse(UUID id, String email, String username, String displayName, String callsign, List<String> roles,
-                                  boolean googleLinked, boolean hasPassword) {
-        public static SessionResponse from(UserAccount account, boolean googleLinked) {
+                                  boolean googleLinked, boolean hasPassword, boolean mfaEnabled, boolean mfaRequired) {
+        public static SessionResponse from(UserAccount account, List<String> effectiveRoles, boolean googleLinked, boolean mfaEnabled) {
+            boolean pending = MfaService.hasPrivilegedRole(account.roles()) && !MfaService.hasPrivilegedRole(effectiveRoles);
             return new SessionResponse(account.publicId(), account.email(), account.username(), account.displayName(),
-                account.callsign(), account.roles(), googleLinked, account.passwordHash() != null);
+                account.callsign(), effectiveRoles, googleLinked, account.passwordHash() != null, mfaEnabled, pending);
         }
     }
+
+    public record MfaCodeRequest(@NotBlank @Size(min = 6, max = 8) String code) {}
+
+    public record MfaSetupResponse(String secret, String otpauthUri) {}
 }

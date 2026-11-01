@@ -2523,3 +2523,14 @@
 
 ### Pendências
 - Criar o cliente OAuth no Google Cloud com o redirect do domínio da VPS e gravar as credenciais no servidor.
+
+## 2026-11-01 — Leva P1: inscrições completas, cadastro sem enumeração e MFA administrativo
+
+### Alterações
+- Operações: organizador aprova, recusa, confirma presença, faz e desfaz check-in; saída da lista de espera respeita vagas de time, esquadrão e limite geral; cancelamento ou recusa promove a fila por ordem de inscrição. Participante confirma a própria presença e cancela antes do início.
+- Status da operação com transições permitidas: encerrar e reabrir inscrições, iniciar, finalizar (só a partir de "em andamento") e cancelar com motivo auditado. Operações finalizadas com participantes confirmados ou com check-in liberam desempenho e ranking.
+- Cadastro não revela e-mails existentes (mesma resposta; conta pendente recebe novo link em silêncio). Login de conta sem senha responde como senha errada.
+- MFA (TOTP, RFC 6238) com chave cifrada em AES-GCM (`V24__admin_mfa_totp.sql`). Papéis ADMIN e MODERATOR só valem em sessões que confirmaram o código; ativação, confirmação e desativação em Meu Operador.
+
+### Testes
+- `mvn -B test`: 120 testes. `npm test`, lint e typecheck aprovados.

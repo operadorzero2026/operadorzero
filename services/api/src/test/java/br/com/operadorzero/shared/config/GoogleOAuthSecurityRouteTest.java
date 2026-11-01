@@ -82,6 +82,9 @@ class GoogleOAuthSecurityRouteTest {
     @MockitoBean
     private GoogleFlowStore store;
 
+    @MockitoBean
+    private br.com.operadorzero.identity.MfaService mfaService;
+
     @Test
     void directGoogleAuthorizationRouteNeverReachesGoogle() throws Exception {
         when(googleAuthHandler.expiredRedirect()).thenReturn("https://operadorzero.example/?auth=google-error&code=GOOGLE_FLOW_EXPIRED");

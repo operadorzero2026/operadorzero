@@ -83,7 +83,7 @@ public class SecurityConfig {
                     "/api/auth/login", "/api/auth/password-recovery", "/api/auth/password-reset",
                     "/api/auth/resend-verification", "/api/auth/session", "/api/auth/google/start").permitAll()
                 .requestMatchers(HttpMethod.GET, "/oauth2/authorization/google", "/login/oauth2/code/google").permitAll()
-                .requestMatchers("/api/auth/logout", "/api/auth/google/link").authenticated()
+                .requestMatchers("/api/auth/logout", "/api/auth/google/link", "/api/auth/mfa/**").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/community/**").permitAll()
                 .requestMatchers("/api/admin/community/**").hasAnyRole("ADMIN", "MODERATOR")
                 .requestMatchers("/api/community/**").authenticated()

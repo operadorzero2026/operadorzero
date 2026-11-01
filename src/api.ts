@@ -12,6 +12,8 @@ export type SessionUser = {
   roles: string[]
   googleLinked?: boolean
   hasPassword?: boolean
+  mfaEnabled?: boolean
+  mfaRequired?: boolean
 }
 
 export type GoogleMode = 'login' | 'register' | 'link'
@@ -342,6 +344,11 @@ export async function startGoogle(mode: GoogleMode, termsAccepted = false) {
 }
 
 export const unlinkGoogle = () => apiRequest<void>('/api/auth/google/link', json('DELETE'))
+
+export const setupMfa = () => apiRequest<{ secret: string; otpauthUri: string }>('/api/auth/mfa/setup', json('POST', {}))
+export const enableMfa = (code: string) => apiRequest<void>('/api/auth/mfa/enable', json('POST', { code }))
+export const verifyMfa = (code: string) => apiRequest<void>('/api/auth/mfa/verify', json('POST', { code }))
+export const disableMfa = (code: string) => apiRequest<void>('/api/auth/mfa/disable', json('POST', { code }))
 
 export async function logout() {
   await apiRequest<void>('/api/auth/logout', json('POST', {}))
