@@ -23,7 +23,9 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       PORT: "8080"
-      DATABASE_URL: jdbc:postgresql://postgres:5432/operadorzero
+      # Sem DATABASE_URL: ele forca sslmode=require (banco remoto do Render). Aqui o Postgres
+      # fica na rede interna "data", sem acesso externo, e nao tem TLS.
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/operadorzero
       DATABASE_USER: operadorzero
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Defina DATABASE_PASSWORD em deploy/vps/.env}
       DATABASE_POOL_MAX: "10"
