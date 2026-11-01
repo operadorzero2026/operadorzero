@@ -2,6 +2,8 @@ package br.com.operadorzero.identity;
 
 import br.com.operadorzero.identity.AuthDtos.CsrfResponse;
 import br.com.operadorzero.identity.AuthDtos.EmailRequest;
+import br.com.operadorzero.identity.AuthDtos.GoogleStartRequest;
+import br.com.operadorzero.identity.AuthDtos.GoogleStartResponse;
 import br.com.operadorzero.identity.AuthDtos.LoginRequest;
 import br.com.operadorzero.identity.AuthDtos.MessageResponse;
 import br.com.operadorzero.identity.AuthDtos.PasswordResetRequest;
@@ -15,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,9 +31,11 @@ public class AuthController {
     private static final String NEUTRAL_EMAIL_MESSAGE = "Se o e-mail puder receber esta acao, enviaremos as instrucoes.";
 
     private final AuthService service;
+    private final GoogleAuthService google;
 
-    public AuthController(AuthService service) {
+    public AuthController(AuthService service, GoogleAuthService google) {
         this.service = service;
+        this.google = google;
     }
 
     @GetMapping("/csrf")
@@ -54,7 +59,22 @@ public class AuthController {
 
     @PostMapping("/login")
     SessionResponse login(@Valid @RequestBody LoginRequest body, HttpServletRequest request, HttpServletResponse response) {
-        return SessionResponse.from(service.login(body.email(), body.password(), request, response));
+        UserAccount account = service.login(body.email(), body.password(), request, response);
+        google.completePendingLink(account, request, response);
+        return SessionResponse.from(account, google.isLinked(account.id()));
+    }
+
+    @PostMapping("/google/start")
+    GoogleStartResponse googleStart(@Valid @RequestBody GoogleStartRequest body,
+                                    @AuthenticationPrincipal AuthenticatedUser principal,
+                                    HttpServletRequest request, HttpServletResponse response) {
+        return new GoogleStartResponse(google.start(body.mode(), body.termsAccepted(), principal, request, response));
+    }
+
+    @DeleteMapping("/google/link")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void googleUnlink(@AuthenticationPrincipal AuthenticatedUser principal, HttpServletRequest request) {
+        google.unlink(principal, request);
     }
 
     @PostMapping("/password-recovery")
@@ -84,7 +104,9 @@ public class AuthController {
         if (principal == null) {
             return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.ok(SessionResponse.from(principal));
+        return ResponseEntity.ok(service.findAccount(principal)
+            .map(account -> SessionResponse.from(account, google.isLinked(account.id())))
+            .orElseThrow(AuthException::sessionRequired));
     }
 
     @PostMapping("/logout")

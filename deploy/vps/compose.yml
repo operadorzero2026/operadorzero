@@ -41,6 +41,10 @@ services:
       MAIL_ENABLED: ${MAIL_ENABLED:-true}
       MAIL_FROM: ${MAIL_FROM:?Defina MAIL_FROM em deploy/vps/.env}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
+      GOOGLE_AUTH_ENABLED: ${GOOGLE_AUTH_ENABLED:-false}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${FRONTEND_BASE_URL:-https://operadorzero.com.br}/login/oauth2/code/google
     depends_on:
       postgres:
         condition: service_healthy

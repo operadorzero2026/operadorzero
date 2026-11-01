@@ -50,6 +50,24 @@ public final class AuthException extends RuntimeException {
         return new AuthException(HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMITED", "Muitas tentativas. Aguarde e tente novamente.");
     }
 
+    public static AuthException googleUnavailable() {
+        return new AuthException(HttpStatus.SERVICE_UNAVAILABLE, "GOOGLE_UNAVAILABLE",
+            "Entrar com Google esta indisponivel no momento. Use e-mail e senha.");
+    }
+
+    public static AuthException invalidGoogleMode() {
+        return new AuthException(HttpStatus.BAD_REQUEST, "INVALID_GOOGLE_MODE", "Modo de acesso invalido.");
+    }
+
+    public static AuthException sessionRequired() {
+        return new AuthException(HttpStatus.UNAUTHORIZED, "AUTHENTICATION_REQUIRED", "Entre para continuar.");
+    }
+
+    public static AuthException passwordRequiredToUnlink() {
+        return new AuthException(HttpStatus.CONFLICT, "PASSWORD_REQUIRED",
+            "Defina uma senha pela recuperacao de senha antes de desvincular o Google.");
+    }
+
     public HttpStatus status() {
         return status;
     }

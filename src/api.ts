@@ -10,7 +10,11 @@ export type SessionUser = {
   displayName: string
   callsign: string
   roles: string[]
+  googleLinked?: boolean
+  hasPassword?: boolean
 }
+
+export type GoogleMode = 'login' | 'register' | 'link'
 
 export type OperatorEquipment = {
   id: string
@@ -328,6 +332,15 @@ export async function getCurrentSession(timeoutMs = 7000): Promise<SessionUser |
     throw error
   }
 }
+
+// The browser follows a top-level navigation to Google; the API only releases the
+// flow after this CSRF-protected request, so a direct visit never reaches Google.
+export async function startGoogle(mode: GoogleMode, termsAccepted = false) {
+  const result = await apiRequest<{ authorizationPath: string }>('/api/auth/google/start', json('POST', { mode, termsAccepted }), AUTH_MUTATION_TIMEOUT_MS)
+  return `${getApiBaseUrl()}${result.authorizationPath}`
+}
+
+export const unlinkGoogle = () => apiRequest<void>('/api/auth/google/link', json('DELETE'))
 
 export async function logout() {
   await apiRequest<void>('/api/auth/logout', json('POST', {}))

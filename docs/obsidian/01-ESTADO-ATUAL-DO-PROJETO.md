@@ -1,5 +1,10 @@
 # Estado atual do projeto
 
+## 2026-11-01
+
+- O site roda na VPS própria (Docker Compose atrás do Caddy), com backup diário criptografado no Google Drive. Vercel e Render foram desligados.
+- Login e cadastro com Google restaurados com vínculo seguro de contas (sem associação automática por e-mail). Ver `AUTHENTICATION.md` e [[99-HISTORICO-DE-ALTERACOES]].
+
 ## 2026-07-29
 
 - Autenticação social foi removida do frontend, backend, dependências, proxies e configuração pública. O acesso agora usa exclusivamente e-mail e senha.

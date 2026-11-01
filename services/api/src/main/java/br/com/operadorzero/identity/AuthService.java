@@ -194,11 +194,15 @@ public class AuthService {
         cookies.clearLegacyAuthentication(response);
     }
 
+    public Optional<UserAccount> findAccount(AuthenticatedUser principal) {
+        return repository.findById(principal.internalId());
+    }
+
     public void clearLegacyAuthentication(HttpServletResponse response) {
         cookies.clearLegacyAuthentication(response);
     }
 
-    private UserAccount createSession(UserAccount account, HttpServletRequest request, HttpServletResponse response, String action) {
+    UserAccount createSession(UserAccount account, HttpServletRequest request, HttpServletResponse response, String action) {
         String raw = tokens.newToken();
         String sessionHash = tokens.hash(raw);
         Instant now = Instant.now();
@@ -220,12 +224,12 @@ public class AuthService {
         passwordEncoder.matches(tokens.newToken(), dummyPasswordHash);
     }
 
-    private void audit(UserAccount account, String action, String sessionHash, String ipHash, Instant now) {
+    void audit(UserAccount account, String action, String sessionHash, String ipHash, Instant now) {
         repository.recordAudit(account.id(), action, "APP_USER", account.publicId(),
             Objects.requireNonNullElse(MDC.get("correlationId"), UUID.randomUUID().toString()), sessionHash, ipHash, now);
     }
 
-    private String uniqueUsername(String displayName) {
+    String uniqueUsername(String displayName) {
         String normalized = Normalizer.normalize(displayName, Normalizer.Form.NFD)
             .replaceAll("\\p{M}", "")
             .toLowerCase(Locale.ROOT)
@@ -245,16 +249,16 @@ public class AuthService {
         throw AuthException.unavailable();
     }
 
-    private String callsign(String displayName) {
+    String callsign(String displayName) {
         String value = displayName.strip().toUpperCase(Locale.ROOT);
         return value.substring(0, Math.min(value.length(), 40));
     }
 
-    private String normalizeEmail(String email) {
+    String normalizeEmail(String email) {
         return email.strip().toLowerCase(Locale.ROOT);
     }
 
-    private String ipHash(HttpServletRequest request) {
+    String ipHash(HttpServletRequest request) {
         return tokens.hash(request.getRemoteAddr() == null ? "unknown" : request.getRemoteAddr());
     }
 
@@ -263,7 +267,7 @@ public class AuthService {
         return value == null ? null : tokens.hash(value);
     }
 
-    private void ensureEnabled() {
+    void ensureEnabled() {
         if (!properties.enabled()) {
             throw AuthException.unavailable();
         }

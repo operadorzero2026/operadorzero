@@ -34,6 +34,8 @@ import {
   getOperatorRanking,
   getTeamSummary,
   login,
+  startGoogle,
+  unlinkGoogle,
   logout,
   register,
   resendVerification,
@@ -58,6 +60,23 @@ function Brand({ compact = false }: { compact?: boolean }) {
   return <a className={`brand ${compact ? 'brand--compact' : ''}`} href="#inicio" aria-label="Operador Zero, início"><span>Operador</span><strong>Zero</strong></a>
 }
 
+function GoogleMark() {
+  return <svg aria-hidden="true" viewBox="0 0 24 24"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.91h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.33 2.98-7.4Z"/><path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.42l-3.24-2.5c-.9.6-2.05.96-3.38.96-2.6 0-4.81-1.76-5.6-4.13H3.05v2.6A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.4 13.91a6 6 0 0 1 0-3.82v-2.6H3.05a10 10 0 0 0 0 9.02l3.35-2.6Z"/><path fill="#EA4335" d="M12 5.96c1.47 0 2.79.5 3.83 1.5L18.7 4.6A9.64 9.64 0 0 0 12 2a10 10 0 0 0-8.95 5.49l3.35 2.6c.79-2.37 3-4.13 5.6-4.13Z"/></svg>
+}
+
+// Messages for the /?auth=google-STATUS&code=CODE redirect sent by the API after Google.
+const GOOGLE_NOTICES: Record<string, string> = {
+  'google-link-required': 'Este e-mail já tem uma conta no Operador Zero. Entre com sua senha para vincular o Google com segurança.',
+  'google-signup-required': 'Esta conta Google ainda não está cadastrada. Aceite os Termos e clique em Continuar com Google para criar sua conta.',
+  GOOGLE_CANCELLED: 'O acesso com Google foi cancelado. Você pode tentar novamente.',
+  GOOGLE_FLOW_EXPIRED: 'O acesso com Google expirou. Tente novamente.',
+  GOOGLE_EMAIL_NOT_VERIFIED: 'O Google não confirmou este e-mail. Use outra conta Google ou entre com e-mail e senha.',
+  GOOGLE_ACCOUNT_UNAVAILABLE: 'Esta conta não está disponível. Fale com o suporte.',
+  GOOGLE_ALREADY_LINKED: 'Esta conta Google já está vinculada a outro operador.',
+  GOOGLE_ACCOUNT_HAS_LINK: 'Sua conta já está vinculada a outra conta Google. Desvincule antes de trocar.',
+  GOOGLE_LINK_SESSION_EXPIRED: 'Sua sessão terminou antes de concluir o vínculo. Entre novamente e tente outra vez.',
+}
+
 type AuthMode = 'login' | 'signup' | 'recovery' | 'reset'
 const AUTH_ENABLED = import.meta.env.VITE_AUTH_ENABLED === 'true'
 const IS_STAGING = import.meta.env.PROD && import.meta.env.VITE_APP_ENV !== 'production'
@@ -72,7 +91,7 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
 }) {
   const [showPassword, setShowPassword] = useState(false)
   const [notice, setNotice] = useState(initialNotice)
-  const [pendingAction, setPendingAction] = useState<'form' | null>(null)
+  const [pendingAction, setPendingAction] = useState<'form' | 'google' | null>(null)
   const [authPreparing, setAuthPreparing] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [verificationEmail, setVerificationEmail] = useState('')
@@ -93,6 +112,16 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
       .finally(() => { window.clearTimeout(delayedStatus); if (active) setAuthPreparing(false) })
     return () => { active = false; window.clearTimeout(delayedStatus) }
   }, [mode])
+  useEffect(() => {
+    // Returning with the browser Back button restores this page from the cache with the button still busy.
+    const resumeAfterGoogle = (event: PageTransitionEvent) => {
+      if (!event.persisted) return
+      setPendingAction(null)
+      setNotice('O acesso com Google foi interrompido. Você pode tentar novamente.')
+    }
+    window.addEventListener('pageshow', resumeAfterGoogle)
+    return () => window.removeEventListener('pageshow', resumeAfterGoogle)
+  }, [])
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && onClose()
     document.body.classList.add('modal-open')
@@ -135,6 +164,19 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
     }
   }
 
+  const continueWithGoogle = async () => {
+    if (!AUTH_ENABLED) { setNotice('Autenticação indisponível neste ambiente.'); return }
+    if (mode === 'signup' && !termsAccepted) { setNotice('Aceite os Termos de Uso e a Política de Privacidade para criar a conta.'); return }
+    setPendingAction('google')
+    setNotice('')
+    try {
+      window.location.assign(await startGoogle(mode === 'signup' ? 'register' : 'login', mode === 'signup' && termsAccepted))
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Entrar com Google está indisponível no momento.')
+      setPendingAction(null)
+    }
+  }
+
   const resendConfirmation = async () => {
     if (!verificationEmail) return
     setPendingAction('form')
@@ -156,6 +198,7 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
         {(isRecovery || isReset) && <button className="auth-back" onClick={() => onModeChange('login')}><ArrowLeft size={16}/> Voltar para entrar</button>}
         <div className="auth-heading"><p className="eyebrow"><span/>{isRecovery || isReset ? 'Recuperação por e-mail' : 'Acesso à plataforma'}</p><h2 id="auth-title">{title}</h2><p>{description}</p></div>
         {!AUTH_ENABLED && <p className="auth-unavailable"><ShieldAlert size={17}/> Autenticação remota temporariamente indisponível.</p>}
+        {!isRecovery && !isReset && <><button className="google-button" type="button" disabled={pendingAction !== null || !AUTH_ENABLED} aria-busy={pendingAction === 'google'} onClick={continueWithGoogle}><GoogleMark/> {pendingAction === 'google' ? 'Conectando ao Google...' : 'Continuar com Google'}</button><div className="auth-divider"><span/> ou use seu e-mail <span/></div></>}
         <form className="auth-form" onSubmit={submit} onInput={() => notice && setNotice('')}>
           {mode === 'signup' && <label><span>Nome de exibição</span><div><Users/><input name="displayName" autoComplete="name" maxLength={80} required placeholder="Como devemos chamar você?"/></div></label>}
           {!isReset && <label><span>E-mail</span><div><Mail/><input name="email" type="email" autoComplete="email" maxLength={254} required placeholder="voce@exemplo.com.br"/></div></label>}
@@ -204,7 +247,30 @@ function EmptyWorkspace({ area, onHome }: { area: string; onHome: () => void }) 
   return <main className="real-empty-page"><h1>{area}</h1><section className="real-empty-state"><Search/><h2>{copy.title}</h2><p>{copy.description}</p><button onClick={onHome}>Voltar à visão geral <ArrowRight/></button></section></main>
 }
 
-function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommunity, user }: { path:string; onNavigate:(path:string)=>void; onLogout: () => Promise<boolean>; onUserUpdated: (user: SessionUser) => void; onNavigateCommunity: () => void; user: SessionUser }) {
+function GoogleAccountPanel({ user, onUserUpdated }: { user: SessionUser; onUserUpdated: (user: SessionUser) => void }) {
+  const [pending, setPending] = useState(false)
+  const [message, setMessage] = useState('')
+  const linked = Boolean(user.googleLinked)
+  const canUnlink = linked && user.hasPassword !== false
+  const link = async () => {
+    setPending(true); setMessage('')
+    try { window.location.assign(await startGoogle('link')) } catch (error) { setMessage(error instanceof Error ? error.message : 'Não foi possível abrir o Google.'); setPending(false) }
+  }
+  const unlink = async () => {
+    setPending(true); setMessage('')
+    try { await unlinkGoogle(); onUserUpdated({ ...user, googleLinked: false }); setMessage('Conta Google desvinculada.') } catch (error) { setMessage(error instanceof Error ? error.message : 'Não foi possível desvincular.') } finally { setPending(false) }
+  }
+  return <section className="google-account" aria-labelledby="google-account-title">
+    <GoogleMark/>
+    <div><h2 id="google-account-title">Conta Google</h2><p>{linked ? 'Vinculada. Você pode entrar com o Google ou com e-mail e senha.' : 'Não vinculada. Vincule para entrar com um clique.'}</p>
+      {linked && !canUnlink && <p>Para desvincular, defina antes uma senha em Entrar &gt; Esqueci minha senha.</p>}
+      {message && <p role="status">{message}</p>}</div>
+    {linked ? <button className="text-button" type="button" disabled={pending || !canUnlink} onClick={unlink}>{pending ? 'Aguarde...' : 'Desvincular'}</button>
+      : <button className="google-button" type="button" disabled={pending} aria-busy={pending} onClick={link}><GoogleMark/> {pending ? 'Conectando ao Google...' : 'Vincular Google'}</button>}
+  </section>
+}
+
+function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommunity, user, googleNotice = '', onDismissGoogleNotice }: { path:string; onNavigate:(path:string)=>void; onLogout: () => Promise<boolean>; onUserUpdated: (user: SessionUser) => void; onNavigateCommunity: () => void; user: SessionUser; googleNotice?: string; onDismissGoogleNotice?: () => void }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [activeView, setActiveView] = useState(path.startsWith('/operadores') ? 'Operadores' : 'Visão geral')
   const [logoutPending, setLogoutPending] = useState(false)
@@ -239,7 +305,8 @@ function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommun
     <aside className="app-sidebar"><Brand compact/><nav aria-label="Navegação do operador">{dashboardNav.map(({ label, icon: Icon }) => <button onClick={() => label === 'Comunidade' ? onNavigateCommunity() : label === 'Operadores' ? onNavigate('/operadores') : (onNavigate('/'), setActiveView(label))} className={activeView === label ? 'active' : ''} key={label}><Icon/><span>{label}</span>{activeView === label && <i/>}</button>)}</nav><div className="sidebar-footer"><p>Jogue. Registre.<br/><b>Evolua.</b></p></div></aside>
     <div className="app-main">
       <header className="app-topbar"><OperatorSearch/><div className="profile-control"><button onClick={() => setProfileOpen(!profileOpen)} aria-expanded={profileOpen}><span className="profile-avatar">{initial}</span><span><b>{callsign}</b><small>@{user.username}</small></span><ChevronDown/></button>{profileOpen && <div className="profile-menu"><p>{user.email}</p><button disabled={logoutPending} onClick={async () => { setLogoutPending(true); setLogoutError(''); const completed = await onLogout(); setLogoutPending(false); if (!completed) setLogoutError('Não foi possível encerrar a sessão. Verifique sua conexão e tente novamente.') }}><LogOut/> {logoutPending ? 'Encerrando...' : 'Sair da conta'}</button>{logoutError && <small className="logout-error" role="alert">{logoutError}</small>}</div>}</div></header>
-      {activeView === 'Operadores' ? <OperatorsSocialPage path={path.startsWith('/operadores')?path:'/operadores'} currentUsername={user.username} onNavigate={onNavigate} onEditProfile={()=>setActiveView('Meu Operador')}/> : activeView === 'Meu Operador' ? <OperatorPage onUserUpdated={updated => onUserUpdated({ ...user, ...updated })}/> : activeView === 'Minha equipe' ? <TeamPage/> : activeView === 'Operações' ? <OperationsPage/> : activeView === 'Campos' ? <VenuesPage mode="fields"/> : activeView === 'Mapas' ? <VenuesPage mode="maps"/> : activeView === 'Desempenho' ? <PerformancePage/> : activeView === 'Rankings' ? <RankingsPage/> : activeView !== 'Visão geral' ? <EmptyWorkspace area={activeView} onHome={() => setActiveView('Visão geral')}/> : <main className="dashboard real-dashboard">
+      {googleNotice && <p className="auth-notice google-notice" role="status">{googleNotice} <button type="button" onClick={onDismissGoogleNotice}>Fechar</button></p>}
+      {activeView === 'Operadores' ? <OperatorsSocialPage path={path.startsWith('/operadores')?path:'/operadores'} currentUsername={user.username} onNavigate={onNavigate} onEditProfile={()=>setActiveView('Meu Operador')}/> : activeView === 'Meu Operador' ? <><OperatorPage onUserUpdated={updated => onUserUpdated({ ...user, ...updated })}/><GoogleAccountPanel user={user} onUserUpdated={onUserUpdated}/></> : activeView === 'Minha equipe' ? <TeamPage/> : activeView === 'Operações' ? <OperationsPage/> : activeView === 'Campos' ? <VenuesPage mode="fields"/> : activeView === 'Mapas' ? <VenuesPage mode="maps"/> : activeView === 'Desempenho' ? <PerformancePage/> : activeView === 'Rankings' ? <RankingsPage/> : activeView !== 'Visão geral' ? <EmptyWorkspace area={activeView} onHome={() => setActiveView('Visão geral')}/> : <main className="dashboard real-dashboard">
         <section className="dashboard-welcome"><div><p>BEM-VINDO</p><h1>Olá, <em>{callsign}.</em></h1></div></section>
         <section className="operator-strip real-operator-strip"><div className="operator-identity"><span className="operator-avatar">{initial}</span><div><small>OPERADOR</small><h2>{callsign}</h2><p>{user.displayName} · @{user.username}</p></div></div><div><small>STATUS DO PERFIL</small><strong>ATIVO</strong><span>Conta disponível</span></div></section>
         <section className="real-dashboard-intro"><div><p className="eyebrow"><span/> SUA JORNADA</p><h2>Comece pelo que importa.</h2><p>Encontre operações, organize sua equipe e acompanhe sua participação na comunidade.</p></div></section>
@@ -262,6 +329,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<SessionUser | null>(null)
   const [sessionRestoring, setSessionRestoring] = useState(AUTH_ENABLED)
   const [authNotice, setAuthNotice] = useState('')
+  const [googleNotice, setGoogleNotice] = useState('')
   const [resetTokenValue, setResetTokenValue] = useState('')
   const [currentPath, setCurrentPath] = useState(window.location.pathname)
 
@@ -282,7 +350,9 @@ export default function App() {
       const params = new URLSearchParams(window.location.search)
       const action = params.get('action')
       const token = params.get('token')
-      if (action) window.history.replaceState({}, document.title, window.location.pathname + window.location.hash)
+      const google = params.get('auth')
+      const googleCode = params.get('code')
+      if (action || google) window.history.replaceState({}, document.title, window.location.pathname + window.location.hash)
       try {
         if (action === 'verify-email' && token) {
           await verifyEmail(token)
@@ -293,6 +363,18 @@ export default function App() {
         const session = await getCurrentSession()
         if (active) {
           setCurrentUser(session)
+          if (google === 'google-success' && !session) {
+            setAuthNotice('O Google confirmou o acesso, mas a sessão não foi aberta. Verifique se o navegador aceita cookies e tente novamente.')
+            setAuthMode('login')
+          } else if (google === 'google-linked' && session) {
+            setGoogleNotice('Conta Google vinculada. Agora você também pode entrar com o Google.')
+          } else if (google === 'google-link-required' || google === 'google-signup-required') {
+            setAuthNotice(GOOGLE_NOTICES[google]); setAuthMode(google === 'google-signup-required' ? 'signup' : 'login')
+          } else if (google === 'google-error') {
+            const message = GOOGLE_NOTICES[googleCode ?? ''] ?? 'Não foi possível concluir o acesso com Google. Tente novamente ou use e-mail e senha.'
+            if (session) setGoogleNotice(message)
+            else { setAuthNotice(message); setAuthMode('login') }
+          }
         }
       } catch (error) {
         if (active) { setAuthNotice(error instanceof Error ? error.message : 'Não foi possível validar o acesso.'); setAuthMode('login') }
@@ -309,7 +391,11 @@ export default function App() {
     setCurrentPath(path)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
-  const authenticated = (user: SessionUser) => { setAuthMode(null); setAuthNotice(''); setCurrentUser(user) }
+  const authenticated = (user: SessionUser) => {
+    // A password login right after "link-required" completes the Google link on the server.
+    if (user.googleLinked && authNotice === GOOGLE_NOTICES['google-link-required']) setGoogleNotice('Conta Google vinculada. Agora você também pode entrar com o Google.')
+    setAuthMode(null); setAuthNotice(''); setCurrentUser(user)
+  }
   const authModal = authMode && <AuthModal mode={authMode} onClose={() => { setAuthMode(null); setAuthNotice('') }} onModeChange={setAuthMode} onAuthenticated={authenticated} resetToken={resetTokenValue} initialNotice={authNotice}/>
 
   if (currentPath === '/comunidade' || currentPath.startsWith('/comunidade/')) {
@@ -319,7 +405,7 @@ export default function App() {
     </>
   }
 
-  if (currentUser) return <Dashboard path={currentPath} onNavigate={navigate} user={currentUser} onUserUpdated={setCurrentUser} onNavigateCommunity={() => navigate('/comunidade')} onLogout={async () => {
+  if (currentUser) return <Dashboard path={currentPath} onNavigate={navigate} user={currentUser} onUserUpdated={setCurrentUser} googleNotice={googleNotice} onDismissGoogleNotice={() => setGoogleNotice('')} onNavigateCommunity={() => navigate('/comunidade')} onLogout={async () => {
     try {
       await logout()
       setCurrentUser(null)

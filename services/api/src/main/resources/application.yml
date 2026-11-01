@@ -68,6 +68,11 @@ app:
       secure: ${AUTH_COOKIE_SECURE:false}
       same-site: ${AUTH_COOKIE_SAME_SITE:Lax}
       domain: ${AUTH_COOKIE_DOMAIN:}
+    google:
+      enabled: ${GOOGLE_AUTH_ENABLED:false}
+      client-id: ${GOOGLE_CLIENT_ID:}
+      client-secret: ${GOOGLE_CLIENT_SECRET:}
+      redirect-uri: ${GOOGLE_REDIRECT_URI:{baseUrl}/login/oauth2/code/{registrationId}}
     mail:
       enabled: ${MAIL_ENABLED:true}
       from: ${MAIL_FROM:no-reply@operadorzero.local}

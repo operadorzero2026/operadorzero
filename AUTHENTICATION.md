@@ -1,6 +1,6 @@
 # Autenticação
 
-Status em 2026-07-29: o Operador Zero utiliza exclusivamente cadastro e login com e-mail e senha, confirmação obrigatória de e-mail, recuperação de senha e sessão opaca em cookie seguro. Autenticação social foi descontinuada.
+Status em 2026-11-01: cadastro e login com e-mail e senha (confirmação obrigatória do e-mail, recuperação de senha e sessão opaca em cookie seguro) e **login e cadastro com Google** (OpenID Connect), que voltou a ser requisito. O Google é ligado por `GOOGLE_AUTH_ENABLED`.
 
 ## Contrato
 
@@ -13,8 +13,28 @@ Status em 2026-07-29: o Operador Zero utiliza exclusivamente cadastro e login co
 - `POST /api/auth/logout`: revoga a sessão atual e limpa os cookies.
 - `POST /api/auth/password-recovery`: resposta não enumerável e envio do link por e-mail.
 - `POST /api/auth/password-reset`: troca o hash, revoga todas as sessões do usuário e envia aviso da alteração.
+- `POST /api/auth/google/start` (CSRF, rate limit de 10 por 15 min): `mode` = `login`, `register` (exige aceite dos termos) ou `link` (exige sessão). Libera um único pedido de autorização e devolve `/oauth2/authorization/google`.
+- `GET /oauth2/authorization/google`: redireciona ao Google com `state`, `nonce` e PKCE (S256) somente se o fluxo foi liberado; acesso direto ou repetido volta ao site com `GOOGLE_FLOW_EXPIRED`.
+- `GET /login/oauth2/code/google`: callback. O Spring Security troca o código e valida o ID token (assinatura JWKS, `iss`, `aud`, `exp`, `nonce`) e o `state`.
+- `DELETE /api/auth/google/link`: desvincula o Google da conta logada; exige que a conta tenha senha.
+- A sessão (`/session` e `/login`) informa `googleLinked` e `hasPassword`.
 
-Não existem endpoints, callbacks, dependências ou rotas de proxy para login social.
+## Login com Google
+
+A conta Google é reconhecida somente pelo par imutável `(issuer, subject)` em `user_oidc_identity` (migration `V23`). **E-mail igual nunca vincula contas automaticamente.** Depois do callback, o servidor devolve a pessoa a `/?auth=google-STATUS&code=CODE`:
+
+| Situação | Resultado |
+|---|---|
+| `(iss, sub)` já vinculado e conta ativa | Sessão criada (`google-success`). |
+| E-mail do Google não verificado | `google-error`, `GOOGLE_EMAIL_NOT_VERIFIED`. |
+| E-mail já existe em outra conta, sem vínculo | Nada é vinculado. Uma intenção de vínculo fica 15 min no Redis (cookie `OZ_GOOGLE_LINK`) e a pessoa precisa **entrar com a senha daquela conta** no mesmo navegador; só então o vínculo é gravado e auditado (`AUTH_GOOGLE_LINKED`). |
+| Conta inexistente, modo `register` com aceite | Conta `ACTIVE` sem senha, vínculo e sessão (`AUTH_REGISTER_GOOGLE`). |
+| Conta inexistente, modo `login` | `google-signup-required`: a interface pede o aceite dos termos. |
+| Modo `link` (pessoa logada em Meu Operador) | Vincula à conta da sessão atual, conferida de novo no callback; recusa identidade de outra conta (`GOOGLE_ALREADY_LINKED`). |
+| Cancelamento ou negação no Google | `GOOGLE_CANCELLED`. |
+| `state` ausente, inválido ou expirado | `GOOGLE_FLOW_EXPIRED`. |
+
+O estado temporário (pedido de autorização com `state`, `nonce` e `code_verifier`, liberação de uso único e intenção de vínculo) fica no Redis com TTL de 10 a 15 minutos; o navegador guarda apenas tokens opacos em cookies `HttpOnly`, `Secure` e `SameSite=Lax`. Não há sessão HTTP. O client secret fica somente no `.env` do servidor e nunca usa prefixo `VITE_`. Contas criadas pelo Google não têm senha; podem definir uma por **Esqueci minha senha**.
 
 ## Senhas, tokens e sessões
 
@@ -22,7 +42,7 @@ Senhas usam Argon2id. Tokens de confirmação, recuperação e sessão são alea
 
 A sessão fica no PostgreSQL e chega ao navegador em `OZ_SESSION` com `HttpOnly`, `Secure` em produção e `SameSite=Lax`. CSRF usa cookie/header separado. Nenhuma credencial é armazenada em Web Storage, IndexedDB ou URL depois do primeiro processamento.
 
-A migration `V17__retire_social_authentication.sql` preserva usuários e perfis, registra auditoria, revoga sessões anteriores e remove as tabelas de identidade social. Contas antigas sem senha permanecem preservadas e definem uma senha por **Esqueci minha senha**.
+A migration `V17__retire_social_authentication.sql` (2026-07-29) removeu as tabelas da primeira versão do login social; a `V23__restore_google_identity.sql` recria somente a identidade, com chave `(issuer, subject)`. Contas sem senha definem uma por **Esqueci minha senha**.
 
 ## E-mail
 

@@ -97,6 +97,16 @@ sudo docker compose -f deploy/vps/compose.yml exec -T postgres pg_restore -U ope
 rclone copy gdrive-crypt:operadorzero-AAAAMMDD-HHMMSS.dump .
 ```
 
+## 6. Login com Google
+
+1. No Google Cloud (Google Auth Platform), crie um cliente OAuth do tipo **Aplicativo da Web** com:
+   - Origem JavaScript autorizada: `https://operadorzero.com.br`
+   - URI de redirecionamento autorizado: `https://operadorzero.com.br/login/oauth2/code/google`
+2. Grave no `.env` (sem colar em chat): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `GOOGLE_AUTH_ENABLED=true`.
+3. Recrie a API: `sudo docker compose -f deploy/vps/compose.yml --env-file deploy/vps/.env up -d api`.
+
+O Nginx interno encaminha somente `/oauth2/authorization/google` e `/login/oauth2/code/google` para a API.
+
 ## Atualizar
 
 ```bash

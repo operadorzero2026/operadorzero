@@ -52,10 +52,24 @@ if (!app.includes('Preparando conexão segura...') || !app.includes('Conectando 
   throw new Error('Cold start deve ter estado visual sem congelar o formulario.')
 }
 
-for (const removedSocialAuth of ['prepareGoogleLogin', 'Continuar com Google', 'Conectando ao Google', '/api/auth/google/intent']) {
-  if (api.includes(removedSocialAuth) || app.includes(removedSocialAuth)) {
-    throw new Error(`Autenticacao social ainda presente: ${removedSocialAuth}`)
+for (const googleContract of [
+  "'/api/auth/google/start'", "startGoogle(mode === 'signup' ? 'register' : 'login'", 'Continuar com Google',
+  "startGoogle('link')", 'unlinkGoogle', 'google-link-required', 'resumeAfterGoogle',
+]) {
+  if (!api.includes(googleContract) && !app.includes(googleContract)) {
+    throw new Error(`Login com Google incompleto: ${googleContract}`)
   }
+}
+
+// O fluxo antigo (intent sem CSRF e sem vínculo) não pode voltar, e o segredo nunca vai para o navegador.
+for (const retiredGoogleFlow of ['prepareGoogleLogin', '/api/auth/google/intent', 'GOOGLE_CLIENT_SECRET', 'VITE_GOOGLE']) {
+  if (api.includes(retiredGoogleFlow) || app.includes(retiredGoogleFlow)) {
+    throw new Error(`Fluxo Google proibido presente: ${retiredGoogleFlow}`)
+  }
+}
+
+if (!app.includes("if (mode === 'signup' && !termsAccepted)")) {
+  throw new Error('Cadastro com Google deve exigir o aceite dos Termos antes de sair para o Google.')
 }
 
 for (const passwordConfirmationContract of ['passwordConfirmation', 'Confirmar senha', 'As senhas devem ser iguais.']) {

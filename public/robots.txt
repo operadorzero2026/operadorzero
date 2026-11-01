@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /oauth2/
 Disallow: /login/
 
 Sitemap: https://operadorzero.com.br/sitemap.xml

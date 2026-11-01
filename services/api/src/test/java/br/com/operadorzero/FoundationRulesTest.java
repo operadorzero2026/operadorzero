@@ -41,14 +41,25 @@ class FoundationRulesTest {
     }
 
     @Test
-    void productionDoesNotLoadSocialAuthenticationDependenciesOrSessions() throws Exception {
+    void googleLoginIsGatedUsesPkceAndKeepsOAuthStateOutOfHttpSessions() throws Exception {
         String pom = Files.readString(Path.of("pom.xml"));
         String productionYaml = Files.readString(Path.of("src/main/resources/application-prod.yml"));
+        String yaml = Files.readString(Path.of("src/main/resources/application.yml"));
         String securityConfig = Files.readString(Path.of("src/main/java/br/com/operadorzero/shared/config/SecurityConfig.java"));
 
-        assertThat(pom).doesNotContain("spring-boot-starter-oauth2-client", "spring-session-data-redis");
-        assertThat(productionYaml).doesNotContain("OZ_OAUTH_SESSION", "spring.session");
-        assertThat(securityConfig).doesNotContain("oauth2Login", "/oauth2/", "/login/oauth2/");
+        assertThat(pom).contains("spring-boot-starter-oauth2-client").doesNotContain("spring-session-data-redis");
+        assertThat(productionYaml).doesNotContain("spring.session", "client-secret");
+        assertThat(yaml).contains("enabled: ${GOOGLE_AUTH_ENABLED:false}", "client-secret: ${GOOGLE_CLIENT_SECRET:}");
+        assertThat(securityConfig).contains("GatedOAuth2AuthorizationRequestResolver", "withPkce()",
+            "authorizationRequestRepository(googleRequests.getObject())", "\"/api/auth/google/start\"");
+    }
+
+    @Test
+    void googleIdentityMigrationIsAdditiveAndKeyedByIssuerAndSubject() throws Exception {
+        String v23 = Files.readString(Path.of("src/main/resources/db/migration/V23__restore_google_identity.sql"));
+
+        assertThat(v23).contains("user_oidc_identity", "UNIQUE (issuer, subject)", "UNIQUE (provider, user_id)");
+        assertThat(v23).doesNotContain("DROP TABLE", "TRUNCATE", "DELETE FROM", "email_at_link VARCHAR(254) NOT NULL UNIQUE");
     }
 
     @Test

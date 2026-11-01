@@ -45,17 +45,17 @@ public final class AuthDtos {
 
     public record MessageResponse(String message) {}
 
+    public record GoogleStartRequest(@NotBlank @Size(max = 16) String mode, boolean termsAccepted) {}
+
+    public record GoogleStartResponse(String authorizationPath) {}
+
     public record CsrfResponse(String token, String headerName) {}
 
-    public record SessionResponse(UUID id, String email, String username, String displayName, String callsign, List<String> roles) {
-        public static SessionResponse from(UserAccount account) {
+    public record SessionResponse(UUID id, String email, String username, String displayName, String callsign, List<String> roles,
+                                  boolean googleLinked, boolean hasPassword) {
+        public static SessionResponse from(UserAccount account, boolean googleLinked) {
             return new SessionResponse(account.publicId(), account.email(), account.username(), account.displayName(),
-                account.callsign(), account.roles());
-        }
-
-        public static SessionResponse from(AuthenticatedUser principal) {
-            return new SessionResponse(principal.publicId(), principal.email(), principal.username(), principal.displayName(),
-                principal.callsign(), principal.roles());
+                account.callsign(), account.roles(), googleLinked, account.passwordHash() != null);
         }
     }
 }

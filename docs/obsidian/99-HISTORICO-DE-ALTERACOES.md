@@ -2504,3 +2504,22 @@
 ### Pendências
 - Capturas autenticadas em todos os oito viewports dependem de uma sessão de navegador reutilizável; a nova sessão de automação não herdou a sessão autenticada já aberta.
 - Vídeos, XP e conquistas permanecem como contratos futuros e não foram simulados.
+
+## 2026-11-01 — Login e cadastro com Google restaurados
+
+### Motivo
+- O login e o cadastro com Google voltaram a ser requisito do produto. A remoção de 2026-07-29 também não oferecia vínculo para contas que já tinham senha.
+
+### Alterações
+- Backend: OpenID Connect com Authorization Code, PKCE (S256), `state` e `nonce`; ID token validado pelo Spring Security (JWKS, `iss`, `aud`, `exp`, `nonce`). Início liberado uma única vez por `POST /api/auth/google/start` (CSRF + rate limit). Estado temporário no Redis, sem sessão HTTP.
+- Vínculo seguro: identidade reconhecida só por `(issuer, subject)`. E-mail igual nunca vincula sozinho; exige login por senha da mesma conta no mesmo navegador, ou vínculo explícito em Meu Operador. Desvínculo exige senha definida.
+- Banco: migration aditiva `V23__restore_google_identity.sql` (`user_oidc_identity`).
+- Frontend: "Continuar com Google" no login e no cadastro (cadastro exige aceite dos termos), mensagens para cancelamento, expiração e vínculo, retomada pelo botão Voltar e painel "Conta Google" em Meu Operador.
+- VPS: Nginx encaminha `/oauth2/authorization/google` e `/login/oauth2/code/google`; `compose.yml` recebe `GOOGLE_*`.
+
+### Testes
+- `mvn -B test`: 102 testes, incluindo cenários de tomada de conta pelo mesmo e-mail, identidade de outra conta, sessão trocada, PKCE/nonce na URL do Google e acesso direto ao início do fluxo.
+- `npm test`, `npm run lint`, `npm run build`, `validate:bundle` e `validate:deploy` aprovados.
+
+### Pendências
+- Criar o cliente OAuth no Google Cloud com o redirect do domínio da VPS e gravar as credenciais no servidor.

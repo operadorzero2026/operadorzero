@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuthCookieService {
     private static final String[] LEGACY_AUTH_COOKIES = {"OZ_GOOGLE_INTENT", "OZ_OAUTH_SESSION"};
+    public static final String GOOGLE_FLOW_COOKIE = "OZ_GOOGLE_FLOW";
+    public static final String GOOGLE_LINK_COOKIE = "OZ_GOOGLE_LINK";
 
     private final AuthProperties properties;
 
@@ -30,6 +32,30 @@ public class AuthCookieService {
 
     public void clearSession(HttpServletResponse response) {
         add(response, properties.cookie().name(), "", Duration.ZERO, true);
+    }
+
+    public Optional<String> googleFlow(HttpServletRequest request) {
+        return cookie(request, GOOGLE_FLOW_COOKIE);
+    }
+
+    public void writeGoogleFlow(HttpServletResponse response, String token) {
+        add(response, GOOGLE_FLOW_COOKIE, token, GoogleFlowStore.FLOW_TTL, true);
+    }
+
+    public void clearGoogleFlow(HttpServletResponse response) {
+        add(response, GOOGLE_FLOW_COOKIE, "", Duration.ZERO, true);
+    }
+
+    public Optional<String> googleLink(HttpServletRequest request) {
+        return cookie(request, GOOGLE_LINK_COOKIE);
+    }
+
+    public void writeGoogleLink(HttpServletResponse response, String token) {
+        add(response, GOOGLE_LINK_COOKIE, token, GoogleFlowStore.LINK_TTL, true);
+    }
+
+    public void clearGoogleLink(HttpServletResponse response) {
+        add(response, GOOGLE_LINK_COOKIE, "", Duration.ZERO, true);
     }
 
     public void clearLegacyAuthentication(HttpServletResponse response) {

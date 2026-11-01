@@ -79,6 +79,45 @@ public class IdentityRepository {
             account.status(), account.displayName(), account.callsign(), List.copyOf(roles));
     }
 
+    public Optional<UserAccount> findByOidc(String issuer, String subject) {
+        return single(ACCOUNT_SELECT + """
+             JOIN user_oidc_identity oi ON oi.user_id = u.id
+             WHERE oi.issuer = :issuer AND oi.subject = :subject
+            """, Map.of("issuer", issuer, "subject", subject));
+    }
+
+    public boolean hasOidc(long userId, String provider) {
+        Boolean exists = jdbc.queryForObject(
+            "SELECT EXISTS(SELECT 1 FROM user_oidc_identity WHERE user_id = :userId AND provider = :provider)",
+            Map.of("userId", userId, "provider", provider), Boolean.class);
+        return Boolean.TRUE.equals(exists);
+    }
+
+    /** Retorna false se a identidade ou o provedor do usuario ja estiverem vinculados (constraints unicas). */
+    public boolean linkOidc(long userId, String provider, String issuer, String subject, String email, Instant now) {
+        return jdbc.update("""
+            INSERT INTO user_oidc_identity(user_id, provider, issuer, subject, email_at_link, linked_at, last_login_at)
+            VALUES (:userId, :provider, :issuer, :subject, :email, :now, :now)
+            ON CONFLICT DO NOTHING
+            """, new MapSqlParameterSource()
+                .addValue("userId", userId)
+                .addValue("provider", provider)
+                .addValue("issuer", issuer)
+                .addValue("subject", subject)
+                .addValue("email", email)
+                .addValue("now", dbTime(now))) == 1;
+    }
+
+    public void touchOidcLogin(String issuer, String subject, Instant now) {
+        jdbc.update("UPDATE user_oidc_identity SET last_login_at = :now WHERE issuer = :issuer AND subject = :subject",
+            Map.of("issuer", issuer, "subject", subject, "now", dbTime(now)));
+    }
+
+    public boolean unlinkOidc(long userId, String provider) {
+        return jdbc.update("DELETE FROM user_oidc_identity WHERE user_id = :userId AND provider = :provider",
+            Map.of("userId", userId, "provider", provider)) > 0;
+    }
+
     public boolean usernameExists(String username) {
         Boolean exists = jdbc.queryForObject(
             "SELECT EXISTS(SELECT 1 FROM app_user WHERE lower(username) = lower(:username))",
