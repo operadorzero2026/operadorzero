@@ -72,13 +72,29 @@ O certificado só é emitido depois que o DNS apontar para o VPS; até lá o tes
 ```bash
 sudo chmod +x /opt/operadorzero/deploy/vps/backup.sh
 sudo crontab -e
-# 30 3 * * * /opt/operadorzero/deploy/vps/backup.sh >> /var/log/operadorzero-backup.log 2>&1
+# 30 3 * * * OFFSITE_REMOTE=gdrive-crypt: /opt/operadorzero/deploy/vps/backup.sh >> /var/log/operadorzero-backup.log 2>&1
 ```
 
-Guarda 14 dumps em `/var/backups/operadorzero`. Copie-os também para fora do VPS. Restaurar:
+Guarda 14 dumps em `/var/backups/operadorzero`. Com `OFFSITE_REMOTE`, envia cada dump para fora do VPS e mantém lá 60 dias (`OFFSITE_KEEP_DAYS`).
+
+Cópia externa no Google Drive, criptografada com rclone:
+
+```bash
+sudo apt-get install -y rclone
+# Autorização: abra um túnel do seu computador (ssh -L 53682:127.0.0.1:53682 root@SERVIDOR)
+# e, nessa sessão, rode o comando abaixo; abra no navegador o link http://127.0.0.1:53682/auth?... que ele mostrar.
+rclone config create gdrive drive scope=drive.file
+rclone mkdir gdrive:operadorzero-backups
+# Senha de criptografia: digite-a sem colar e guarde-a fora do servidor. Sem ela os backups não abrem.
+rclone config create gdrive-crypt crypt remote=gdrive:operadorzero-backups filename_encryption=off directory_name_encryption=false password=SENHA --obscure
+```
+
+Restaurar:
 
 ```bash
 sudo docker compose -f deploy/vps/compose.yml exec -T postgres pg_restore -U operadorzero -d operadorzero --clean --if-exists < ARQUIVO.dump
+# Se o servidor foi perdido: reinstale o rclone, refaça os dois "config create" com a MESMA senha e baixe o dump:
+rclone copy gdrive-crypt:operadorzero-AAAAMMDD-HHMMSS.dump .
 ```
 
 ## Atualizar
