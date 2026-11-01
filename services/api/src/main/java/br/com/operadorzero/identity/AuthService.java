@@ -61,7 +61,11 @@ public class AuthService {
 
         Optional<UserAccount> existing = repository.findByEmail(normalizedEmail);
         if (existing.isPresent()) {
-            throw AuthException.emailAlreadyRegistered();
+            // Resposta identica a um cadastro novo: nao revela que o e-mail existe. Quem ainda nao confirmou
+            // recebe um novo link; contas ativas nao recebem nada.
+            existing.filter(account -> "PENDING_EMAIL".equals(account.status()))
+                .ifPresent(account -> issueToken(account, "VERIFY_EMAIL"));
+            return;
         }
 
         Instant now = Instant.now();
@@ -69,7 +73,7 @@ public class AuthService {
         long userId = repository.createUser(normalizedEmail, uniqueUsername(safeDisplayName), passwordHash,
             "PENDING_EMAIL", safeDisplayName, callsign(safeDisplayName), TERMS_VERSION, PRIVACY_VERSION, now);
         if (userId == 0L) {
-            throw AuthException.emailAlreadyRegistered();
+            return;
         }
         UserAccount account = repository.findById(userId).orElseThrow();
         issueToken(account, "VERIFY_EMAIL");
@@ -108,11 +112,8 @@ public class AuthService {
             logLoginDuration(redisMs, findUserMs, passwordMs, 0, 0, 0, totalStarted, "INVALID");
             throw AuthException.invalidCredentials();
         }
-        if (passwordHash == null) {
-            logLoginDuration(redisMs, findUserMs, passwordMs, 0, 0, 0, totalStarted, "PASSWORD_SETUP");
-            throw AuthException.passwordSetupRequired();
-        }
-        if (!passwordMatches) {
+        if (passwordHash == null || !passwordMatches) {
+            // Conta sem senha (criada pelo Google) e senha errada respondem igual, sem revelar o metodo da conta.
             logLoginDuration(redisMs, findUserMs, passwordMs, 0, 0, 0, totalStarted, "INVALID");
             throw AuthException.invalidCredentials();
         }

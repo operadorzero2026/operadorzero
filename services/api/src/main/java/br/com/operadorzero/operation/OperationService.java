@@ -10,6 +10,7 @@ import br.com.operadorzero.operation.OperationDtos.UpdateStatusRequest;
 import br.com.operadorzero.operation.OperationDtos.UpdateOperationRequest;
 import br.com.operadorzero.operation.OperationDtos.DeleteOperationRequest;
 import br.com.operadorzero.operation.OperationDtos.ParticipationRequest;
+import br.com.operadorzero.operation.OperationDtos.ParticipantDecisionRequest;
 import br.com.operadorzero.operation.OperationDtos.OperationRosterResponse;
 import br.com.operadorzero.operation.OperationRepository.FieldRef;
 import br.com.operadorzero.shared.audit.AuditEventRepository;
@@ -18,6 +19,7 @@ import br.com.operadorzero.shared.image.SafeRasterImageProcessor;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +35,30 @@ public class OperationService {
     private static final Set<String> STATUSES = Set.of("DRAFT", "PUBLISHED", "REGISTRATION_OPEN", "FULL",
         "CONFIRMATION_PENDING", "IN_PROGRESS", "FINISHED", "CANCELLED");
     private static final Set<String> GAME_SIZES = Set.of("SMALL", "MEDIUM", "LARGE");
+    private static final Set<String> BEFORE_START = Set.of("PUBLISHED", "REGISTRATION_OPEN", "FULL", "CONFIRMATION_PENDING");
+    // Status de destino -> status de origem permitidos. Rascunho so sai por /publish; finalizada e cancelada sao finais.
+    private static final Map<String, Set<String>> STATUS_TRANSITIONS = Map.of(
+        "CONFIRMATION_PENDING", Set.of("PUBLISHED", "REGISTRATION_OPEN", "FULL"),
+        "REGISTRATION_OPEN", Set.of("CONFIRMATION_PENDING", "FULL"),
+        "IN_PROGRESS", BEFORE_START,
+        "FINISHED", Set.of("IN_PROGRESS"),
+        "CANCELLED", Set.of("PUBLISHED", "REGISTRATION_OPEN", "FULL", "CONFIRMATION_PENDING", "IN_PROGRESS"));
+
+    record Decision(Set<String> from, String to, Set<String> operationStatuses, String successMessage, String unavailableMessage) {}
+
+    private static final Map<String, Decision> DECISIONS = Map.of(
+        "APPROVE", new Decision(Set.of("REQUESTED", "WAITING_LIST"), "APPROVED", BEFORE_START,
+            "Inscrição aprovada.", "Só é possível aprovar inscrições pendentes ou da lista de espera, antes do início e com vaga disponível."),
+        "REJECT", new Decision(Set.of("REQUESTED", "WAITING_LIST", "APPROVED", "CONFIRMED"), "REJECTED", BEFORE_START,
+            "Inscrição recusada.", "Esta inscrição não pode mais ser recusada."),
+        "CONFIRM", new Decision(Set.of("APPROVED"), "CONFIRMED", BEFORE_START,
+            "Presença confirmada.", "Só inscrições aprovadas, antes do início, podem ter a presença confirmada."),
+        "CHECK_IN", new Decision(Set.of("APPROVED", "CONFIRMED"), "CHECKED_IN",
+            Set.of("REGISTRATION_OPEN", "FULL", "CONFIRMATION_PENDING", "IN_PROGRESS"),
+            "Check-in registrado.", "O check-in exige inscrição aprovada e operação aberta ou em andamento."),
+        "UNDO_CHECK_IN", new Decision(Set.of("CHECKED_IN"), "CONFIRMED",
+            Set.of("REGISTRATION_OPEN", "FULL", "CONFIRMATION_PENDING", "IN_PROGRESS"),
+            "Check-in desfeito.", "Este check-in não pode ser desfeito."));
     private final OperationRepository repository;
     private final AuditEventRepository audit;
     private final Clock clock;
@@ -82,10 +108,54 @@ public class OperationService {
     @Transactional
     public OperationResponse updateStatus(AuthenticatedUser user, UUID id, UpdateStatusRequest request) {
         String status = allowed(request.status(), STATUSES, "INVALID_OPERATION_STATUS", "Selecione um status válido.");
+        Set<String> from = STATUS_TRANSITIONS.get(status);
+        if (from == null) {
+            throw BusinessException.badRequest("INVALID_OPERATION_STATUS", "Este status não pode ser definido manualmente.");
+        }
+        if ("CANCELLED".equals(status) && nullable(request.reason()) == null) {
+            throw BusinessException.badRequest("CANCELLATION_REASON_REQUIRED", "Informe o motivo do cancelamento.");
+        }
         Instant now = clock.instant();
-        if (repository.updateStatus(id, user.internalId(), status, now) != 1) throw BusinessException.notFound("Operação não encontrada.");
-        audit.record(user.internalId(), "OPERATION_STATUS_CHANGED", "OPERATION", id, nullable(request.reason()), now);
+        if (repository.updateStatus(id, user.internalId(), status, from, now) != 1) {
+            if (repository.isOwned(id, user.internalId())) {
+                throw BusinessException.conflict("INVALID_STATUS_TRANSITION", "A operação não pode passar para este status a partir do status atual.");
+            }
+            throw BusinessException.notFound("Operação não encontrada.");
+        }
+        audit.record(user.internalId(), "OPERATION_STATUS_CHANGED", "OPERATION", id, status + (nullable(request.reason()) == null ? "" : ": " + request.reason().trim()), now);
+        if ("REGISTRATION_OPEN".equals(status)) {
+            repository.lockOwnedOperation(id, user.internalId()).ifPresent(operationId -> repository.promoteWaitingList(operationId, now));
+        }
         return detail(user, id);
+    }
+
+    /** Organizador aprova, recusa, confirma presenca ou faz check-in de um participante. */
+    @Transactional
+    public MessageResponse decideParticipant(AuthenticatedUser user, UUID id, UUID operatorId, ParticipantDecisionRequest request) {
+        String action = allowed(request.action(), DECISIONS.keySet(), "INVALID_PARTICIPANT_ACTION", "Selecione uma ação válida.");
+        Decision decision = DECISIONS.get(action);
+        Instant now = clock.instant();
+        long operationId = repository.lockOwnedOperation(id, user.internalId())
+            .orElseThrow(() -> BusinessException.notFound("Operação não encontrada."));
+        if (repository.transitionParticipant(operationId, operatorId, decision.from(), decision.to(), decision.operationStatuses(), now) != 1) {
+            throw BusinessException.conflict("PARTICIPANT_ACTION_UNAVAILABLE", decision.unavailableMessage());
+        }
+        if ("REJECTED".equals(decision.to())) {
+            repository.promoteWaitingList(operationId, now);
+        }
+        audit.record(user.internalId(), "OPERATION_PARTICIPANT_" + action, "OPERATION", id,
+            operatorId + (nullable(request.reason()) == null ? "" : ": " + request.reason().trim()), now);
+        return new MessageResponse(decision.successMessage());
+    }
+
+    @Transactional
+    public MessageResponse confirmOwnPresence(AuthenticatedUser user, UUID id) {
+        Instant now = clock.instant();
+        if (repository.confirmOwnPresence(id, user.internalId(), now) != 1) {
+            throw BusinessException.conflict("PRESENCE_NOT_CONFIRMABLE", "Somente inscrições aprovadas, antes do início da operação, podem confirmar presença.");
+        }
+        audit.record(user.internalId(), "OPERATION_PRESENCE_CONFIRMED", "OPERATION", id, null, now);
+        return new MessageResponse("Presença confirmada.");
     }
 
     @Transactional
@@ -143,10 +213,12 @@ public class OperationService {
     @Transactional
     public MessageResponse cancelParticipation(AuthenticatedUser user, UUID id) {
         Instant now = clock.instant();
-        if (repository.cancelParticipation(id, user.internalId(), now) != 1) {
+        Long operationId = repository.lockOperation(id).orElse(null);
+        if (operationId == null || repository.cancelParticipation(id, user.internalId(), now) != 1) {
             throw BusinessException.conflict("PARTICIPATION_NOT_CANCELLABLE", "Esta participação não pode ser cancelada.");
         }
         audit.record(user.internalId(), "OPERATION_PARTICIPATION_CANCELLED", "OPERATION", id, null, now);
+        repository.promoteWaitingList(operationId, now);
         return new MessageResponse("Participação cancelada.");
     }
 

@@ -152,7 +152,7 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
       } else if (mode === 'signup') {
         await register(String(data.get('displayName') ?? '').trim(), email, password, passwordConfirmation, termsAccepted)
         setVerificationEmail(email)
-        setNotice('Cadastro realizado. Enviamos um link de confirmação para o seu e-mail. Confira também o Lixo Eletrônico.')
+        setNotice('Se este e-mail puder ser usado, enviamos um link de confirmação. Confira também o Lixo Eletrônico.')
       } else {
         onAuthenticated(await login(email, password))
       }

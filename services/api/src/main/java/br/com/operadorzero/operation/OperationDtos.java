@@ -65,13 +65,14 @@ public final class OperationDtos {
     ) {}
     public record DeleteOperationRequest(@NotBlank @Size(max = 500) String reason) {}
     public record ParticipationRequest(@NotNull UUID operationTeamId, UUID operationSquadId) {}
+    public record ParticipantDecisionRequest(@NotBlank @Size(max = 16) String action, @Size(max = 500) String reason) {}
     public record OperationTeamResponse(UUID id, String name, String acronym, String color, String description,
                                         int capacity, long participantCount, String status) {}
     public record ParticipantResponse(UUID operatorId, String callsign, String displayName, String teamName,
                                       String teamAcronym, String status,
                                       UUID operationTeamId, String operationTeamName) {}
     public record OperationRosterResponse(List<OperationTeamResponse> teams, List<ParticipantResponse> participants,
-                                          UUID currentUserTeamId) {}
+                                          UUID currentUserTeamId, String currentUserStatus) {}
 
     public record OperationSummary(
         UUID id, String name, String description, UUID fieldId, String fieldName, UUID mapId, String mapName,

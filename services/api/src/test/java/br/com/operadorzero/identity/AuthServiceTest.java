@@ -92,16 +92,27 @@ class AuthServiceTest {
     }
 
     @Test
-    void registrationForExistingAccountReturnsConflictAfterPasswordValidationAndHashing() {
+    void registrationForExistingActiveAccountLooksLikeSuccessAndSendsNothing() {
         when(repository.findByEmail("new@example.com")).thenReturn(Optional.of(account("ACTIVE", encoder.encode("OutraSenha2026!"))));
 
         long startedAt = System.nanoTime();
-        assertThatThrownBy(() -> service.register("New Operator", "new@example.com", "CampoSeguro2026!", true, request()))
-            .isInstanceOfSatisfying(AuthException.class, error -> assertThat(error.status().value()).isEqualTo(409));
+        service.register("New Operator", "new@example.com", "CampoSeguro2026!", true, request());
 
         assertThat(Duration.ofNanos(System.nanoTime() - startedAt)).isGreaterThan(Duration.ofMillis(5));
         verify(repository, never()).createUser(anyString(), anyString(), anyString(), anyString(), anyString(),
             anyString(), anyString(), anyString(), any(Instant.class));
+        verify(repository, never()).saveAuthToken(anyLong(), anyString(), anyString(), any(), any());
+        verify(events, never()).publishEvent(any());
+    }
+
+    @Test
+    void registrationForPendingAccountSilentlyResendsConfirmation() {
+        UserAccount pending = account("PENDING_EMAIL", encoder.encode("OutraSenha2026!"));
+        when(repository.findByEmail("new@example.com")).thenReturn(Optional.of(pending));
+
+        service.register("New Operator", "new@example.com", "CampoSeguro2026!", true, request());
+
+        verify(repository).saveAuthToken(eq(pending.id()), eq("VERIFY_EMAIL"), anyString(), any(), any());
     }
 
     @Test
@@ -117,11 +128,14 @@ class AuthServiceTest {
     }
 
     @Test
-    void loginGuidesLegacyAccountWithoutPasswordToRecovery() {
+    void loginForAccountWithoutPasswordAnswersLikeWrongPassword() {
         when(repository.findByEmail("new@example.com")).thenReturn(Optional.of(account("ACTIVE", null)));
 
         assertThatThrownBy(() -> service.login("new@example.com", "CampoSeguro2026!", request(), new MockHttpServletResponse()))
-            .isInstanceOfSatisfying(AuthException.class, error -> assertThat(error.code()).isEqualTo("PASSWORD_SETUP_REQUIRED"));
+            .isInstanceOfSatisfying(AuthException.class, error -> {
+                assertThat(error.code()).isEqualTo("INVALID_CREDENTIALS");
+                assertThat(error.status().value()).isEqualTo(401);
+            });
     }
 
     @Test

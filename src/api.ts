@@ -104,7 +104,8 @@ export type VenueMap = { id:string; fieldId:string; fieldName:string; city:strin
 export type Operation = { id:string; name:string; description:string; fieldId:string; fieldName:string; mapId?:string|null; mapName?:string|null; city:string; stateCode:string; operationDate:string; presentationTime:string; startTime:string; endTime:string; modality:string; status:string; gameSize:'SMALL'|'MEDIUM'|'LARGE'; participantLimit:number|null; participantCount:number; registrationPrice:number; participantStatus?:string|null; managedByCurrentUser:boolean; hasCover:boolean; coverVersion:number; briefing?:string|null; version?:number }
 export type OperationTeam = { id:string; name:string; acronym?:string|null; color:string; description?:string|null; capacity:number; participantCount:number; status:string }
 export type OperationParticipant = { operatorId:string; callsign:string; displayName:string; teamName?:string|null; teamAcronym?:string|null; status:string; operationTeamId?:string|null; operationTeamName?:string|null }
-export type OperationRoster = { teams:OperationTeam[]; participants:OperationParticipant[]; currentUserTeamId?:string|null }
+export type OperationRoster = { teams:OperationTeam[]; participants:OperationParticipant[]; currentUserTeamId?:string|null; currentUserStatus?:string|null }
+export type ParticipantAction = 'APPROVE' | 'REJECT' | 'CONFIRM' | 'CHECK_IN' | 'UNDO_CHECK_IN'
 export type OperationSquad = { id:string;teamId:string;name:string;acronym?:string|null;description?:string|null;capacity:number;participantCount:number;sortOrder:number;status:string;commanderId?:string|null;commanderCallsign?:string|null;radioId?:string|null;radioCallsign?:string|null }
 export type OperationStructureTeam = OperationTeam & {sortOrder:number;commanderId?:string|null;commanderCallsign?:string|null;radioId?:string|null;radioCallsign?:string|null;squads:OperationSquad[]}
 export type OperationStructure = {operationId:string;operationStatus:string;gameSize:'SMALL'|'MEDIUM'|'LARGE';participantLimit:number|null;participantCount:number;commandRolesEnabled:boolean;allowRoleAccumulation:boolean;managedByCurrentUser:boolean;currentUserSquadId?:string|null;teams:OperationStructureTeam[];roles:Array<{id:string;operatorId:string;callsign:string;role:string;teamId?:string|null;squadId?:string|null}>}
@@ -396,6 +397,11 @@ export const createVenueMap = (fieldId:string,map:Record<string,unknown>) => api
 export const getOperations = (query = '') => apiRequest<{items:Operation[]}>(`/api/operations?q=${encodeURIComponent(query)}&limit=100`)
 export const getOperation = (id:string) => apiRequest<Operation>(`/api/operations/${encodeURIComponent(id)}`)
 export const getOperationRoster = (id:string) => apiRequest<OperationRoster>(`/api/operations/${encodeURIComponent(id)}/roster`)
+export const decideOperationParticipant = (id:string, operatorId:string, action:ParticipantAction, reason?:string) =>
+  apiRequest<{message:string}>(`/api/operations/${encodeURIComponent(id)}/participants/${encodeURIComponent(operatorId)}/decision`, json('POST', { action, reason: reason || null }))
+export const confirmOperationPresence = (id:string) => apiRequest<{message:string}>(`/api/operations/${encodeURIComponent(id)}/participation/confirm`, json('POST', {}))
+export const updateOperationStatus = (id:string, status:string, reason?:string) =>
+  apiRequest<Operation>(`/api/operations/${encodeURIComponent(id)}/status`, json('PATCH', { status, reason: reason || null }))
 export const createOperation = (operation:Record<string,unknown>) => apiRequest<Operation>('/api/operations',json('POST',operation))
 export const updateOperation = (id:string,operation:Record<string,unknown>) => apiRequest<Operation>(`/api/operations/${encodeURIComponent(id)}`,json('PATCH',operation))
 export const deleteOperation = (id:string,reason:string) => apiRequest<{message:string}>(`/api/operations/${encodeURIComponent(id)}`,json('DELETE',{reason}))

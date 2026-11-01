@@ -1,7 +1,11 @@
 import { CalendarClock, CalendarDays, MapPin, Pencil, Plus, Search, Target, Trash2, Users, X } from 'lucide-react'
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  type ParticipantAction,
   cancelOperationParticipation,
+  confirmOperationPresence,
+  decideOperationParticipant,
+  updateOperationStatus,
   createOperation,
   deleteOperation,
   getFields,
@@ -48,6 +52,35 @@ const statusLabels: Record<string, string> = {
   FINISHED: 'Finalizada',
   CANCELLED: 'Cancelada',
 }
+
+const participantStatusLabels: Record<string, string> = {
+  REQUESTED: 'Aguardando aprovação',
+  APPROVED: 'Aprovado',
+  CONFIRMED: 'Presença confirmada',
+  CHECKED_IN: 'Check-in feito',
+  WAITING_LIST: 'Lista de espera',
+  REJECTED: 'Recusado',
+}
+
+// Ações do organizador por status do participante, na ordem em que aparecem.
+const participantActions: Record<string, Array<{ action: ParticipantAction; label: string }>> = {
+  REQUESTED: [{ action: 'APPROVE', label: 'Aprovar' }, { action: 'REJECT', label: 'Recusar' }],
+  WAITING_LIST: [{ action: 'APPROVE', label: 'Aprovar se houver vaga' }, { action: 'REJECT', label: 'Recusar' }],
+  APPROVED: [{ action: 'CONFIRM', label: 'Confirmar presença' }, { action: 'CHECK_IN', label: 'Check-in' }, { action: 'REJECT', label: 'Recusar' }],
+  CONFIRMED: [{ action: 'CHECK_IN', label: 'Check-in' }, { action: 'REJECT', label: 'Recusar' }],
+  CHECKED_IN: [{ action: 'UNDO_CHECK_IN', label: 'Desfazer check-in' }],
+}
+
+// Próximos status que o organizador pode escolher a partir do status atual (o backend valida de novo).
+const statusActions: Record<string, Array<{ status: string; label: string; danger?: boolean }>> = {
+  PUBLISHED: [{ status: 'CONFIRMATION_PENDING', label: 'Encerrar inscrições' }, { status: 'IN_PROGRESS', label: 'Iniciar operação' }],
+  REGISTRATION_OPEN: [{ status: 'CONFIRMATION_PENDING', label: 'Encerrar inscrições' }, { status: 'IN_PROGRESS', label: 'Iniciar operação' }],
+  FULL: [{ status: 'REGISTRATION_OPEN', label: 'Reabrir inscrições' }, { status: 'CONFIRMATION_PENDING', label: 'Encerrar inscrições' }, { status: 'IN_PROGRESS', label: 'Iniciar operação' }],
+  CONFIRMATION_PENDING: [{ status: 'REGISTRATION_OPEN', label: 'Reabrir inscrições' }, { status: 'IN_PROGRESS', label: 'Iniciar operação' }],
+  IN_PROGRESS: [{ status: 'FINISHED', label: 'Finalizar operação' }],
+}
+const CANCELLABLE_STATUSES = ['PUBLISHED', 'REGISTRATION_OPEN', 'FULL', 'CONFIRMATION_PENDING', 'IN_PROGRESS']
+const BEFORE_START = ['PUBLISHED', 'REGISTRATION_OPEN', 'FULL', 'CONFIRMATION_PENDING']
 
 export function OperationsPage() {
   const [items, setItems] = useState<Operation[]>([]),
@@ -222,6 +255,34 @@ export function OperationsPage() {
     } catch (err) {
       setFeedback(err instanceof Error ? err.message : 'Não foi possível excluir a operação.')
     } finally { setPending('') }
+  }
+  const runOperationAction = async (key: string, action: () => Promise<unknown>, success: string) => {
+    if (!selected) return
+    setPending(key)
+    setFeedback('')
+    try {
+      await action()
+      setFeedback(success)
+      await load(query)
+      await openOperation(selected)
+    } catch (err) {
+      setFeedback(err instanceof Error ? err.message : 'Não foi possível concluir.')
+    } finally { setPending('') }
+  }
+  const changeStatus = (status: string, label: string) => {
+    if (!selected) return
+    let reason: string | undefined
+    if (status === 'CANCELLED') {
+      reason = window.prompt('Motivo do cancelamento (será registrado):')?.trim()
+      if (!reason) return
+    } else if (!window.confirm(`${label}?`)) return
+    void runOperationAction(`status-${status}`, async () => setSelected(await updateOperationStatus(selected.id, status, reason)), 'Status da operação atualizado.')
+  }
+  const decide = (operatorId: string, action: ParticipantAction) => {
+    if (!selected) return
+    const reason = action === 'REJECT' ? window.prompt('Motivo da recusa (opcional):') ?? undefined : undefined
+    if (action === 'REJECT' && reason === undefined) return
+    void runOperationAction(`decide-${operatorId}`, () => decideOperationParticipant(selected.id, operatorId, action, reason), 'Inscrição atualizada.')
   }
   const participate = async (item: Operation, cancel = false, operationTeamId = '', operationSquadId = '') => {
     setPending(item.id)
@@ -492,6 +553,10 @@ export function OperationsPage() {
             <p>{selected.description}</p>
             {selected.briefing && <section className="operation-briefing"><small>BRIEFING DO JOGO</small><p>{selected.briefing}</p></section>}
             <div className="operation-roster-summary"><span><MapPin /> {selected.fieldName} · {selected.city}/{selected.stateCode}</span><span><Users /> {selected.participantCount}/{selected.participantLimit ?? 'sem limite'} participantes</span></div>
+            {selected.managedByCurrentUser && (statusActions[selected.status] || CANCELLABLE_STATUSES.includes(selected.status)) && <div className="operation-status-actions" aria-label="Status da operação">
+              {(statusActions[selected.status] || []).map(item => <button key={item.status} type="button" className="module-secondary" disabled={pending.startsWith('status-')} onClick={() => changeStatus(item.status, item.label)}>{item.label}</button>)}
+              {CANCELLABLE_STATUSES.includes(selected.status) && <button type="button" className="module-danger" disabled={pending.startsWith('status-')} onClick={() => changeStatus('CANCELLED', 'Cancelar operação')}>Cancelar operação</button>}
+            </div>}
             {selected.managedByCurrentUser && operationEditMode && <section className="operation-organizer-tools">
               <header><CalendarClock/><div><small>ORGANIZAÇÃO</small><h3>Editar data e briefing</h3><p>Remarque a operação ou atualize as instruções apresentadas aos jogadores.</p></div></header>
               <form className="module-form" onSubmit={updateManagedOperation} key={`${selected.id}-${selected.version ?? 0}`}>
@@ -515,13 +580,24 @@ export function OperationsPage() {
               <div className="operation-team-grid">
                 {roster.teams.map(team => <article key={team.id} className={selectedTeam === team.id ? 'active' : ''}>
                   <label><input type="radio" name="operationTeam" value={team.id} checked={selectedTeam === team.id} onChange={() => {setSelectedTeam(team.id);setSelectedSquad('')}} disabled={Boolean(roster.currentUserTeamId)} /><strong>{team.name}</strong><small>{team.participantCount}/{team.capacity} inscritos</small></label>
-                  <div>{roster.participants.filter(person => person.operationTeamId === team.id).map(person => <p key={person.operatorId}><span className="operator-avatar">{person.callsign.charAt(0).toUpperCase()}</span><b>{operatorTeamLabel(person)}</b><small>{person.status === 'WAITING_LIST' ? 'Lista de espera' : person.displayName}</small></p>)}</div>
+                  <div>{roster.participants.filter(person => person.operationTeamId === team.id).map(person => <p key={person.operatorId}><span className="operator-avatar">{person.callsign.charAt(0).toUpperCase()}</span><b>{operatorTeamLabel(person)}</b><small>{person.status === 'APPROVED' ? person.displayName : participantStatusLabels[person.status] || person.displayName}</small></p>)}</div>
                   {selectedTeam===team.id&&structure?.gameSize!=='SMALL'&&<div className="operation-squad-choice"><b>Escolha obrigatória do esquadrão</b>{structure?.teams.find(t=>t.id===team.id)?.squads.map(s=><label key={s.id}><input type="radio" name="operationSquad" value={s.id} checked={selectedSquad===s.id} disabled={s.status!=='OPEN'||s.participantCount>=s.capacity} onChange={()=>setSelectedSquad(s.id)}/>{s.name} · {s.participantCount}/{s.capacity}</label>)}{structure?.teams.find(t=>t.id===team.id)?.squads.length===0&&<small className="module-feedback">Este time ainda não possui esquadrão disponível. O organizador precisa concluir a estrutura.</small>}</div>}
                 </article>)}
               </div>
               {roster.participants.length === 0 && <p className="module-empty">Ainda não há participantes inscritos.</p>}
               {!roster.currentUserTeamId && <button className="module-primary" disabled={!selectedTeam || (structure?.gameSize!=='SMALL'&&!selectedSquad) || pending === selected.id} onClick={() => void participate(selected, false, selectedTeam, selectedSquad)}>{pending === selected.id ? 'Inscrevendo…' : 'Entrar no time e esquadrão escolhidos'}</button>}
-              {roster.currentUserTeamId && <p className="module-feedback">Você já está inscrito em {roster.teams.find(team => team.id === roster.currentUserTeamId)?.name || 'um time'}.</p>}
+              {roster.currentUserTeamId && <div className="operation-my-participation">
+                <p className="module-feedback">Você está inscrito em {roster.teams.find(team => team.id === roster.currentUserTeamId)?.name || 'um time'}{roster.currentUserStatus ? ` · ${participantStatusLabels[roster.currentUserStatus] || roster.currentUserStatus}` : ''}.</p>
+                {roster.currentUserStatus === 'APPROVED' && BEFORE_START.includes(selected.status) && <button type="button" className="module-primary" disabled={pending === 'confirm-presence'} onClick={() => void runOperationAction('confirm-presence', () => confirmOperationPresence(selected.id), 'Presença confirmada.')}>{pending === 'confirm-presence' ? 'Confirmando…' : 'Confirmar presença'}</button>}
+                {['REQUESTED', 'APPROVED', 'WAITING_LIST', 'CONFIRMED'].includes(roster.currentUserStatus ?? '') && BEFORE_START.includes(selected.status) && <button type="button" className="module-secondary" disabled={pending === selected.id} onClick={() => { if (window.confirm('Cancelar sua inscrição nesta operação?')) void participate(selected, true) }}>Cancelar inscrição</button>}
+              </div>}
+              {selected.managedByCurrentUser && roster.participants.length > 0 && <section className="operation-participant-admin" aria-label="Gerenciar inscrições">
+                <header><Users/><div><small>ORGANIZAÇÃO</small><h3>Inscrições</h3><p>Aprove, recuse, confirme presença e faça o check-in. Só participantes com presença confirmada ou check-in entram no desempenho e no ranking.</p></div></header>
+                <ul>{roster.participants.map(person => <li key={person.operatorId}>
+                  <span><b>{operatorTeamLabel(person)}</b><small>{person.operationTeamName || 'Sem time'} · {participantStatusLabels[person.status] || person.status}</small></span>
+                  <span>{(participantActions[person.status] || []).map(item => <button key={item.action} type="button" className={item.action === 'REJECT' ? 'module-danger' : 'module-secondary'} disabled={pending === `decide-${person.operatorId}`} onClick={() => decide(person.operatorId, item.action)}>{item.label}</button>)}</span>
+                </li>)}</ul>
+              </section>}
             </>}
             {structureError ? <p className="module-feedback" role="alert">{structureError} <button type="button" onClick={() => void openOperation(selected)}>Tentar novamente</button></p> : <OperationCommandCenter operation={selected} initialStructure={structure} editMode={operationEditMode} onPublish={publish}/>}
           </section>

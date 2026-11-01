@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -112,12 +113,88 @@ public class OperationRepository {
             """, saveParams(userId, field, mapId, request, modality, entryMode, gameSize, now), UUID.class);
     }
 
-    public int updateStatus(UUID operationId, long userId, String status, Instant now) {
+    /** Muda o status somente a partir dos status de origem permitidos para a transicao. */
+    public int updateStatus(UUID operationId, long userId, String status, Collection<String> fromStatuses, Instant now) {
         return jdbc.update("""
             UPDATE airsoft_operation SET status=:status, updated_at=:now, version=version+1,
               published_at=CASE WHEN :status IN ('PUBLISHED','REGISTRATION_OPEN') AND published_at IS NULL THEN :now ELSE published_at END
-            WHERE public_id=:id AND organizer_user_id=:userId AND deleted_at IS NULL
-            """, Map.of("status", status, "now", Timestamp.from(now), "id", operationId, "userId", userId));
+            WHERE public_id=:id AND organizer_user_id=:userId AND deleted_at IS NULL AND status IN (:fromStatuses)
+            """, new MapSqlParameterSource().addValue("status", status).addValue("now", Timestamp.from(now))
+                .addValue("id", operationId).addValue("userId", userId).addValue("fromStatuses", fromStatuses));
+    }
+
+    /** Bloqueia a operacao para serializar decisoes de vagas. Retorna o id interno se o usuario for o organizador. */
+    public Optional<Long> lockOwnedOperation(UUID operationId, long userId) {
+        return jdbc.queryForList("""
+            SELECT id FROM airsoft_operation WHERE public_id=:id AND organizer_user_id=:userId AND deleted_at IS NULL FOR UPDATE
+            """, Map.of("id", operationId, "userId", userId), Long.class).stream().findFirst();
+    }
+
+    public Optional<Long> lockOperation(UUID operationId) {
+        return jdbc.queryForList("SELECT id FROM airsoft_operation WHERE public_id=:id AND deleted_at IS NULL FOR UPDATE",
+            Map.of("id", operationId), Long.class).stream().findFirst();
+    }
+
+    private static final String ACTIVE_PARTICIPATION = "('REQUESTED','APPROVED','CONFIRMED','CHECKED_IN')";
+    // Vaga disponivel no time, no esquadrao e no limite geral, sem contar o proprio participante.
+    private static final String HAS_CAPACITY =
+        "(SELECT count(*) FROM operation_participant x WHERE x.operation_team_id = p.operation_team_id AND x.id <> p.id"
+        + " AND x.status IN " + ACTIVE_PARTICIPATION + ") < (SELECT capacity FROM operation_team WHERE id = p.operation_team_id)"
+        + " AND (o.participant_limit IS NULL OR (SELECT count(*) FROM operation_participant x WHERE x.operation_id = o.id AND x.id <> p.id"
+        + " AND x.status IN " + ACTIVE_PARTICIPATION + ") < o.participant_limit)"
+        + " AND (p.operation_squad_id IS NULL OR (SELECT count(*) FROM operation_participant x WHERE x.operation_squad_id = p.operation_squad_id"
+        + " AND x.id <> p.id AND x.status IN " + ACTIVE_PARTICIPATION + ") < (SELECT capacity FROM operation_squad WHERE id = p.operation_squad_id))";
+
+    /**
+     * Decisao do organizador sobre um participante. Altera somente se o status atual estiver em fromStatuses,
+     * a operacao estiver em operationStatuses e, ao sair da lista de espera, houver vaga.
+     */
+    public int transitionParticipant(long operationId, UUID operatorId, Collection<String> fromStatuses, String toStatus,
+                                     Collection<String> operationStatuses, Instant now) {
+        return jdbc.update("""
+            UPDATE operation_participant p SET status=:toStatus, updated_at=:now,
+              presence_confirmed_at = CASE WHEN :toStatus IN ('CONFIRMED','CHECKED_IN') THEN coalesce(p.presence_confirmed_at, :now) ELSE p.presence_confirmed_at END,
+              checked_in_at = CASE WHEN :toStatus = 'CHECKED_IN' THEN :now ELSE p.checked_in_at END
+            FROM airsoft_operation o, operator_profile prof
+            WHERE p.operation_id = o.id AND o.id = :operationId AND o.status IN (:operationStatuses)
+              AND prof.user_id = p.user_id AND prof.public_id = :operatorId AND p.status IN (:fromStatuses)
+              AND (p.status <> 'WAITING_LIST' OR :toStatus = 'REJECTED' OR (
+            """ + HAS_CAPACITY + "))", new MapSqlParameterSource().addValue("operationId", operationId).addValue("operatorId", operatorId)
+                .addValue("fromStatuses", fromStatuses).addValue("toStatus", toStatus)
+                .addValue("operationStatuses", operationStatuses).addValue("now", Timestamp.from(now)));
+    }
+
+    /** O proprio participante aprovado confirma que vai comparecer. */
+    public int confirmOwnPresence(UUID operationId, long userId, Instant now) {
+        return jdbc.update("""
+            UPDATE operation_participant p SET status='CONFIRMED', presence_confirmed_at=:now, updated_at=:now
+            FROM airsoft_operation o
+            WHERE p.operation_id=o.id AND o.public_id=:id AND o.deleted_at IS NULL AND p.user_id=:userId AND p.status='APPROVED'
+              AND o.status IN ('PUBLISHED','REGISTRATION_OPEN','FULL','CONFIRMATION_PENDING')
+            """, Map.of("id", operationId, "userId", userId, "now", Timestamp.from(now)));
+    }
+
+    /**
+     * Promove a lista de espera por ordem de inscricao enquanto houver vaga. Quem sai da fila volta para
+     * aprovacao do organizador quando a operacao exige aprovacao. Retorna quantos foram promovidos.
+     */
+    public int promoteWaitingList(long operationId, Instant now) {
+        List<Long> waiting = jdbc.queryForList("""
+            SELECT p.id FROM operation_participant p JOIN airsoft_operation o ON o.id = p.operation_id
+            WHERE p.operation_id = :operationId AND p.status = 'WAITING_LIST'
+              AND o.status IN ('PUBLISHED','REGISTRATION_OPEN','FULL','CONFIRMATION_PENDING')
+            ORDER BY p.requested_at, p.id FOR UPDATE OF p
+            """, Map.of("operationId", operationId), Long.class);
+        int promoted = 0;
+        for (Long participantId : waiting) {
+            promoted += jdbc.update("""
+                UPDATE operation_participant p
+                SET status = CASE WHEN o.approval_required THEN 'REQUESTED' ELSE 'APPROVED' END, updated_at = :now
+                FROM airsoft_operation o
+                WHERE p.id = :participantId AND o.id = p.operation_id AND p.status = 'WAITING_LIST' AND (
+                """ + HAS_CAPACITY + ")", Map.of("participantId", participantId, "now", Timestamp.from(now)));
+        }
+        return promoted;
     }
 
     public int update(UUID operationId, long userId, UpdateOperationRequest request, String briefing, Instant now) {
@@ -197,7 +274,11 @@ public class OperationRepository {
               AND op.status NOT IN ('CANCELLED','REJECTED')
             """, Map.of("operationId", operationId, "userId", userId), (r, i) -> r.getObject("public_id", UUID.class))
             .stream().findFirst().orElse(null);
-        return new OperationRosterResponse(teams, participants, currentTeamId);
+        String currentStatus = jdbc.queryForList("""
+            SELECT op.status FROM operation_participant op JOIN airsoft_operation o ON o.id = op.operation_id
+            WHERE o.public_id = :operationId AND op.user_id = :userId AND op.status <> 'CANCELLED'
+            """, Map.of("operationId", operationId, "userId", userId), String.class).stream().findFirst().orElse(null);
+        return new OperationRosterResponse(teams, participants, currentTeamId, currentStatus);
     }
 
     public int publish(UUID operationId, long userId, Instant now) {
@@ -267,6 +348,7 @@ public class OperationRepository {
             UPDATE operation_participant p SET status='CANCELLED',updated_at=:now
             FROM airsoft_operation o WHERE p.operation_id=o.id AND o.public_id=:id AND o.deleted_at IS NULL AND p.user_id=:userId
               AND p.status IN ('REQUESTED','APPROVED','WAITING_LIST','CONFIRMED')
+              AND o.status IN ('PUBLISHED','REGISTRATION_OPEN','FULL','CONFIRMATION_PENDING')
             """, Map.of("id", operationId, "userId", userId, "now", Timestamp.from(now)));
     }
 

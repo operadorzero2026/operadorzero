@@ -48,7 +48,7 @@ public class AuthController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     MessageResponse register(@Valid @RequestBody RegisterRequest body, HttpServletRequest request) {
         service.register(body.displayName(), body.email(), body.password(), body.termsAccepted(), request);
-        return new MessageResponse("Cadastro realizado. Enviamos um link de confirmacao para o seu e-mail.");
+        return new MessageResponse("Se este e-mail puder ser usado, enviamos um link de confirmacao. Confira tambem o Lixo Eletronico.");
     }
 
     @PostMapping("/verify-email")

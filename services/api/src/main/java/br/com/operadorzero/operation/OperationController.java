@@ -10,6 +10,7 @@ import br.com.operadorzero.operation.OperationDtos.UpdateStatusRequest;
 import br.com.operadorzero.operation.OperationDtos.UpdateOperationRequest;
 import br.com.operadorzero.operation.OperationDtos.DeleteOperationRequest;
 import br.com.operadorzero.operation.OperationDtos.ParticipationRequest;
+import br.com.operadorzero.operation.OperationDtos.ParticipantDecisionRequest;
 import br.com.operadorzero.operation.OperationDtos.OperationRosterResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -61,6 +62,8 @@ public class OperationController {
     @PatchMapping("/{id}/status") OperationResponse status(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id, @Valid @RequestBody UpdateStatusRequest request) { return service.updateStatus(user, id, request); }
     @PostMapping("/{id}/publish") OperationResponse publish(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) { return service.publish(user, id); }
     @PostMapping("/{id}/participation") @ResponseStatus(HttpStatus.CREATED) MessageResponse participate(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id, @Valid @RequestBody ParticipationRequest request) { return service.requestParticipation(user, id, request); }
+    @PostMapping("/{id}/participation/confirm") MessageResponse confirmPresence(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) { return service.confirmOwnPresence(user, id); }
+    @PostMapping("/{id}/participants/{operatorId}/decision") MessageResponse decide(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id, @PathVariable UUID operatorId, @Valid @RequestBody ParticipantDecisionRequest request) { return service.decideParticipant(user, id, operatorId, request); }
     @PostMapping("/{id}/participation/cancel") MessageResponse cancel(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) { return service.cancelParticipation(user, id); }
     @PostMapping(value = "/{id}/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     OperationResponse cover(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id,
