@@ -1,0 +1,94 @@
+# Operador Zero em VPS compartilhada com outras aplicacoes.
+# Uso (na raiz do repositorio): docker compose -f deploy/vps/compose.yml --env-file deploy/vps/.env up -d --build
+# Somente o Nginx interno publica porta, e apenas em 127.0.0.1; o proxy do servidor encaminha o dominio para ela.
+name: operadorzero
+
+services:
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/vps/web.Dockerfile
+    restart: unless-stopped
+    ports: ["127.0.0.1:${OZ_HTTP_PORT:-8081}:8080"]
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [edge]
+    mem_limit: 128m
+
+  api:
+    build:
+      context: ../../services/api
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      PORT: "8080"
+      DATABASE_URL: jdbc:postgresql://postgres:5432/operadorzero
+      DATABASE_USER: operadorzero
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Defina DATABASE_PASSWORD em deploy/vps/.env}
+      DATABASE_POOL_MAX: "10"
+      DATABASE_POOL_MIN: "2"
+      REDIS_URL: redis://:${REDIS_PASSWORD:?Defina REDIS_PASSWORD em deploy/vps/.env}@redis:6379
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://operadorzero.com.br,https://www.operadorzero.com.br}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-https://operadorzero.com.br}
+      OPENAPI_UI_ENABLED: "false"
+      AUTH_ENABLED: "true"
+      AUTH_HASH_KEY: ${AUTH_HASH_KEY:?Defina AUTH_HASH_KEY em deploy/vps/.env}
+      AUTH_COOKIE_SECURE: "true"
+      AUTH_COOKIE_SAME_SITE: Lax
+      MAIL_ENABLED: ${MAIL_ENABLED:-true}
+      MAIL_FROM: ${MAIL_FROM:?Defina MAIL_FROM em deploy/vps/.env}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /actuator/health/readiness HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    networks: [edge, data]
+    mem_limit: 1g
+
+  postgres:
+    image: postgres:17-alpine@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: operadorzero
+      POSTGRES_USER: operadorzero
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Defina DATABASE_PASSWORD em deploy/vps/.env}
+    volumes: ["postgres:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U operadorzero -d operadorzero"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [data]
+    mem_limit: 512m
+
+  redis:
+    image: redis:7-alpine@sha256:8da19c7399dca900c6822a1cf30f9d2285585e2c4b457ff4095b0f4500054d3f
+    restart: unless-stopped
+    command: ["sh", "-c", "exec redis-server --appendonly yes --maxmemory-policy noeviction --requirepass \"$$REDIS_PASSWORD\""]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Defina REDIS_PASSWORD em deploy/vps/.env}
+    volumes: ["redis:/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [data]
+    mem_limit: 256m
+
+networks:
+  edge:
+  data:
+    internal: true
+
+volumes:
+  postgres:
+  redis:

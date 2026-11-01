@@ -1,0 +1,13 @@
+# Bloco para o Caddyfile do servidor. Nao altera os sites ja existentes.
+www.operadorzero.com.br {
+	redir https://operadorzero.com.br{uri} permanent
+}
+
+operadorzero.com.br {
+	request_body {
+		max_size 3MB
+	}
+	reverse_proxy 127.0.0.1:8081 {
+		header_up X-Real-IP {remote_host}
+	}
+}

@@ -1,0 +1,12 @@
+**
+!package.json
+!package-lock.json
+!index.html
+!tsconfig.json
+!tsconfig.app.json
+!tsconfig.node.json
+!vite.config.ts
+!public/**
+!src/**
+!deploy/vps/nginx.conf
+!deploy/vps/security-headers.conf
