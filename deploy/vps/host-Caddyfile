@@ -4,6 +4,7 @@ www.operadorzero.com.br {
 }
 
 operadorzero.com.br {
+	encode zstd gzip
 	request_body {
 		max_size 3MB
 	}
