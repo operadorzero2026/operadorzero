@@ -1,6 +1,6 @@
 import { Bookmark, Crosshair, Flag, MessageCircle, MoreHorizontal, Plus, Send, Skull, Trash2, Volume2, VolumeX } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { deleteFeedPost, followOperator, mediaUrl, reactToPost, reportFeedComment, reportFeedPost, savePost, type FeedComment, type FeedMedia, type FeedPost, type PostCounts } from '../api'
+import { deleteFeedPost, followOperator, mediaUrl, reactToPost, recordPostView, reportFeedComment, reportFeedPost, savePost, type FeedComment, type FeedMedia, type FeedPost, type PostCounts } from '../api'
 import { CommentsSheet, ReportSheet, ShareSheet, Sheet } from './FeedSheets'
 import { RankInsignia } from './RankInsignia'
 import { timeAgo } from './format'
@@ -11,8 +11,32 @@ export type ItemMode = 'active' | 'preload' | 'idle'
 
 const DOUBLE_TAP_MS = 280
 const compact = new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 })
-function MediaStage({ media, mode, muted, alt }: { media: FeedMedia; mode: ItemMode; muted: boolean; alt: string }) {
+/** Foto vista por este tempo conta como "vista ate o fim" (para o ranking). */
+const PHOTO_COMPLETE_MS = 2500
+
+function MediaStage({ media, mode, muted, alt, onViewEnd }: { media: FeedMedia; mode: ItemMode; muted: boolean; alt: string; onViewEnd?: (watchedMs: number, completed: boolean) => void }) {
   const video = useRef<HTMLVideoElement>(null)
+  const report = useRef(onViewEnd)
+  useEffect(() => { report.current = onViewEnd }, [onViewEnd])
+  // Tempo na tela enquanto o post esta ativo; video completo quando volta ao inicio (loop) ou termina.
+  useEffect(() => {
+    if (mode !== 'active') return
+    const started = performance.now()
+    const element = video.current
+    let completed = false
+    let last = 0
+    const tick = () => {
+      if (!element) return
+      if (element.currentTime + 0.5 < last || (element.duration && element.currentTime >= element.duration - 0.3)) completed = true
+      last = element.currentTime
+    }
+    element?.addEventListener('timeupdate', tick)
+    return () => {
+      element?.removeEventListener('timeupdate', tick)
+      const watched = performance.now() - started
+      if (watched >= 500) report.current?.(watched, completed || (media.kind === 'IMAGE' && watched >= PHOTO_COMPLETE_MS))
+    }
+  }, [mode, media.kind])
   useVideoSource(video, mediaUrl(media.hlsUrl), mediaUrl(media.mp4Url), mode)
   useEffect(() => {
     const element = video.current
@@ -100,7 +124,8 @@ export function FeedItem({ post, mode, muted, onToggleMute, onHashtag, onDeleted
   const caption = post.caption ?? ''
   const long = caption.length > 90
   return <article className="feed-item" aria-label={`Post de @${post.author.username}`}>
-    {media && <MediaStage media={media} mode={mode} muted={muted} alt={alt}/>}
+    {media && <MediaStage media={media} mode={mode} muted={muted} alt={alt}
+      onViewEnd={readOnly ? undefined : (watched, completed) => { void recordPostView(post.id, watched, completed).catch(() => undefined) }}/>}
     <button type="button" className="feed-tap-layer" onClick={tap} aria-label={isVideo ? (muted ? 'Ativar som' : 'Desativar som') : 'Post'}/>
     {burst > 0 && <span key={burst} className="feed-burst" aria-hidden="true"><Crosshair/></span>}
     {isVideo && mode === 'active' && <span className="feed-sound-badge" aria-hidden="true">{muted ? <VolumeX/> : <Volume2/>}</span>}

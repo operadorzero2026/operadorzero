@@ -31,7 +31,9 @@ import org.junit.jupiter.api.Test;
 
 class FeedServiceTest {
     private final FeedRepository repository = mock(FeedRepository.class);
-    private final FeedService service = new FeedService(repository, new ObjectMapper(), "https://cdn.test/media/");
+    private static final Instant NOW = Instant.parse("2026-11-02T12:00:00Z");
+    private final FeedService service = new FeedService(repository, new ObjectMapper(), "https://cdn.test/media/",
+        java.time.Clock.fixed(NOW, java.time.ZoneOffset.UTC));
     private final AuthenticatedUser user = new AuthenticatedUser(7L, UUID.randomUUID(), "op@example.test", "op",
         "Operador", "OP", List.of("USER"));
 
@@ -95,6 +97,39 @@ class FeedServiceTest {
 
         assertThat(page.items().getFirst().hashtags()).containsExactly("cqb", "milsim");
         assertThat(page.items().getFirst().media().getFirst().images().getFirst().url()).isEqualTo("https://cdn.test/media/i/cd34/1080.webp");
+    }
+
+    @Test
+    void forYouUsesTheRankingAndKeepsTheFirstPageAnchorAcrossPages() {
+        List<PostRow> rows = IntStream.range(0, 3).mapToObj(i -> post(i, NOW.minusSeconds(i))).toList();
+        var ranked = List.of(new FeedRepository.RankedId(2, rows.get(2).publicId(), 9.5), new FeedRepository.RankedId(0, rows.get(0).publicId(), 7.25),
+            new FeedRepository.RankedId(1, rows.get(1).publicId(), 3.0));
+        when(repository.ranked(eq(7L), eq(NOW), isNull(), isNull(), eq(3))).thenReturn(ranked);
+        when(repository.byIds(7L, List.of(2L, 0L))).thenReturn(List.of(rows.get(2), rows.get(0)));
+
+        FeedPage first = service.page(user, "for-you", null, 2);
+
+        // Ordem do ranking, nao da data.
+        assertThat(first.items()).extracting(FeedDtos.FeedPostResponse::id).containsExactly(rows.get(2).publicId(), rows.get(0).publicId());
+        when(repository.ranked(anyLong(), any(), any(), any(), anyInt())).thenReturn(List.of());
+        service.page(user, "for-you", first.nextCursor(), 2);
+        verify(repository).ranked(7L, NOW, 7.25, rows.get(0).publicId(), 3);
+    }
+
+    @Test
+    void followingAndHashtagsStayChronologicalAndAnEmptyRankingFallsBack() {
+        when(repository.chronological(anyLong(), anyBoolean(), any(), any(), anyInt())).thenReturn(List.of());
+        when(repository.query(anyLong(), anyBoolean(), any(), any(), anyBoolean(), any(), any(), anyInt())).thenReturn(List.of());
+        when(repository.ranked(anyLong(), any(), any(), any(), anyInt())).thenReturn(List.of());
+
+        service.page(user, "following", null, 5);
+        service.page(user, "for-you", "milsim", null, 5);
+        verify(repository, org.mockito.Mockito.never()).ranked(anyLong(), any(), any(), any(), anyInt());
+
+        // "Para voce" sem nada novo para ranquear: mostra a ordem cronologica em vez de um feed vazio.
+        service.page(user, "for-you", null, 5);
+        verify(repository).ranked(7L, NOW, null, null, 6);
+        verify(repository).chronological(7L, false, null, null, 6);
     }
 
     private PostRow post(long id, Instant publishedAt) {

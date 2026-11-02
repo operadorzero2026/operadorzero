@@ -85,6 +85,40 @@ public class FeedInteractionRepository {
             .orElse(Map.of("onTarget", 0L, "eliminated", 0L, "comments", 0L, "shares", 0L, "saves", 0L));
     }
 
+    // ---- Visualizacoes ----
+
+    /** Registra uma passagem pelo post e devolve se era a primeira vez e se completou agora (para os contadores). */
+    public record ViewDelta(boolean firstView, boolean newCompletion) {}
+
+    public ViewDelta recordView(long postId, long userId, long watchedMs, boolean completed, Instant now) {
+        Boolean previous = jdbc.query("SELECT completed FROM feed_view WHERE post_id = :post AND user_id = :user FOR UPDATE",
+            Map.of("post", postId, "user", userId), (r, i) -> r.getBoolean(1)).stream().findFirst().orElse(null);
+        jdbc.update("""
+            INSERT INTO feed_view(post_id, user_id, view_count, watched_ms, completed, first_viewed_at, last_viewed_at)
+            VALUES (:post, :user, 1, :watched, :completed, :now, :now)
+            ON CONFLICT (post_id, user_id) DO UPDATE SET view_count = feed_view.view_count + 1,
+                watched_ms = feed_view.watched_ms + :watched, completed = feed_view.completed OR :completed, last_viewed_at = :now
+            """, Map.of("post", postId, "user", userId, "watched", watchedMs, "completed", completed, "now", Timestamp.from(now)));
+        return new ViewDelta(previous == null, completed && !Boolean.TRUE.equals(previous));
+    }
+
+    public void addViewMetrics(long postId, boolean firstView, long watchedMs, boolean newCompletion, Instant now) {
+        jdbc.update("""
+            INSERT INTO feed_post_metrics(post_id, views, unique_viewers, watched_ms, completions, updated_at)
+            VALUES (:post, 1, :unique, :watched, :completion, :now)
+            ON CONFLICT (post_id) DO UPDATE SET views = feed_post_metrics.views + 1,
+                unique_viewers = feed_post_metrics.unique_viewers + :unique, watched_ms = feed_post_metrics.watched_ms + :watched,
+                completions = feed_post_metrics.completions + :completion, updated_at = :now
+            """, Map.of("post", postId, "unique", firstView ? 1 : 0, "watched", watchedMs, "completion", newCompletion ? 1 : 0,
+                "now", Timestamp.from(now)));
+    }
+
+    public Optional<Integer> videoDurationMs(long postId) {
+        return jdbc.query("""
+            SELECT max(a.duration_ms) FROM feed_post_media pm JOIN media_asset a ON a.id = pm.media_asset_id WHERE pm.post_id = :post
+            """, Map.of("post", postId), (r, i) -> (Integer) r.getObject(1)).stream().filter(java.util.Objects::nonNull).findFirst();
+    }
+
     // ---- Seguir ----
 
     public record UserRef(long id, String username) {}

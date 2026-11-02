@@ -43,6 +43,12 @@ public class FeedInteractionController {
         return service.react(user, id, kind, false);
     }
 
+    @PostMapping("/api/feed/posts/{id}/views")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void view(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id, @Valid @RequestBody FeedInteractionService.ViewRequest request) {
+        service.view(user, id, request);
+    }
+
     @PutMapping("/api/feed/posts/{id}/save")
     Counts save(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) {
         return service.save(user, id, true);

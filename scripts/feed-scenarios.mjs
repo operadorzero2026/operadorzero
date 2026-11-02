@@ -66,4 +66,8 @@ assert.match(sheets, /\/p\/\$\{post\.id\}/, 'Link curto com previa.')
 assert.match(publicPage, /readOnly=\{!loggedIn\}/, 'Pagina publica e so leitura para quem nao entrou.')
 assert.match(page, /hashtag=\{hashtag\}/, 'Hashtags filtram o feed.')
 
-console.log('Feed validado: redirecionamento, navegacao, virtualizacao, autoplay mudo, midia sem corte, cursor, Recons e interacoes.')
+// Etapa 7: o post ativo informa o tempo assistido ao sair (base do "% assistido" e do "nao repetir").
+assert.match(item, /if \(watched >= 500\) report\.current\?\.\(watched, completed/, 'Tempo assistido enviado ao sair do post.')
+assert.match(item, /onViewEnd=\{readOnly \? undefined :/, 'Pagina publica nao registra visualizacao.')
+
+console.log('Feed validado: redirecionamento, navegacao, virtualizacao, autoplay mudo, midia sem corte, cursor, Recons, interacoes e ranking.')

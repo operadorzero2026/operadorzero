@@ -31,11 +31,18 @@ public class FeedService {
     private final FeedRepository repository;
     private final ObjectMapper json;
     private final String mediaBaseUrl;
+    private final java.time.Clock clock;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public FeedService(FeedRepository repository, ObjectMapper json, @Value("${app.media.public-base-url:/media}") String mediaBaseUrl) {
+        this(repository, json, mediaBaseUrl, java.time.Clock.systemUTC());
+    }
+
+    FeedService(FeedRepository repository, ObjectMapper json, String mediaBaseUrl, java.time.Clock clock) {
         this.repository = repository;
         this.json = json;
         this.mediaBaseUrl = mediaBaseUrl.endsWith("/") ? mediaBaseUrl.substring(0, mediaBaseUrl.length() - 1) : mediaBaseUrl;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -52,8 +59,12 @@ public class FeedService {
         };
         int size = limit == null ? DEFAULT_LIMIT : Math.max(1, Math.min(MAX_LIMIT, limit));
         Cursor position = Cursor.decode(cursor);
-        // Ranking "Para voce" entra na etapa 7; ate la as duas abas sao cronologicas.
         String tag = hashtag == null || hashtag.isBlank() ? null : FeedText.normalizeTag(hashtag);
+        if (!following && tag == null && (position == null || position.ranked())) {
+            FeedPage ranked = ranked(user, position, size);
+            // Sem nada novo para ranquear (tudo visto ou feed recente vazio): cai para a ordem cronologica.
+            if (!ranked.items().isEmpty() || position != null) return ranked;
+        }
         List<PostRow> rows = tag == null
             ? repository.chronological(user.internalId(), following, position == null ? null : position.publishedAt(), position == null ? null : position.id(), size + 1)
             : repository.query(user.internalId(), following, tag, null, false, position == null ? null : position.publishedAt(),
@@ -123,16 +134,39 @@ public class FeedService {
 
     record Rendition(String type, String path, Integer width, Integer height) {}
 
-    record Cursor(Instant publishedAt, UUID id) {
+    private FeedPage ranked(AuthenticatedUser user, Cursor position, int size) {
+        Instant anchor = position == null ? clock.instant() : position.anchor();
+        var ids = repository.ranked(user.internalId(), anchor, position == null ? null : position.score(),
+            position == null ? null : position.id(), size + 1);
+        boolean more = ids.size() > size;
+        var page = more ? ids.subList(0, size) : ids;
+        var rows = repository.byIds(user.internalId(), page.stream().map(FeedRepository.RankedId::id).toList());
+        var last = page.isEmpty() ? null : page.getLast();
+        return new FeedPage(responses(rows), more ? Cursor.ranked(anchor, last.score(), last.publicId()).encode() : null);
+    }
+
+    /** Cursor cronologico (publishedAt|id) ou do ranking (R|anchor|score|id). */
+    record Cursor(Instant publishedAt, UUID id, Instant anchor, Double score) {
+        Cursor(Instant publishedAt, UUID id) { this(publishedAt, id, null, null); }
+
+        static Cursor ranked(Instant anchor, double score, UUID id) { return new Cursor(null, id, anchor, score); }
+
+        boolean ranked() { return anchor != null; }
+
         String encode() {
-            return Base64.getUrlEncoder().withoutPadding()
-                .encodeToString((publishedAt + "|" + id).getBytes(StandardCharsets.UTF_8));
+            String raw = ranked() ? "R|" + anchor + "|" + score + "|" + id : publishedAt + "|" + id;
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(raw.getBytes(StandardCharsets.UTF_8));
         }
 
         static Cursor decode(String value) {
             if (value == null || value.isBlank()) return null;
             try {
-                String[] parts = new String(Base64.getUrlDecoder().decode(value), StandardCharsets.UTF_8).split("\\|", 2);
+                String raw = new String(Base64.getUrlDecoder().decode(value), StandardCharsets.UTF_8);
+                if (raw.startsWith("R|")) {
+                    String[] parts = raw.split("\\|", 4);
+                    return ranked(Instant.parse(parts[1]), Double.parseDouble(parts[2]), UUID.fromString(parts[3]));
+                }
+                String[] parts = raw.split("\\|", 2);
                 return new Cursor(Instant.parse(parts[0]), UUID.fromString(parts[1]));
             } catch (RuntimeException exception) {
                 throw BusinessException.badRequest("INVALID_CURSOR", "Posição do feed inválida.");

@@ -437,6 +437,8 @@ export type FeedReport = { id:string; targetType:'POST'|'COMMENT'|'RECON'; targe
 export type FollowStats = { followers:number; following:number; follows:boolean }
 const post = (id:string) => `/api/feed/posts/${encodeURIComponent(id)}`
 export const reactToPost = (id:string, kind:'ON_TARGET'|'ELIMINATED', on:boolean) => apiRequest<PostCounts>(`${post(id)}/reactions/${kind}`, { method: on ? 'PUT' : 'DELETE' })
+export const recordPostView = (id:string, watchedMs:number, completed:boolean) =>
+  apiRequest<void>(`${post(id)}/views`, json('POST', { watchedMs: Math.max(0, Math.round(watchedMs)), completed }))
 export const savePost = (id:string, on:boolean) => apiRequest<PostCounts>(`${post(id)}/save`, { method: on ? 'PUT' : 'DELETE' })
 export const sharePost = (id:string, channel:'WHATSAPP'|'LINK'|'NATIVE') => apiRequest<{ url:string }>(`${post(id)}/shares`, json('POST', { channel }))
 export const getComments = (id:string, parentId?:string|null, after?:string|null) =>

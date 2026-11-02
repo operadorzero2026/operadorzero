@@ -1,5 +1,32 @@
 # Histórico de alterações
 
+## 2026-11-02 - Feed (etapa 7): ranking "Para você"
+
+### Arquivos alterados
+- Servidor: `FeedRanking` (pesos e fórmula), `FeedRepository.ranked/byIds`, `FeedService` (cursor do ranking com âncora), visualizações em `FeedInteractionService/Repository/Controller`.
+- Site: `FeedItem.tsx` envia o tempo assistido ao sair do post; `api.ts`.
+
+### O que foi feito
+- Pontuação = (1 + ln(1 + engajamento)) × 0,5^(idade/24 h) × (1 + bônus).
+- Engajamento: reações, comentários (×2), compartilhamentos (×3), condecorações (×3), taxa de conclusão (×4) e fração assistida (×3).
+- Bônus: mesmo estado (+0,4), mesma cidade (+0,3), campo onde a pessoa jogou (+0,6), mesma equipe (+0,5), autor seguido (+0,4), modalidade que a pessoa joga (+0,3).
+- Fora do ranking: posts com mais de 14 dias e os vistos nos últimos 3 dias; sem nada novo, o feed cai para a ordem cronológica.
+- Paginação com âncora de tempo fixa: páginas não se embaralham e posts novos não entram no meio.
+- "Seguindo" e hashtags continuam cronológicos.
+- Visualizações: tempo assistido limitado a 3× a duração do vídeo (60 s em fotos); conclusão por loop/fim do vídeo ou 2,5 s em foto.
+
+### Motivo
+- Etapa 7 do plano do feed (fecha o feed base da Fase 1).
+
+### Impacto
+- Rota nova `POST /api/feed/posts/{id}/views`. Sem migration nova.
+
+### Testes
+- 166 testes do servidor; SQL real do ranking (frescor, região, seguido, visto, janela, bloqueio, âncora, paginação igual à consulta única); ponta a ponta pela API e pelo navegador.
+
+### Pendências
+- Fase 1 restante: Convocação, Condecorar e Quadro de Honra, Filtros táticos. Publicação do feed (exige mudança no Caddy da VPS).
+
 ## 2026-11-02 - Feed (etapa 6): reações, comentários, seguir, compartilhar e moderação
 
 ### Arquivos alterados

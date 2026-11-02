@@ -45,6 +45,7 @@ public class FeedInteractionService {
     public record CommentPage(List<CommentResponse> items, Instant nextAfter) {}
     public record ShareResponse(String url) {}
     public record FollowStats(long followers, long following, boolean follows) {}
+    public record ViewRequest(@jakarta.validation.constraints.PositiveOrZero long watchedMs, boolean completed) {}
 
     private final FeedInteractionRepository repository;
     private final FeedPostRepository posts;
@@ -119,6 +120,23 @@ public class FeedInteractionService {
 
     public String shareUrl(UUID postId) {
         return publicBaseUrl + "/p/" + postId;
+    }
+
+    // ---- Visualizacoes ----
+
+    /**
+     * Uma passagem pelo post (enviada ao sair dele). O tempo e limitado a 3x a duracao do video (ou 60 s em fotos)
+     * para que uma aba esquecida aberta nao infle o "% assistido" do ranking.
+     */
+    @Transactional
+    public void view(AuthenticatedUser user, UUID postId, ViewRequest request) {
+        VisiblePost post = visible(user, postId);
+        limiter.check("feed-view", user.internalId(), 2000, Duration.ofHours(1));
+        long cap = repository.videoDurationMs(post.id()).map(duration -> duration * 3L).orElse(60_000L);
+        long watched = Math.min(request.watchedMs(), cap);
+        Instant now = clock.instant();
+        var delta = repository.recordView(post.id(), user.internalId(), watched, request.completed(), now);
+        repository.addViewMetrics(post.id(), delta.firstView(), watched, delta.newCompletion(), now);
     }
 
     // ---- Seguir ----

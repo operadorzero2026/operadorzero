@@ -137,6 +137,20 @@ class FeedInteractionServiceTest {
     }
 
     @Test
+    void watchTimeIsCappedSoAForgottenTabDoesNotInflateTheRanking() {
+        when(repository.videoDurationMs(11L)).thenReturn(Optional.of(10_000));
+        when(repository.recordView(11L, 7L, 30_000L, true, NOW)).thenReturn(new FeedInteractionRepository.ViewDelta(true, true));
+        service.view(viewer, postId, new FeedInteractionService.ViewRequest(3_600_000L, true));
+        verify(repository).addViewMetrics(11L, true, 30_000L, true, NOW);
+
+        // Foto (sem duracao): limite de 60 s.
+        when(repository.videoDurationMs(11L)).thenReturn(Optional.empty());
+        when(repository.recordView(11L, 7L, 60_000L, false, NOW)).thenReturn(new FeedInteractionRepository.ViewDelta(false, false));
+        service.view(viewer, postId, new FeedInteractionService.ViewRequest(90_000L, false));
+        verify(repository).addViewMetrics(11L, false, 60_000L, false, NOW);
+    }
+
+    @Test
     void followingNotifiesOnlyOnTheFirstFollow() {
         when(repository.followable("bravo", 7L)).thenReturn(Optional.of(new FeedInteractionRepository.UserRef(5L, "bravo")));
         when(repository.follow(7L, 5L, NOW)).thenReturn(true, false);
