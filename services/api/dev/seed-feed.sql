@@ -20,6 +20,7 @@ ON CONFLICT (user_id) DO NOTHING;
 
 -- Remove posts de seed anteriores para o script poder rodar de novo.
 DELETE FROM feed_post WHERE caption LIKE '[DEV]%';
+DELETE FROM recon WHERE media_asset_id IN (SELECT id FROM media_asset WHERE storage_prefix LIKE 'dev-seed/%');
 DELETE FROM media_asset WHERE storage_prefix LIKE 'dev-seed/%';
 
 CREATE TEMP TABLE seed_post(slot int, username text, kind text, w int, h int, ms int, prefix text, renditions jsonb,
@@ -85,6 +86,32 @@ SELECT m.owner_user_id, m.id, x.overlay, 'ACTIVE', now() - make_interval(mins =>
        now() - make_interval(mins => x.minutes_ago) + interval '24 hours'
 FROM recon_media m JOIN (VALUES ('dev-seed/v2', '[DEV] Chegando no campo', 90), ('dev-seed/i1', '[DEV] Briefing às 9h', 30),
                                 ('dev-seed/i2', '[DEV] Equipamento pronto', 200)) x(prefix, overlay, minutes_ago) ON x.prefix = m.storage_prefix;
+
+-- Convocacoes de exemplo: um jogo pequeno quase lotado (2 lados) e um medio com pelotoes.
+DELETE FROM airsoft_operation WHERE name LIKE '[DEV]%';
+DELETE FROM airsoft_field WHERE name LIKE '[DEV]%';
+INSERT INTO airsoft_field(responsible_user_id, name, address_line, city, state_code, latitude, longitude)
+SELECT id, '[DEV] Campo Platina', 'Estrada do Campo, s/n', 'Curitiba', 'PR', -25.428400, -49.273300 FROM app_user WHERE username = 'dev_alfa';
+INSERT INTO airsoft_operation(organizer_user_id, field_id, name, description, city, state_code, operation_date, presentation_time, start_time,
+                              end_time, modality, game_size, participant_limit, approval_required, waiting_list_enabled, status)
+SELECT u.id, f.id, x.name, 'Jogo de exemplo para desenvolvimento.', 'Curitiba', 'PR', CURRENT_DATE + x.days, '08:00', '09:00', '15:00',
+       x.modality, x.size, x.lim, x.approval, TRUE, 'REGISTRATION_OPEN'
+FROM app_user u JOIN airsoft_field f ON f.name = '[DEV] Campo Platina'
+JOIN (VALUES ('[DEV] Operação Neblina', 6, 'DOMINATION', 'SMALL', 5, FALSE),
+             ('[DEV] Cerco ao Galpão', 12, 'ATTACK_DEFENSE', 'MEDIUM', 40, TRUE)) x(name, days, modality, size, lim, approval) ON TRUE
+WHERE u.username = 'dev_alfa';
+DELETE FROM operation_team t USING airsoft_operation o WHERE t.operation_id = o.id AND o.name LIKE '[DEV]%';
+INSERT INTO operation_team(operation_id, name, capacity, sort_order)
+SELECT o.id, x.name, CASE WHEN o.game_size = 'SMALL' THEN 3 ELSE 20 END, x.n FROM airsoft_operation o
+CROSS JOIN (VALUES ('Time Azul', 1), ('Time Vermelho', 2)) x(name, n) WHERE o.name LIKE '[DEV]%';
+INSERT INTO operation_squad(operation_team_id, name, capacity, sort_order)
+SELECT t.id, x.name, 10, x.n FROM operation_team t JOIN airsoft_operation o ON o.id = t.operation_id
+CROSS JOIN (VALUES ('Pelotão 1', 1), ('Pelotão 2', 2)) x(name, n) WHERE o.name = '[DEV] Cerco ao Galpão';
+INSERT INTO operation_participant(operation_id, user_id, status, operation_team_id, requested_at, updated_at)
+SELECT o.id, u.id, 'APPROVED', t.id, now(), now() FROM airsoft_operation o
+JOIN operation_team t ON t.operation_id = o.id AND t.sort_order = 1
+JOIN app_user u ON u.username IN ('dev_bravo', 'dev_charlie')
+WHERE o.name = '[DEV] Operação Neblina';
 
 -- Todo usuario local que nao e de seed passa a seguir dev_alfa, para a aba "Seguindo" ter conteudo.
 INSERT INTO operator_follow(follower_user_id, followed_user_id)

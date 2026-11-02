@@ -58,9 +58,9 @@ public class PublicPostController {
     }
 
     private static String page(String title, String description, String image, String target) {
-        String t = HtmlUtils.htmlEscape(title);
-        String d = HtmlUtils.htmlEscape(description);
-        String u = HtmlUtils.htmlEscape(target);
+        String t = HtmlUtils.htmlEscape(title, "UTF-8");
+        String d = HtmlUtils.htmlEscape(description, "UTF-8");
+        String u = HtmlUtils.htmlEscape(target, "UTF-8");
         StringBuilder html = new StringBuilder("<!doctype html><html lang=\"pt-BR\"><head><meta charset=\"utf-8\">")
             .append("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">")
             .append("<title>").append(t).append("</title>")
@@ -70,7 +70,7 @@ public class PublicPostController {
             .append("<meta property=\"og:description\" content=\"").append(d).append("\">")
             .append("<meta property=\"og:url\" content=\"").append(u).append("\">")
             .append("<meta name=\"twitter:card\" content=\"summary_large_image\">");
-        if (image != null) html.append("<meta property=\"og:image\" content=\"").append(HtmlUtils.htmlEscape(image)).append("\">");
+        if (image != null) html.append("<meta property=\"og:image\" content=\"").append(HtmlUtils.htmlEscape(image, "UTF-8")).append("\">");
         return html.append("<meta http-equiv=\"refresh\" content=\"0; url=").append(u).append("\">")
             .append("<link rel=\"canonical\" href=\"").append(u).append("\"></head><body>")
             .append("<p><a href=\"").append(u).append("\">Abrir no Operador Zero</a></p></body></html>").toString();

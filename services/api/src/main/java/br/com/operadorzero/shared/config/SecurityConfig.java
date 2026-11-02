@@ -92,7 +92,7 @@ public class SecurityConfig {
                 // Midias do feed: caminhos aleatorios e imutaveis; servidas pela API so em desenvolvimento.
                 .requestMatchers(HttpMethod.GET, "/media/**").permitAll()
                 // Link compartilhado: HTML com previa (Open Graph) que redireciona para a pagina publica do post.
-                .requestMatchers(HttpMethod.GET, "/p/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/p/*", "/c/*").permitAll()
                 .requestMatchers("/api/admin/community/**").hasAnyRole("ADMIN", "MODERATOR")
                 .requestMatchers("/api/admin/feed/**").hasAnyRole("ADMIN", "MODERATOR")
                 .requestMatchers("/api/community/**").authenticated()

@@ -1,12 +1,33 @@
 import { Crosshair, RefreshCw, Users } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { getFeed, type FeedPost } from '../api'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { getCallUps, getFeed, type CallUp, type FeedPost } from '../api'
+import { CallUpCard } from './CallUpCard'
 import { FeedItem, FeedSkeleton, type ItemMode } from './FeedItem'
 import type { FeedTab } from './FeedPage'
 
 // Quantos posts ao redor do visivel ficam montados; o resto vira so um espaco vazio do mesmo tamanho.
 const MOUNT_RADIUS = 2
 const LOAD_AHEAD = 3
+// Convocacoes no "Para voce": a primeira depois do 3o post, depois uma a cada 6.
+const FIRST_CALLUP_AFTER = 3
+const CALLUP_EVERY = 6
+
+type Entry = { kind: 'post'; post: FeedPost } | { kind: 'callup'; callUp: CallUp }
+
+function interleave(posts: FeedPost[], callUps: CallUp[], finished: boolean): Entry[] {
+  const entries: Entry[] = []
+  let next = 0
+  posts.forEach((post, index) => {
+    entries.push({ kind: 'post', post })
+    const position = index + 1
+    if (next < callUps.length && position >= FIRST_CALLUP_AFTER && (position - FIRST_CALLUP_AFTER) % CALLUP_EVERY === 0) {
+      entries.push({ kind: 'callup', callUp: callUps[next++] })
+    }
+  })
+  // Feed curto (ou vazio) com jogos abertos: os jogos aparecem no fim em vez de sumirem.
+  if (finished) while (next < callUps.length && next < 3) entries.push({ kind: 'callup', callUp: callUps[next++] })
+  return entries
+}
 
 export function FeedList({ tab, hashtag, onHashtag, onFindOperators, onScrolledChange }: { tab: FeedTab; hashtag?: string | null; onHashtag: (tag: string) => void; onFindOperators: () => void; onScrolledChange?: (scrolled: boolean) => void }) {
   const [items, setItems] = useState<FeedPost[]>([])
@@ -15,6 +36,7 @@ export function FeedList({ tab, hashtag, onHashtag, onFindOperators, onScrolledC
   const [error, setError] = useState('')
   const [active, setActive] = useState(0)
   const [muted, setMuted] = useState(true)
+  const [callUps, setCallUps] = useState<CallUp[]>([])
   const container = useRef<HTMLDivElement>(null)
   const loadingRef = useRef(false)
 
@@ -35,6 +57,15 @@ export function FeedList({ tab, hashtag, onHashtag, onFindOperators, onScrolledC
   }, [tab, hashtag])
 
   useEffect(() => {
+    if (tab !== 'for-you' || hashtag) return
+    let active = true
+    getCallUps().then(result => { if (active) setCallUps(result.items) }).catch(() => undefined)
+    return () => { active = false }
+  }, [tab, hashtag])
+
+  const entries = useMemo(() => interleave(items, tab === 'for-you' && !hashtag ? callUps : [], cursor === null), [items, callUps, cursor, tab, hashtag])
+
+  useEffect(() => {
     setItems([]); setCursor(undefined); setActive(0)
     container.current?.scrollTo({ top: 0 })
     void load(undefined, true)
@@ -51,19 +82,19 @@ export function FeedList({ tab, hashtag, onHashtag, onFindOperators, onScrolledC
     }, { root, threshold: [0.6] })
     root.querySelectorAll<HTMLElement>('[data-index]').forEach(slot => observer.observe(slot))
     return () => observer.disconnect()
-  }, [items.length])
+  }, [entries.length])
 
   useEffect(() => { onScrolledChange?.(active > 0) }, [active, onScrolledChange])
 
   useEffect(() => {
-    if (cursor && !loading && !error && active >= items.length - LOAD_AHEAD) void load(cursor, false)
-  }, [active, cursor, error, items.length, load, loading])
+    if (cursor && !loading && !error && active >= entries.length - LOAD_AHEAD) void load(cursor, false)
+  }, [active, cursor, error, entries.length, load, loading])
 
   const mode = (index: number): ItemMode => index === active ? 'active' : Math.abs(index - active) === 1 ? 'preload' : 'idle'
 
   if (!items.length && loading) return <div className="feed-stream"><FeedSkeleton/></div>
   if (!items.length && error) return <div className="feed-stream"><div className="feed-empty" role="alert"><Crosshair aria-hidden="true"/><h2>Não foi possível carregar o feed</h2><p>{error}</p><button type="button" className="button button--small" onClick={() => void load(undefined, true)}><RefreshCw/> Tentar novamente</button></div></div>
-  if (!items.length && cursor === null) return <div className="feed-stream"><div className="feed-empty">
+  if (!entries.length && cursor === null) return <div className="feed-stream"><div className="feed-empty">
     <Crosshair aria-hidden="true"/>
     <h2>{hashtag ? `Nenhum post com #${hashtag}` : tab === 'following' ? 'Você ainda não segue ninguém' : 'Nenhum post por aqui ainda'}</h2>
     <p>{tab === 'following' ? 'Siga operadores para ver os posts deles nesta aba, em ordem de publicação.' : 'Os posts da comunidade aparecerão aqui assim que forem publicados.'}</p>
@@ -71,11 +102,11 @@ export function FeedList({ tab, hashtag, onHashtag, onFindOperators, onScrolledC
   </div></div>
 
   return <div className="feed-stream" ref={container}>
-    {items.map((post, index) => <div className="feed-slot" key={post.id} data-index={index}>
-      {Math.abs(index - active) <= MOUNT_RADIUS
-        ? <FeedItem post={post} mode={mode(index)} muted={muted} onToggleMute={() => setMuted(value => !value)} onHashtag={onHashtag}
-          onDeleted={id => setItems(previous => previous.filter(item => item.id !== id))}/>
-        : null}
+    {entries.map((entry, index) => <div className="feed-slot" key={entry.kind === 'post' ? entry.post.id : `callup-${entry.callUp.id}`} data-index={index}>
+      {Math.abs(index - active) > MOUNT_RADIUS ? null
+        : entry.kind === 'callup' ? <CallUpCard callUp={entry.callUp}/>
+        : <FeedItem post={entry.post} mode={mode(index)} muted={muted} onToggleMute={() => setMuted(value => !value)} onHashtag={onHashtag}
+          onDeleted={id => setItems(previous => previous.filter(item => item.id !== id))}/>}
     </div>)}
     {loading && <div className="feed-slot"><FeedSkeleton/></div>}
     {error && <div className="feed-slot"><div className="feed-empty" role="alert"><p>{error}</p><button type="button" className="button button--small" onClick={() => void load(cursor, false)}><RefreshCw/> Tentar novamente</button></div></div>}

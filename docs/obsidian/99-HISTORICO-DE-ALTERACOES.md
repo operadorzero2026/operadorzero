@@ -1,5 +1,32 @@
 # Histórico de alterações
 
+## 2026-11-02 - Feed: Convocação
+
+### Arquivos alterados
+- Servidor: `operation/CallUpRepository`, `CallUpService`, `CallUpController`; `SecurityConfig` (`/c/*` público); prévias em UTF-8.
+- Site: `src/feed/CallUpCard.tsx`, `PublicCallUpPage.tsx`, intercalação em `FeedList.tsx`, rota `/convocacao/{id}` em `App.tsx`.
+- Deploy: `nginx.conf` encaminha `/c/` para a API.
+- Desenvolvimento: jogos de exemplo no `seed-feed.sql`.
+
+### O que foi feito
+- Card de jogo no "Para você" (primeiro depois do 3º post, depois a cada 6), gerado das operações existentes com inscrição aberta nos próximos 45 dias.
+- Prioridade: mesmo estado (+1), mesma cidade (+1), campo onde a pessoa já jogou (+1,5), dividida pela distância em semanas até o jogo.
+- Mostra campo, data/hora, modalidade, preço, "Como chegar" (link GPS do campo ou coordenadas), vagas ocupadas/total com barra e destaque "Últimas N vagas" (≤ 3).
+- ALISTAR usa a inscrição existente (mesmas regras de vaga, aprovação e lista de espera): escolhe o lado no jogo pequeno e lado + pelotão nos demais; estados ALISTADO ✓, PEDIDO ENVIADO, NA LISTA DE ESPERA, LOTADO.
+- Compartilhar no WhatsApp com `/c/{id}` (prévia Open Graph) que leva a `/convocacao/{id}`; deslogado, ALISTAR abre o login.
+
+### Motivo
+- Fase 1 do plano do feed (Convocação).
+
+### Impacto
+- Rotas novas `/api/feed/callups`, `/api/feed/callups/{id}`, `/api/public/callups/{id}` e `/c/{id}`. Sem migration nova.
+
+### Testes
+- 169 testes do servidor (3 novos); cenários do site; ponta a ponta pela API (ALISTAR pequeno e médio, recusa sem pelotão, prévia) e pelo navegador (card no feed e escolha de pelotão).
+
+### Pendências
+- Condecorar e Quadro de Honra; Filtros táticos; publicação.
+
 ## 2026-11-02 - Feed (etapa 7): ranking "Para você"
 
 ### Arquivos alterados

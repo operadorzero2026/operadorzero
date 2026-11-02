@@ -21,7 +21,7 @@ assert.ok(order.every(index => index > 0) && order.every((index, i) => i === 0 |
 // Virtualizacao: so os vizinhos do post visivel ficam montados.
 const radius = Number(list.match(/const MOUNT_RADIUS = (\d+)/)?.[1])
 assert.ok(radius >= 1 && radius <= 3, 'MOUNT_RADIUS deve manter poucos posts montados.')
-assert.match(list, /Math\.abs\(index - active\) <= MOUNT_RADIUS/)
+assert.match(list, /Math\.abs\(index - active\) > MOUNT_RADIUS \? null/)
 
 // Video: mudo por padrao, inline, em loop, sem baixar quando esta longe.
 assert.match(list, /useState\(true\)/, 'O feed comeca mudo para permitir autoplay.')
@@ -70,4 +70,14 @@ assert.match(page, /hashtag=\{hashtag\}/, 'Hashtags filtram o feed.')
 assert.match(item, /if \(watched >= 500\) report\.current\?\.\(watched, completed/, 'Tempo assistido enviado ao sair do post.')
 assert.match(item, /onViewEnd=\{readOnly \? undefined :/, 'Pagina publica nao registra visualizacao.')
 
-console.log('Feed validado: redirecionamento, navegacao, virtualizacao, autoplay mudo, midia sem corte, cursor, Recons, interacoes e ranking.')
+// Convocacao: card intercalado no "Para voce", ALISTAR pela inscricao existente, ultimas vagas e WhatsApp.
+const callUpCard = await readFile('src/feed/CallUpCard.tsx', 'utf8')
+assert.match(list, /const FIRST_CALLUP_AFTER = 3/)
+assert.match(list, /tab !== 'for-you' \|\| hashtag\) return/, 'Convocacoes so no Para voce.')
+assert.match(callUpCard, /requestOperationParticipation\(callUp\.id, teamId, squadId\)/, 'ALISTAR usa a inscricao existente.')
+assert.match(callUpCard, /callUp\.gameSize === 'SMALL'/, 'Jogo medio/grande pede pelotao.')
+assert.match(callUpCard, /Últimas \{callUp\.remaining\}/, 'Destaque de ultimas vagas.')
+assert.match(callUpCard, /https:\/\/wa\.me\/\?text=/, 'Compartilhar convocacao no WhatsApp.')
+for (const label of ['ALISTADO', 'PEDIDO ENVIADO', 'NA LISTA DE ESPERA', 'LOTADO']) assert.ok(callUpCard.includes(`'${label}'`), label)
+
+console.log('Feed validado: redirecionamento, navegacao, virtualizacao, autoplay mudo, midia sem corte, cursor, Recons, interacoes, ranking e Convocacoes.')

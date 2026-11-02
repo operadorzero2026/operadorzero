@@ -241,3 +241,33 @@
 .feed-moderation li>div{display:flex;gap:8px;justify-content:flex-end}
 .feed-moderation-details{color:#9da08f}
 .recon-viewer~.feed-sheet-backdrop,.recon-viewer~* .feed-sheet-backdrop{z-index:130}
+
+/* Convocacao: card de jogo em tela cheia no feed. */
+.callup-card{position:absolute;inset:0;display:grid;place-items:center;padding:calc(110px + env(safe-area-inset-top)) 16px 24px;color:#f2f1e9;
+  background:repeating-linear-gradient(135deg,#0b0d09 0 18px,#0e110b 18px 36px),radial-gradient(circle at 50% 20%,#2a2f1a,#050605 70%);background-blend-mode:overlay}
+.callup-inner{width:100%;max-width:420px;display:grid;gap:12px;padding:20px 18px;border:1px solid var(--feed-olive);border-top:3px solid var(--feed-gold);background:#0d0f0bee;box-shadow:0 10px 40px #000a}
+.callup-eyebrow{display:flex;align-items:center;gap:6px;margin:0;color:var(--feed-gold-soft);font:800 13px/1 'Barlow Condensed',sans-serif;letter-spacing:.2em}
+.callup-eyebrow svg{width:16px;height:16px}
+.callup-card h2{margin:0;font:800 30px/1.05 'Barlow Condensed',sans-serif;text-transform:uppercase}
+.callup-facts{list-style:none;margin:0;padding:0;display:grid;gap:7px;font-size:14px;color:#d8d9cc}
+.callup-facts li{display:flex;align-items:center;gap:8px}
+.callup-facts svg{flex:none;width:16px;height:16px;color:var(--feed-gold)}
+.callup-directions{justify-self:start;display:inline-flex;align-items:center;gap:6px;color:var(--feed-gold-soft);font-size:13px;font-weight:700}
+.callup-directions svg{width:15px;height:15px}
+.callup-spots p{margin:0 0 6px;font-size:13px;color:#c9cbbb}
+.callup-spots b{color:#fff;font-size:16px}
+.callup-spots em{font-style:normal;color:#c9cbbb}
+.callup-spots--last em{color:#ffb347;font-weight:800}
+.callup-bar{height:8px;border-radius:4px;background:#22261b;overflow:hidden}
+.callup-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--feed-olive),var(--feed-gold))}
+.callup-spots--last .callup-bar i{background:linear-gradient(90deg,#c98a27,#ff7b3a);animation:callup-pulse 1.4s ease-in-out infinite}
+@keyframes callup-pulse{50%{opacity:.6}}
+.callup-actions{display:grid;grid-template-columns:1fr auto;gap:8px}
+.callup-enlist{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border:0;background:var(--feed-gold);color:#120f04;font:800 18px/1 'Barlow Condensed',sans-serif;letter-spacing:.16em;cursor:pointer}
+.callup-enlist svg{width:18px;height:18px}
+.callup-enlist--done{background:#1d2116;color:var(--feed-gold-soft);box-shadow:inset 0 0 0 1px var(--feed-olive);cursor:default}
+.callup-enlist:disabled{opacity:1}
+.callup-share{display:grid;place-items:center;width:52px;border:1px solid var(--feed-olive);background:#141711;color:#fff;cursor:pointer}
+.callup-share svg{width:20px;height:20px}
+.callup-note{margin:0;font-size:12px;color:#9da08f}
+@media(prefers-reduced-motion:reduce){.callup-spots--last .callup-bar i{animation:none}}

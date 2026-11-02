@@ -65,6 +65,7 @@ import { UploadStatus } from './feed/UploadStatus'
 import { DossierStrip } from './feed/DossierStrip'
 import { FeedModerationPanel } from './feed/FeedModerationPanel'
 import { PublicPostPage } from './feed/PublicPostPage'
+import { PublicCallUpPage } from './feed/PublicCallUpPage'
 import { BottomNav, CreateSheet, HubPage, type HubId } from './feed/AppNavigation'
 import { OperationsPage } from './OperationsPage'
 import { VenuesPage } from './VenuesPage'
@@ -491,6 +492,13 @@ export default function App() {
 
   // Link compartilhado (/p/{id} redireciona para ca): funciona logado ou nao.
   const sharedPost = currentPath.match(/^\/post\/([0-9a-f-]{36})$/)?.[1]
+  const sharedCallUp = currentPath.match(/^\/convocacao\/([0-9a-f-]{36})$/)?.[1]
+  if (sharedCallUp && !sessionRestoring) {
+    return <>
+      <PublicCallUpPage operationId={sharedCallUp} loggedIn={Boolean(currentUser)} onLogin={() => setAuthMode('login')} onOpenFeed={() => navigate('/feed')}/>
+      {authModal}
+    </>
+  }
   if (sharedPost && !sessionRestoring) {
     return <>
       <PublicPostPage postId={sharedPost} loggedIn={Boolean(currentUser)} onLogin={() => setAuthMode('login')} onSignup={() => setAuthMode('signup')} onOpenFeed={() => navigate('/feed')}/>

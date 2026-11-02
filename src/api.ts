@@ -485,6 +485,12 @@ export const createDossier = (title:string) => apiRequest<DossierSummary>('/api/
 export const addReconToDossier = (dossierId:string, reconId:string) => apiRequest<void>(`/api/dossiers/${encodeURIComponent(dossierId)}/recons`, json('POST', { reconId }))
 export const removeReconFromDossier = (dossierId:string, reconId:string) => apiRequest<void>(`/api/dossiers/${encodeURIComponent(dossierId)}/recons/${encodeURIComponent(reconId)}`, { method:'DELETE' })
 export const deleteDossier = (id:string) => apiRequest<void>(`/api/dossiers/${encodeURIComponent(id)}`, { method:'DELETE' })
+export type CallUpSquad = { id:string; name:string; capacity:number; occupied:number }
+export type CallUpTeam = { id:string; name:string; capacity:number; occupied:number; squads:CallUpSquad[] }
+export type CallUp = { id:string; name:string; date:string; presentationTime?:string|null; startTime:string; city:string; stateCode:string; fieldName:string; directionsUrl?:string|null; modality:string; customModality?:string|null; gameSize:'SMALL'|'MEDIUM'|'LARGE'; status:string; occupied:number; limit?:number|null; remaining?:number|null; lastSpots:boolean; price?:number|null; approvalRequired:boolean; waitingListEnabled:boolean; viewerStatus?:string|null; teams:CallUpTeam[]; shareUrl:string }
+export const getCallUps = (limit = 10) => apiRequest<{ items:CallUp[] }>(`/api/feed/callups?limit=${limit}`)
+export const getCallUp = (id:string) => apiRequest<CallUp>(`/api/feed/callups/${encodeURIComponent(id)}`)
+export const getPublicCallUp = (id:string) => apiRequest<CallUp>(`/api/public/callups/${encodeURIComponent(id)}`)
 /** Midias vem com caminho relativo (/media/...); em desenvolvimento a API fica em outra origem. */
 export const mediaUrl = (url?:string|null) => !url ? undefined : /^(https?:|data:)/.test(url) ? url : `${getApiBaseUrl()}${url}`
 export type PublicOperation = { id:string; name:string; operationDate:string; startTime:string; city:string; stateCode:string; fieldName:string; modality:string; status:string; participantCount:number; participantLimit?:number|null; registrationPrice?:number|null }
