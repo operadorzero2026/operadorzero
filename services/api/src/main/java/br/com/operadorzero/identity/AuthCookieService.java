@@ -15,6 +15,7 @@ public class AuthCookieService {
     private static final String[] LEGACY_AUTH_COOKIES = {"OZ_GOOGLE_INTENT", "OZ_OAUTH_SESSION"};
     public static final String GOOGLE_FLOW_COOKIE = "OZ_GOOGLE_FLOW";
     public static final String GOOGLE_LINK_COOKIE = "OZ_GOOGLE_LINK";
+    public static final String GOOGLE_SIGNUP_COOKIE = "OZ_GOOGLE_SIGNUP";
 
     private final AuthProperties properties;
 
@@ -52,6 +53,18 @@ public class AuthCookieService {
 
     public void writeGoogleLink(HttpServletResponse response, String token) {
         add(response, GOOGLE_LINK_COOKIE, token, GoogleFlowStore.LINK_TTL, true);
+    }
+
+    public Optional<String> googleSignup(HttpServletRequest request) {
+        return cookie(request, GOOGLE_SIGNUP_COOKIE);
+    }
+
+    public void writeGoogleSignup(HttpServletResponse response, String token) {
+        add(response, GOOGLE_SIGNUP_COOKIE, token, GoogleFlowStore.FLOW_TTL, true);
+    }
+
+    public void clearGoogleSignup(HttpServletResponse response) {
+        add(response, GOOGLE_SIGNUP_COOKIE, "", Duration.ZERO, true);
     }
 
     public void clearGoogleLink(HttpServletResponse response) {

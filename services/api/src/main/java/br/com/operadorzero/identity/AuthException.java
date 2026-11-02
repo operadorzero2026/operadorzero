@@ -44,6 +44,11 @@ public final class AuthException extends RuntimeException {
         return new AuthException(HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMITED", "Muitas tentativas. Aguarde e tente novamente.");
     }
 
+    public static AuthException googleSignupExpired() {
+        return new AuthException(HttpStatus.CONFLICT, "GOOGLE_SIGNUP_EXPIRED",
+            "A confirmacao do Google expirou. Toque em Continuar com Google novamente.");
+    }
+
     public static AuthException googleUnavailable() {
         return new AuthException(HttpStatus.SERVICE_UNAVAILABLE, "GOOGLE_UNAVAILABLE",
             "Entrar com Google esta indisponivel no momento. Use e-mail e senha.");

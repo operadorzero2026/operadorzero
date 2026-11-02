@@ -106,6 +106,59 @@ class GoogleAuthServiceTest {
     }
 
     @Test
+    void unknownGoogleAccountOnLoginKeepsTheConfirmedIdentityForAOneTapSignup() {
+        when(repository.findByOidc(ISSUER, SUBJECT)).thenReturn(Optional.empty());
+        when(repository.findByEmail("new@example.com")).thenReturn(Optional.empty());
+        when(store.saveSignupIntent(any())).thenReturn("raw-signup-token");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        complete(Mode.LOGIN, false, "New@example.com", true, new MockHttpServletRequest(), response);
+
+        verify(store).saveSignupIntent(new GoogleFlowStore.SignupIntent(ISSUER, SUBJECT, "new@example.com", "Nova Pessoa"));
+        assertThat(response.getHeaders("Set-Cookie")).anyMatch(value -> value.startsWith("OZ_GOOGLE_SIGNUP=raw-signup-token") && value.contains("HttpOnly"));
+    }
+
+    @Test
+    void oneTapSignupNeedsTermsAndAValidIntentAndCreatesTheAccount() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setCookies(new jakarta.servlet.http.Cookie("OZ_GOOGLE_SIGNUP", "raw-signup-token"));
+        assertThatThrownBy(() -> service.completeSignup(false, request, new MockHttpServletResponse()))
+            .isInstanceOfSatisfying(AuthException.class, e -> assertThat(e.code()).isEqualTo("TERMS_REQUIRED"));
+        assertThatThrownBy(() -> service.completeSignup(true, new MockHttpServletRequest(), new MockHttpServletResponse()))
+            .isInstanceOfSatisfying(AuthException.class, e -> assertThat(e.code()).isEqualTo("GOOGLE_SIGNUP_EXPIRED"));
+
+        when(store.takeSignupIntent("raw-signup-token")).thenReturn(Optional.of(new GoogleFlowStore.SignupIntent(ISSUER, SUBJECT, "new@example.com", "Nova Pessoa")));
+        when(repository.findByOidc(ISSUER, SUBJECT)).thenReturn(Optional.empty());
+        when(repository.findByEmail("new@example.com")).thenReturn(Optional.empty());
+        when(repository.createUser(eq("new@example.com"), anyString(), isNull(), eq("ACTIVE"), eq("Nova Pessoa"),
+            eq("NOVA PESSOA"), anyString(), anyString(), any(Instant.class))).thenReturn(30L);
+        when(repository.linkOidc(eq(30L), eq("google"), eq(ISSUER), eq(SUBJECT), eq("new@example.com"), any())).thenReturn(true);
+        when(repository.findById(30L)).thenReturn(Optional.of(account(30L, "new@example.com", null)));
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        UserAccount account = service.completeSignup(true, request, response);
+
+        assertThat(account.id()).isEqualTo(30L);
+        verify(repository).saveSession(eq(30L), anyString(), any(), anyString(), any(), any());
+        verify(repository).recordAudit(eq(30L), eq("AUTH_REGISTER_GOOGLE"), anyString(), any(), anyString(), isNull(), anyString(), any());
+        assertThat(response.getHeaders("Set-Cookie")).anyMatch(value -> value.startsWith("OZ_GOOGLE_SIGNUP=;") || value.startsWith("OZ_GOOGLE_SIGNUP=\"\""));
+    }
+
+    @Test
+    void oneTapSignupNeverTakesAnAccountThatAppearedWithTheSameEmail() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setCookies(new jakarta.servlet.http.Cookie("OZ_GOOGLE_SIGNUP", "raw-signup-token"));
+        when(store.takeSignupIntent("raw-signup-token")).thenReturn(Optional.of(new GoogleFlowStore.SignupIntent(ISSUER, SUBJECT, "op@example.com", "Op")));
+        when(repository.findByOidc(ISSUER, SUBJECT)).thenReturn(Optional.empty());
+        when(repository.findByEmail("op@example.com")).thenReturn(Optional.of(account(20L, "op@example.com", "hash")));
+
+        assertThatThrownBy(() -> service.completeSignup(true, request, new MockHttpServletResponse()))
+            .isInstanceOfSatisfying(AuthException.class, e -> assertThat(e.code()).isEqualTo("GOOGLE_SIGNUP_EXPIRED"));
+        verify(repository, never()).linkOidc(anyLong(), anyString(), anyString(), anyString(), anyString(), any());
+        verify(repository, never()).saveSession(anyLong(), anyString(), any(), anyString(), any(), any());
+    }
+
+    @Test
     void registrationWithTermsCreatesActiveAccountWithoutPasswordAndLinksSubject() {
         when(repository.findByOidc(ISSUER, SUBJECT)).thenReturn(Optional.empty());
         when(repository.findByEmail("new@example.com")).thenReturn(Optional.empty());

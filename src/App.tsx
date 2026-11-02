@@ -65,6 +65,7 @@ import { UploadStatus } from './feed/UploadStatus'
 import { DossierStrip } from './feed/DossierStrip'
 import { FeedModerationPanel } from './feed/FeedModerationPanel'
 import { PublicPostPage } from './feed/PublicPostPage'
+import { GoogleSignupPrompt } from './GoogleSignupPrompt'
 import { PublicCallUpPage } from './feed/PublicCallUpPage'
 import { HonorBoardPage } from './feed/HonorBoard'
 import { BottomNav, CreateSheet, HubPage, type HubId } from './feed/AppNavigation'
@@ -419,6 +420,7 @@ export default function App() {
   const [authNotice, setAuthNotice] = useState('')
   const [googleNotice, setGoogleNotice] = useState('')
   const [resetTokenValue, setResetTokenValue] = useState('')
+  const [googleSignup, setGoogleSignup] = useState(false)
   const [currentPath, setCurrentPath] = useState(window.location.pathname)
 
   useEffect(() => {
@@ -456,6 +458,9 @@ export default function App() {
             setAuthMode('login')
           } else if (google === 'google-linked' && session) {
             setGoogleNotice('Conta Google vinculada. Agora você também pode entrar com o Google.')
+          } else if (google === 'google-signup-required' && !session) {
+            // A identidade Google ja foi confirmada: basta aceitar os Termos (sem refazer o fluxo pelo Criar conta).
+            setGoogleSignup(true)
           } else if (google === 'google-link-required' || google === 'google-signup-required') {
             setAuthNotice(GOOGLE_NOTICES[google]); setAuthMode(google === 'google-signup-required' ? 'signup' : 'login')
           } else if (google === 'google-error') {
@@ -490,7 +495,10 @@ export default function App() {
     if (user.googleLinked && authNotice === GOOGLE_NOTICES['google-link-required']) setGoogleNotice('Conta Google vinculada. Agora você também pode entrar com o Google.')
     setAuthMode(null); setAuthNotice(''); setCurrentUser(user)
   }
-  const authModal = authMode && <AuthModal mode={authMode} onClose={() => { setAuthMode(null); setAuthNotice('') }} onModeChange={setAuthMode} onAuthenticated={authenticated} resetToken={resetTokenValue} initialNotice={authNotice}/>
+  const googleSignupPrompt = googleSignup && <GoogleSignupPrompt onClose={() => setGoogleSignup(false)}
+    onDone={user => { setGoogleSignup(false); authenticated(user); navigate('/feed') }}
+    onExpired={() => { setGoogleSignup(false); setAuthNotice(GOOGLE_NOTICES['google-signup-required']); setAuthMode('signup') }}/>
+  const authModal = authMode ? <AuthModal mode={authMode} onClose={() => { setAuthMode(null); setAuthNotice('') }} onModeChange={setAuthMode} onAuthenticated={authenticated} resetToken={resetTokenValue} initialNotice={authNotice}/> : googleSignupPrompt
 
   // Link compartilhado (/p/{id} redireciona para ca): funciona logado ou nao.
   const sharedPost = currentPath.match(/^\/post\/([0-9a-f-]{36})$/)?.[1]

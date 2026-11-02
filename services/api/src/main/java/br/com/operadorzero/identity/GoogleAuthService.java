@@ -2,6 +2,7 @@ package br.com.operadorzero.identity;
 
 import br.com.operadorzero.identity.GoogleFlowStore.Flow;
 import br.com.operadorzero.identity.GoogleFlowStore.LinkIntent;
+import br.com.operadorzero.identity.GoogleFlowStore.SignupIntent;
 import br.com.operadorzero.identity.GoogleFlowStore.Mode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -111,21 +112,65 @@ public class GoogleAuthService {
         }
 
         if (flow.mode() != Mode.REGISTER || !flow.termsAccepted()) {
+            // Quem tocou em "Entrar" sem ter conta: guarda a identidade ja confirmada pelo Google; basta aceitar
+            // os Termos no site para concluir, sem voltar ao Google nem preencher o formulario de novo.
+            cookies.writeGoogleSignup(response, store.saveSignupIntent(new SignupIntent(issuer, subject, normalizedEmail, displayName)));
             return Outcome.of("signup-required");
         }
 
-        String safeDisplayName = displayName == null || displayName.isBlank() ? "Operador" : displayName.strip();
-        safeDisplayName = safeDisplayName.substring(0, Math.min(safeDisplayName.length(), 80));
-        long userId = repository.createUser(normalizedEmail, auth.uniqueUsername(safeDisplayName), null, "ACTIVE",
-            safeDisplayName, auth.callsign(safeDisplayName), AuthService.TERMS_VERSION, AuthService.PRIVACY_VERSION, now);
-        if (userId == 0L || !repository.linkOidc(userId, PROVIDER, issuer, subject, normalizedEmail, now)) {
+        UserAccount account = createGoogleUser(issuer, subject, normalizedEmail, displayName, now);
+        if (account == null) {
             return Outcome.error("GOOGLE_AUTH_FAILED");
         }
-        UserAccount account = repository.findById(userId).orElseThrow(AuthException::unavailable);
         auth.audit(account, "AUTH_REGISTER_GOOGLE", null, auth.ipHash(request), now);
         revokeCurrentSession(request, now);
         auth.createSession(account, request, response, "AUTH_LOGIN_GOOGLE");
         return Outcome.of("success");
+    }
+
+    /**
+     * Conclui o cadastro guardado em {@link #complete} depois que a pessoa aceita os Termos no site.
+     * A intencao vale uma vez, por 10 minutos, e so neste navegador (cookie HttpOnly).
+     */
+    @Transactional
+    public UserAccount completeSignup(boolean termsAccepted, HttpServletRequest request, HttpServletResponse response) {
+        auth.ensureEnabled();
+        if (!google.enabled()) {
+            throw AuthException.googleUnavailable();
+        }
+        if (!termsAccepted) {
+            throw AuthException.termsRequired();
+        }
+        String raw = cookies.googleSignup(request).orElseThrow(AuthException::googleSignupExpired);
+        cookies.clearGoogleSignup(response);
+        SignupIntent intent = store.takeSignupIntent(raw).orElseThrow(AuthException::googleSignupExpired);
+        Instant now = Instant.now();
+        // Algo mudou nesses minutos (cadastro em outra aba): nunca cria duplicado nem vincula pelo e-mail.
+        Optional<UserAccount> linked = repository.findByOidc(intent.issuer(), intent.subject());
+        UserAccount account;
+        if (linked.isPresent()) {
+            account = linked.get();
+            if (!account.active()) throw AuthException.googleSignupExpired();
+        } else {
+            if (repository.findByEmail(intent.email()).isPresent()) throw AuthException.googleSignupExpired();
+            account = createGoogleUser(intent.issuer(), intent.subject(), intent.email(), intent.displayName(), now);
+            if (account == null) throw AuthException.googleSignupExpired();
+            auth.audit(account, "AUTH_REGISTER_GOOGLE", null, auth.ipHash(request), now);
+        }
+        revokeCurrentSession(request, now);
+        auth.createSession(account, request, response, "AUTH_LOGIN_GOOGLE");
+        return account;
+    }
+
+    private UserAccount createGoogleUser(String issuer, String subject, String email, String displayName, Instant now) {
+        String safeDisplayName = displayName == null || displayName.isBlank() ? "Operador" : displayName.strip();
+        safeDisplayName = safeDisplayName.substring(0, Math.min(safeDisplayName.length(), 80));
+        long userId = repository.createUser(email, auth.uniqueUsername(safeDisplayName), null, "ACTIVE",
+            safeDisplayName, auth.callsign(safeDisplayName), AuthService.TERMS_VERSION, AuthService.PRIVACY_VERSION, now);
+        if (userId == 0L || !repository.linkOidc(userId, PROVIDER, issuer, subject, email, now)) {
+            return null;
+        }
+        return repository.findById(userId).orElseThrow(AuthException::unavailable);
     }
 
     /**

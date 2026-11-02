@@ -348,6 +348,14 @@ export async function startGoogle(mode: GoogleMode, termsAccepted = false) {
   return `${getApiBaseUrl()}${result.authorizationPath}`
 }
 
+/** Conclui o cadastro de quem entrou com Google sem ter conta (identidade guardada pelo servidor por 10 min). */
+export async function completeGoogleSignup() {
+  const user = await apiRequest<SessionUser>('/api/auth/google/signup', json('POST', { termsAccepted: true }), AUTH_MUTATION_TIMEOUT_MS)
+  csrfToken = null
+  csrfPreparedAt = 0
+  return user
+}
+
 export const unlinkGoogle = () => apiRequest<void>('/api/auth/google/link', json('DELETE'))
 
 export const setupMfa = () => apiRequest<{ secret: string; otpauthUri: string }>('/api/auth/mfa/setup', json('POST', {}))

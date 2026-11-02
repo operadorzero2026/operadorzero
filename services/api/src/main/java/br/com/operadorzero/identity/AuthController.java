@@ -80,6 +80,16 @@ public class AuthController {
         return new GoogleStartResponse(google.start(body.mode(), body.termsAccepted(), principal, request, response));
     }
 
+    /** Conclui o cadastro de quem entrou com Google sem ter conta, depois de aceitar os Termos. */
+    @PostMapping("/google/signup")
+    SessionResponse googleSignup(@RequestBody GoogleSignupRequest body, HttpServletRequest request, HttpServletResponse response) {
+        UserAccount account = google.completeSignup(body != null && body.termsAccepted(), request, response);
+        csrf.rotate(request, response);
+        return SessionResponse.from(account, MfaService.withoutPrivilegedRoles(account.roles()), true, mfa.isEnabled(account.id()));
+    }
+
+    public record GoogleSignupRequest(boolean termsAccepted) {}
+
     @PostMapping("/mfa/setup")
     MfaSetupResponse mfaSetup(@AuthenticationPrincipal AuthenticatedUser principal) {
         MfaService.Setup setup = mfa.setup(principal);

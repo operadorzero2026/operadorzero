@@ -85,7 +85,8 @@ public class SecurityConfig {
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/api/auth/csrf", "/api/auth/register", "/api/auth/verify-email",
                     "/api/auth/login", "/api/auth/password-recovery", "/api/auth/password-reset",
-                    "/api/auth/resend-verification", "/api/auth/session", "/api/auth/google/start").permitAll()
+                    "/api/auth/resend-verification", "/api/auth/session", "/api/auth/google/start",
+                    "/api/auth/google/signup").permitAll()
                 .requestMatchers(HttpMethod.GET, "/oauth2/authorization/google", "/login/oauth2/code/google").permitAll()
                 .requestMatchers("/api/auth/logout", "/api/auth/google/link", "/api/auth/mfa/**").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/community/**", "/api/public/**").permitAll()

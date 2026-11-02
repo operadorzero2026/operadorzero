@@ -1,5 +1,22 @@
 # Histórico de alterações
 
+## 2026-11-02 - Login com Google: cadastro em um toque para quem tocou em "Entrar"
+
+### Arquivos alterados
+- Servidor: `GoogleAuthService.completeSignup`, `GoogleFlowStore.SignupIntent`, cookie `OZ_GOOGLE_SIGNUP`, `POST /api/auth/google/signup`, `AuthException.googleSignupExpired`.
+- Site: `src/GoogleSignupPrompt.tsx`, `completeGoogleSignup` em `api.ts`, tratamento de `?auth=google-signup-required` em `App.tsx`.
+
+### O que foi feito
+- Diagnóstico em produção: app do Google "Em produção/Externo", configuração presente, início do fluxo correto. Nenhum login Google havia sido concluído; quem tocava em "Entrar com Google" sem conta era devolvido ao formulário "Criar conta" e precisava refazer tudo.
+- Agora a identidade já confirmada pelo Google fica guardada por 10 min (cookie HttpOnly + Redis, uso único) e a tela "Criar sua conta com o Google" pede só o aceite dos Termos.
+- Segurança mantida: se surgir conta com o mesmo e-mail nesse intervalo, nada é vinculado (continua exigindo senha); sem a intenção válida, cai no cadastro normal.
+
+### Testes
+- 176 testes do servidor (3 novos); cenários do site; build de produção local: tela, aviso sem termos e queda para o cadastro quando a confirmação expira.
+
+### Pendências
+- Armadilha de conta cadastrada por e-mail e nunca confirmada (aguarda decisão do usuário).
+
 ## 2026-11-02 - Feed: Condecorar e Quadro de Honra
 
 ### Arquivos alterados

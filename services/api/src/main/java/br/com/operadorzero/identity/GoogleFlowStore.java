@@ -32,6 +32,9 @@ public class GoogleFlowStore {
 
     public record LinkIntent(long userId, String issuer, String subject, String email) {}
 
+    /** Identidade Google ja confirmada que ainda nao tem conta: falta so aceitar os Termos. */
+    public record SignupIntent(String issuer, String subject, String email, String displayName) {}
+
     private final StringRedisTemplate redis;
     private final TokenSupport tokens;
 
@@ -90,6 +93,23 @@ public class GoogleFlowStore {
         }
         String[] parts = value.split("\\|", -1);
         return Optional.of(new LinkIntent(Long.parseLong(parts[0]), decode(parts[1]), decode(parts[2]), decode(parts[3])));
+    }
+
+    public String saveSignupIntent(SignupIntent intent) {
+        String raw = tokens.newToken();
+        String value = encode(intent.issuer()) + "|" + encode(intent.subject()) + "|" + encode(intent.email()) + "|"
+            + encode(intent.displayName() == null ? "" : intent.displayName());
+        redis.opsForValue().set(PREFIX + "signup:" + tokens.hash(raw), value, FLOW_TTL);
+        return raw;
+    }
+
+    public Optional<SignupIntent> takeSignupIntent(String raw) {
+        String value = redis.opsForValue().getAndDelete(PREFIX + "signup:" + tokens.hash(raw));
+        if (value == null) {
+            return Optional.empty();
+        }
+        String[] parts = value.split("\\|", -1);
+        return Optional.of(new SignupIntent(decode(parts[0]), decode(parts[1]), decode(parts[2]), decode(parts[3])));
     }
 
     private static String encode(String value) {
