@@ -2534,3 +2534,21 @@
 
 ### Testes
 - `mvn -B test`: 120 testes. `npm test`, lint e typecheck aprovados.
+
+## 2026-11-02 — Leva P2: organização de operações, equipes, notificações e agenda pública
+
+### Alterações
+- Comunidade: limite por usuário para publicações (5/h), comentários (20/10 min), imagens (20/h) e denúncias (10/h), resposta `429 RATE_LIMITED`.
+- Central da operação: configurações do jogo, excluir time e esquadrão vazios, atribuir e remover funções, mover participante, ocultar, excluir e restaurar mensagens, denunciar mensagem, travar canal, trocar e remover capa.
+- Campos e mapas: edição pelo responsável com controle de versão (`PATCH /api/fields/{id}` e `PATCH /api/maps/{id}`, `?version=`).
+- Equipes (`V25__team_join_requests.sql`): diretório com busca, perfil público, pedido de entrada para equipes com recrutamento aberto, aceite ou recusa pela gestão, remoção de integrante e troca de função pelo capitão.
+- Agenda pública na página inicial (`GET /api/public/operations`, sem dados de organizador ou participantes, cache de 5 min).
+- Notificações (`V26__user_notifications.sql`, `/api/me/notifications`): convites, pedidos e decisões de equipe, decisões de inscrição, operação iniciada, finalizada ou cancelada. Contador no menu.
+- Conquistas (`/api/me/achievements`) calculadas só com participação confirmada em operação finalizada, desempenho homologado, histórico de equipe e publicações ativas.
+
+### Testes
+- `mvn -B test`: 127 testes. Migrations V1 a V26 e todo o SQL novo executados contra um PostgreSQL 16 local descartável.
+- `npm test`, lint, typecheck e build aprovados.
+
+### Pendências
+- Ambiente de homologação (staging) na VPS depende de um subdomínio no DNS.
