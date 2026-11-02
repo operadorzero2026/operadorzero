@@ -793,3 +793,23 @@
 .notification-list{list-style:none;margin:0;padding:0;display:grid;gap:1px;background:#262920}.notification-list button{display:grid;gap:4px;width:100%;text-align:left;padding:14px 16px;background:#121410;border:0;color:#c9cbbb;cursor:pointer}.notification-list li.unread button{background:#191c14;color:#f2f1e9;box-shadow:inset 3px 0 0 #b6c43a}.notification-list b{font-size:14px}.notification-list span{font-size:13px}.notification-list small{font-size:11px;color:#8d907f}
 .nav-badge{margin-left:auto;min-width:20px;padding:1px 6px;border-radius:10px;background:#b6c43a;color:#10120c;font-style:normal;font-size:11px;font-weight:800;text-align:center}
 .achievement-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}.achievement-grid article{display:grid;gap:6px;padding:16px;border:1px solid #2c3024;background:#111310;opacity:.7}.achievement-grid article.unlocked{opacity:1;border-color:#6f7839}.achievement-icon svg{width:22px;height:22px;color:#8d907f}.achievement-grid article.unlocked .achievement-icon svg{color:#c8d36a}.achievement-grid p{margin:0;font-size:12px;color:#9da08f}.achievement-progress{height:4px;background:#262920}.achievement-progress i{display:block;height:100%;background:#b6c43a}.achievement-grid small{font-size:11px;color:#8d907f}
+
+/* Acoes sobre um operador (busca e perfil): amizade e convites entre amigos. */
+.operator-actions { display: grid; gap: 14px; margin-top: 18px; text-align: left; }
+.operator-actions-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.operator-actions button { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 1px solid #3a3f2c; background: #1a1e15; color: #e8e6d8; font: inherit; font-size: 0.85rem; cursor: pointer; }
+.operator-actions button svg { width: 16px; height: 16px; }
+.operator-actions button.is-primary { background: #b7b95e; border-color: #b7b95e; color: #121510; font-weight: 700; }
+.operator-actions button.is-done { border-color: #b7b95e; color: #b7b95e; }
+.operator-actions button:disabled { cursor: default; opacity: 0.75; }
+.operator-actions section { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid #2a2e20; }
+.operator-actions section > small { color: #b7b95e; font-size: 0.7rem; letter-spacing: 0.12em; }
+.operator-actions section p, .operator-actions-hint { margin: 0; color: #9a9a8c; font-size: 0.85rem; }
+.operator-actions ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; max-height: 220px; overflow-y: auto; }
+.operator-actions li { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.operator-actions li span { display: grid; min-width: 0; }
+.operator-actions li b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #e8e6d8; font-size: 0.9rem; }
+.operator-actions li small { color: #9a9a8c; font-size: 0.75rem; }
+.operator-actions-notice { margin: 0; color: #b7b95e; font-size: 0.85rem; }
+.operator-profile-dialog { max-height: calc(100vh - 40px); overflow-y: auto; }
+.oz-profile-invites { width: min(100% - 28px, 1120px); margin: 12px auto 0; }

@@ -7,6 +7,7 @@ import {
   operatorPhotoUrl, operationCoverUrl, removeOperatorFriendship, reportOperator, requestOperatorFriendship,
   searchOperators, toggleCommunityBookmark, toggleCommunityVote, unblockOperator,
 } from './api'
+import { OperatorActions } from './OperatorActions'
 import { operatorTeamLabel } from './operator-label'
 
 type Props = { path:string;currentUsername:string;onNavigate:(path:string)=>void;onEditProfile:()=>void }
@@ -66,6 +67,7 @@ function PublicProfile({username,own,onNavigate,onEditProfile}:{username:string;
       </div>
     </section>
     {notice&&<p className="oz-social-notice" role="status">{notice}</p>}
+    {!own&&connection?.status==='ACCEPTED'&&<section className="oz-profile-invites"><OperatorActions username={username} showFriendButton={false}/></section>}
     <nav className="oz-profile-metrics" aria-label="Estatísticas do perfil">{metrics.map(([label,value])=><button key={label} onClick={()=>label==='AMIGOS'?onNavigate('/operadores/amigos'):label==='OPERAÇÕES'?setTab('operations'):undefined}><b>{value}</b><small>{label}</small></button>)}</nav>
     <nav className="oz-profile-tabs">{([['feed','Feed'],['about','Sobre'],['operations','Operações'],['teams','Equipes'],['friends','Amigos']] as const).map(([id,label])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}>{id==='feed'?<Radio/>:id==='operations'?<Target/>:id==='teams'?<Shield/>:<Users/>}{label}</button>)}</nav>
     <section className="oz-profile-body">

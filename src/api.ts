@@ -424,7 +424,7 @@ export const getMaps = (fieldId = '') => apiRequest<{items:VenueMap[]}>(`/api/ma
 export const updateField = (id:string,version:number,field:Record<string,unknown>) => apiRequest<VenueField>(`/api/fields/${encodeURIComponent(id)}?version=${version}`,json('PATCH',field))
 export const updateVenueMap = (id:string,version:number,map:Record<string,unknown>) => apiRequest<VenueMap>(`/api/maps/${encodeURIComponent(id)}?version=${version}`,json('PATCH',map))
 export const createVenueMap = (fieldId:string,map:Record<string,unknown>) => apiRequest<VenueMap>(`/api/fields/${encodeURIComponent(fieldId)}/maps`,json('POST',map))
-export type UserNotification = { id:string; kind:string; title:string; body?:string|null; targetView?:string|null; createdAt:string; readAt?:string|null }
+export type UserNotification = { id:string; kind:string; title:string; body?:string|null; targetView?:string|null; targetPath?:string|null; createdAt:string; readAt?:string|null }
 export type NotificationPage = { items:UserNotification[]; unread:number }
 export type Achievement = { code:string; name:string; category:string; description:string; current:number; target:number; unlocked:boolean }
 export type AchievementPage = { items:Achievement[]; unlocked:number }
@@ -562,6 +562,10 @@ export const acceptOperatorFriendship = (id:string) => apiRequest<{message:strin
 export const declineOperatorFriendship = (id:string) => apiRequest<{message:string}>(`/api/operators/social/requests/${encodeURIComponent(id)}/decline`,json('POST',{}))
 export const cancelOperatorFriendship = (id:string) => apiRequest<{message:string}>(`/api/operators/social/requests/${encodeURIComponent(id)}`,json('DELETE'))
 export const removeOperatorFriendship = (id:string) => apiRequest<{message:string}>(`/api/operators/social/connections/${encodeURIComponent(id)}`,json('DELETE'))
+export type InvitableOperation = { id:string; name:string; date:string; fieldName:string }
+export type OperatorInviteOptions = { operatorId:string; username:string; friends:boolean; team?:{ id:string; name:string; canInvite:boolean; reason?:string|null }|null; operations:InvitableOperation[] }
+export const getOperatorInviteOptions = (username:string) => apiRequest<OperatorInviteOptions>(`/api/operators/${encodeURIComponent(username)}/invite-options`)
+export const inviteFriendToGame = (operationId:string, username:string) => apiRequest<void>(`/api/operations/${encodeURIComponent(operationId)}/invitations`,json('POST',{username}))
 export const blockOperator = (username:string) => apiRequest<{message:string}>(`/api/operators/social/${encodeURIComponent(username)}/block`,json('POST',{}))
 export const unblockOperator = (username:string) => apiRequest<{message:string}>(`/api/operators/social/${encodeURIComponent(username)}/block`,json('DELETE'))
 export const reportOperator = (username:string,reason:string,details:string) => apiRequest<{message:string}>(`/api/operators/social/${encodeURIComponent(username)}/reports`,json('POST',{reason,details}))

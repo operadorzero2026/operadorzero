@@ -6,6 +6,11 @@ import java.util.UUID;
 public interface Notifier {
     void toUser(long userId, String kind, String title, String body, String targetView);
 
+    /** Aviso que abre um endereco do app (ex.: /convocacao/{id}); quem nao suporta cai na area do painel. */
+    default void toUserAt(long userId, String kind, String title, String body, String targetView, String targetPath) {
+        toUser(userId, kind, title, body, targetView);
+    }
+
     void toOperator(UUID operatorId, String kind, String title, String body, String targetView);
 
     void toTeamManagers(long teamId, String kind, String title, String body, String targetView);

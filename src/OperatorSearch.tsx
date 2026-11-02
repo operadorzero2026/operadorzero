@@ -1,14 +1,16 @@
 import { Search, UserRound, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { getOperatorPublicProfile, type OperatorSummary, searchOperators } from './api'
+import { OperatorActions } from './OperatorActions'
 import { operatorTeamLabel } from './operator-label'
 
 type OperatorSearchProps = {
   onSelect?: (operator: OperatorSummary) => void
   compact?: boolean
+  onOpenProfile?: (username: string) => void
 }
 
-export function OperatorSearch({ onSelect, compact = false }: OperatorSearchProps) {
+export function OperatorSearch({ onSelect, compact = false, onOpenProfile }: OperatorSearchProps) {
   const [query, setQuery] = useState('')
   const [items, setItems] = useState<OperatorSummary[]>([])
   const [selected, setSelected] = useState<OperatorSummary | null>(null)
@@ -107,6 +109,7 @@ export function OperatorSearch({ onSelect, compact = false }: OperatorSearchProp
             </p>
           )}
           <strong>{recruitmentLabel(selected.recruitmentStatus)}</strong>
+          <OperatorActions username={selected.username} onViewProfile={onOpenProfile ? () => { const username = selected.username; setSelected(null); setQuery(''); onOpenProfile(username) } : undefined} />
         </div>
       )}
     </div>

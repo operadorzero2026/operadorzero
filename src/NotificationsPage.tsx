@@ -2,7 +2,7 @@ import { Bell, CheckCheck, Lock, Medal, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { getMyAchievements, getNotifications, markAllNotificationsRead, markNotificationRead, type AchievementPage, type NotificationPage, type UserNotification } from './api'
 
-export function NotificationsPage({ onOpen, onChanged }: { onOpen: (view: string) => void; onChanged: () => void }) {
+export function NotificationsPage({ onOpen, onOpenPath, onChanged }: { onOpen: (view: string) => void; onOpenPath?: (path: string) => void; onChanged: () => void }) {
   const [page, setPage] = useState<NotificationPage | null>(null)
   const [error, setError] = useState('')
   const load = useCallback(async () => {
@@ -12,7 +12,8 @@ export function NotificationsPage({ onOpen, onChanged }: { onOpen: (view: string
   useEffect(() => { void load() }, [load])
   const open = async (item: UserNotification) => {
     if (!item.readAt) { try { await markNotificationRead(item.id); onChanged() } catch { /* a navegacao segue mesmo sem marcar */ } }
-    if (item.targetView) onOpen(item.targetView)
+    if (item.targetPath && onOpenPath) onOpenPath(item.targetPath)
+    else if (item.targetView) onOpen(item.targetView)
     else void load()
   }
   const readAll = async () => {

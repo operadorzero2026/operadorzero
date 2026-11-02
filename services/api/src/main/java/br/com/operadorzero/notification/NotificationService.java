@@ -37,6 +37,12 @@ public class NotificationService implements Notifier {
     }
 
     @Override
+    public void toUserAt(long userId, String kind, String title, String body, String targetView, String targetPath) {
+        insert("SELECT CAST(:userId AS bigint)", params(kind, title, body, targetView).addValue("userId", userId)
+            .addValue("targetPath", targetPath));
+    }
+
+    @Override
     public void toOperator(UUID operatorId, String kind, String title, String body, String targetView) {
         insert("SELECT user_id FROM operator_profile WHERE public_id = :operatorId",
             params(kind, title, body, targetView).addValue("operatorId", operatorId));
@@ -60,11 +66,11 @@ public class NotificationService implements Notifier {
     @Transactional(readOnly = true)
     public NotificationPage list(AuthenticatedUser user) {
         List<NotificationResponse> items = jdbc.query("""
-            SELECT public_id, kind, title, body, target_view, created_at, read_at FROM user_notification
+            SELECT public_id, kind, title, body, target_view, target_path, created_at, read_at FROM user_notification
             WHERE user_id = :userId ORDER BY created_at DESC, id DESC LIMIT :limit
             """, Map.of("userId", user.internalId(), "limit", PAGE), (row, index) -> new NotificationResponse(
                 row.getObject("public_id", UUID.class), row.getString("kind"), row.getString("title"), row.getString("body"),
-                row.getString("target_view"), row.getTimestamp("created_at").toInstant(),
+                row.getString("target_view"), row.getString("target_path"), row.getTimestamp("created_at").toInstant(),
                 row.getTimestamp("read_at") == null ? null : row.getTimestamp("read_at").toInstant()));
         return new NotificationPage(items, unread(user));
     }
@@ -93,8 +99,9 @@ public class NotificationService implements Notifier {
     }
 
     private void insert(String recipients, MapSqlParameterSource params) {
-        jdbc.update("INSERT INTO user_notification(user_id, kind, title, body, target_view, created_at) "
-            + "SELECT r.user_id, :kind, :title, :body, :targetView, :now FROM (" + recipients + ") AS r(user_id)", params);
+        if (!params.hasValue("targetPath")) params.addValue("targetPath", null);
+        jdbc.update("INSERT INTO user_notification(user_id, kind, title, body, target_view, target_path, created_at) "
+            + "SELECT r.user_id, :kind, :title, :body, :targetView, :targetPath, :now FROM (" + recipients + ") AS r(user_id)", params);
     }
 
     private MapSqlParameterSource params(String kind, String title, String body, String targetView) {
@@ -108,7 +115,7 @@ public class NotificationService implements Notifier {
         return value.length() <= max ? value : value.substring(0, max - 1) + "…";
     }
 
-    public record NotificationResponse(UUID id, String kind, String title, String body, String targetView,
+    public record NotificationResponse(UUID id, String kind, String title, String body, String targetView, String targetPath,
                                        Instant createdAt, Instant readAt) {}
 
     public record NotificationPage(List<NotificationResponse> items, long unread) {}

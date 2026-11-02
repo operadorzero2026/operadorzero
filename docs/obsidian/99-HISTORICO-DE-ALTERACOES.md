@@ -1,5 +1,23 @@
 # Histórico de alterações
 
+## 2026-11-02 - Busca de operadores: adicionar amigo e convidar para equipe e jogos
+
+### Arquivos alterados
+- Banco: `V31__operation_invitations_and_notification_links.sql` (tabela `operation_invitation`; avisos ganham `target_path`).
+- Servidor: `operation/OperatorInvite{Repository,Service,Controller}`, `Notifier.toUserAt`, `NotificationService` (target_path).
+- Site: `src/OperatorActions.tsx` (novo), `OperatorSearch.tsx`, `OperatorsSocialPage.tsx`, `NotificationsPage.tsx`, `App.tsx`, `api.ts`, `functional-modules.css`.
+
+### O que foi feito
+- No cartão do operador encontrado na busca: "Adicionar amigo" conforme o estado (pedido enviado/cancelar, aceitar, Amigos) e "Ver perfil".
+- Entre amigos: "Convidar para <minha equipe>" (capitão ou gestor, alvo sem equipe; usa o convite de equipe existente) e "Convidar para um jogo" com os jogos futuros de inscrição aberta que a pessoa organiza ou joga. O mesmo bloco aparece no perfil de um amigo.
+- `GET /api/operators/{username}/invite-options` e `POST /api/operations/{id}/invitations {username}`.
+- O amigo recebe um aviso que abre direto a Convocação do jogo (`/convocacao/{id}`), onde pode se alistar.
+- Antispam: convite para jogo só entre amigos, um por jogo e convidado (409 `GAME_INVITE_UNAVAILABLE`), limite de 30 por dia, bloqueios respeitados.
+
+### Testes
+- `OperatorInviteServiceTest` (5 casos); suíte do servidor e lint verdes.
+- Ponta a ponta local: opções de amigo e desconhecido, 403 para desconhecido, convite 204, repetição 409, aviso com link; conferido na tela (busca, convite, pedido de amizade, aviso abrindo a Convocação).
+
 ## 2026-11-02 - Login com Google: cadastro em um toque para quem tocou em "Entrar"
 
 ### Arquivos alterados
