@@ -428,7 +428,31 @@ export const getMyAchievements = () => apiRequest<AchievementPage>('/api/me/achi
 export type FeedMedia = { id:string; kind:'IMAGE'|'VIDEO'; width:number; height:number; durationMs?:number|null; posterUrl?:string|null; blurPlaceholder?:string|null; hlsUrl?:string|null; mp4Url?:string|null; images:{width:number;url:string}[] }
 export type FeedPost = { id:string; postType:string; author:{username:string;callsign:string;rankCode:string}; caption?:string|null; hashtags:string[]; media:FeedMedia[]; field?:{id:string;name:string}|null; team?:{id:string;name:string;acronym:string}|null; counts:{onTarget:number;eliminated:number;comments:number;shares:number;saves:number;decorations:number}; viewer:{onTarget:boolean;eliminated:boolean;saved:boolean;followsAuthor:boolean;ownPost:boolean}; publishedAt:string }
 export type FeedPage = { items:FeedPost[]; nextCursor?:string|null }
-export const getFeed = (tab:'for-you'|'following', cursor?:string|null) => apiRequest<FeedPage>(`/api/feed?tab=${tab}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`)
+export const getFeed = (tab:'for-you'|'following', cursor?:string|null, hashtag?:string|null) =>
+  apiRequest<FeedPage>(`/api/feed?tab=${tab}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}${hashtag ? `&hashtag=${encodeURIComponent(hashtag)}` : ''}`)
+export type PostCounts = { onTarget:number; eliminated:number; comments:number; shares:number; saves:number }
+export type FeedComment = { id:string; parentId?:string|null; authorUsername:string; authorCallsign:string; rankCode:string; body:string; createdAt:string; own:boolean; canDelete:boolean; replies:number }
+export type ReportReason = 'SPAM'|'HARASSMENT'|'HATE'|'THREAT'|'PERSONAL_DATA'|'FRAUD'|'ILLEGAL'|'OTHER'
+export type FeedReport = { id:string; targetType:'POST'|'COMMENT'|'RECON'; targetId:string; excerpt:string; reporterUsername:string; reason:ReportReason; details?:string|null; status:string; createdAt:string; targetStatus:string }
+export type FollowStats = { followers:number; following:number; follows:boolean }
+const post = (id:string) => `/api/feed/posts/${encodeURIComponent(id)}`
+export const reactToPost = (id:string, kind:'ON_TARGET'|'ELIMINATED', on:boolean) => apiRequest<PostCounts>(`${post(id)}/reactions/${kind}`, { method: on ? 'PUT' : 'DELETE' })
+export const savePost = (id:string, on:boolean) => apiRequest<PostCounts>(`${post(id)}/save`, { method: on ? 'PUT' : 'DELETE' })
+export const sharePost = (id:string, channel:'WHATSAPP'|'LINK'|'NATIVE') => apiRequest<{ url:string }>(`${post(id)}/shares`, json('POST', { channel }))
+export const getComments = (id:string, parentId?:string|null, after?:string|null) =>
+  apiRequest<{ items:FeedComment[]; nextAfter?:string|null }>(`${post(id)}/comments?${parentId ? `parentId=${encodeURIComponent(parentId)}&` : ''}${after ? `after=${encodeURIComponent(after)}` : ''}`)
+export const addComment = (id:string, body:string, parentId:string|null, idempotencyKey:string) => apiRequest<PostCounts>(`${post(id)}/comments`, json('POST', { body, parentId, idempotencyKey }))
+export const deleteFeedComment = (commentId:string) => apiRequest<PostCounts>(`/api/feed/comments/${encodeURIComponent(commentId)}`, { method:'DELETE' })
+export const reportFeedPost = (id:string, reason:ReportReason, details?:string) => apiRequest<void>(`${post(id)}/report`, json('POST', { reason, details }))
+export const reportFeedComment = (id:string, reason:ReportReason, details?:string) => apiRequest<void>(`/api/feed/comments/${encodeURIComponent(id)}/report`, json('POST', { reason, details }))
+export const reportRecon = (id:string, reason:ReportReason, details?:string) => apiRequest<void>(`/api/recons/${encodeURIComponent(id)}/report`, json('POST', { reason, details }))
+export const followOperator = (username:string, on:boolean) => apiRequest<FollowStats>(`/api/operators/${encodeURIComponent(username)}/follow`, { method: on ? 'PUT' : 'DELETE' })
+export const getFollowStats = (username:string) => apiRequest<FollowStats>(`/api/operators/${encodeURIComponent(username)}/follow`)
+export const getFeedPost = (id:string) => apiRequest<FeedPost>(post(id))
+export const getPublicPost = (id:string) => apiRequest<FeedPost>(`/api/public/posts/${encodeURIComponent(id)}`)
+export const getFeedReports = () => apiRequest<FeedReport[]>('/api/admin/feed/reports')
+export const resolveFeedReport = (id:string, action:'DISMISS'|'REMOVE', resolution?:string) =>
+  apiRequest<void>(`/api/admin/feed/reports/${encodeURIComponent(id)}/resolve`, json('POST', { action, resolution }))
 export type MediaCrop = { x:number; y:number; zoom:number }
 export type MediaUpload = { uploadId:string; mediaId:string; chunkBytes:number; receivedBytes:number; totalBytes:number; status:string }
 export type MediaStatus = { id:string; kind:'IMAGE'|'VIDEO'; status:'UPLOADING'|'QUEUED'|'PROCESSING'|'READY'|'FAILED'|'DELETED'; errorCode?:string|null }

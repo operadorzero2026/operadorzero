@@ -1,5 +1,33 @@
 # Histórico de alterações
 
+## 2026-11-02 - Feed (etapa 6): reações, comentários, seguir, compartilhar e moderação
+
+### Arquivos alterados
+- Servidor: `FeedInteractionService/Repository/Controller`, `PublicPostController`, filtro por hashtag e post único em `FeedService/FeedRepository`, `SecurityConfig`.
+- Site: `FeedItem.tsx` (ações reais), `FeedSheets.tsx`, `PublicPostPage.tsx`, `FeedModerationPanel.tsx`, `reportReasons.ts`, `FeedList/FeedPage` (hashtag), `ReconViewer` (denunciar).
+- Deploy: `nginx.conf` encaminha `/p/` para a API.
+
+### O que foi feito
+- 🎯 Na mira e 💀 Eliminado (uma de cada por pessoa e post; toque duplo marca Na mira), salvar, contadores atualizados na hora.
+- Comentários com respostas em um nível, apagar (autor ou dono do post), avisos de comentário, resposta e menção.
+- Seguir pelo "+" do avatar; aviso "começou a seguir você"; afeta aba Seguindo e barra de Recons.
+- Compartilhar: WhatsApp, copiar link e compartilhamento nativo; link `/p/{id}` com prévia Open Graph que leva a `/post/{id}` (público, só leitura para quem não entrou).
+- Denúncia de post, comentário e Recon; fila "Denúncias do feed" no Perfil de moderadores e administradores (manter ou remover).
+- Hashtag clicável filtra o feed.
+- XP: reação recebida (1 por pessoa e post) e comentário em post alheio; estornado quando o comentário (e suas respostas) é apagado.
+
+### Motivo
+- Etapa 6 do plano do feed.
+
+### Impacto
+- Rotas novas em `/api/feed/**`, `/api/operators/{u}/follow`, `/api/public/posts/{id}`, `/p/{id}` e `/api/admin/feed/**`. Sem migration nova.
+
+### Testes
+- 163 testes do servidor (7 novos de interação); cenários do site; ponta a ponta local pela API e pelo navegador.
+
+### Pendências
+- Etapa 7 (ranking "Para você").
+
 ## 2026-11-02 - Feed (etapa 5): Recons e Dossiês
 
 ### Arquivos alterados

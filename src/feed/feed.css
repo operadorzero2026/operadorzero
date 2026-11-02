@@ -197,3 +197,47 @@
 .dossier-delete{position:absolute;top:0;right:0;display:grid;place-items:center;width:22px;height:22px;padding:0;border:0;border-radius:50%;background:#000c;color:#c9cbbb;cursor:pointer}
 .dossier-delete svg{width:12px;height:12px}
 @media(prefers-reduced-motion:reduce){.recon-ring--unseen::before{animation:none}}
+
+/* Etapa 6: seguir, avisos, folhas de comentarios/compartilhar/denuncia, hashtag. */
+.feed-follow{position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);display:grid;place-items:center;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:var(--feed-gold);color:#120f04;cursor:pointer}
+.feed-follow svg{width:13px!important;height:13px!important;filter:none!important}
+.feed-actions .feed-author-avatar{margin-bottom:12px}
+.feed-toast{position:absolute;z-index:7;left:50%;top:40%;transform:translateX(-50%);margin:0;padding:8px 14px;border-radius:20px;background:#000c;color:#fff;font-size:13px;pointer-events:none}
+.feed-sheet-backdrop{z-index:120}
+.feed-sheet{max-height:78svh;overflow-y:auto}
+.feed-sheet:focus{outline:none}
+.feed-comments ul{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+.feed-comment{display:grid;grid-template-columns:auto 1fr;gap:10px;font-size:14px}
+.feed-comment ul{margin-top:10px}
+.feed-comment-avatar{width:32px;height:32px;border-width:1px;font-size:14px}
+.feed-comment p{margin:0}
+.feed-comment time{color:#8d907f;font-size:11px}
+.feed-comment-body{white-space:pre-wrap;word-break:break-word;line-height:1.4}
+.feed-comment-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:4px}
+.feed-comment-actions button{display:inline-flex;align-items:center;padding:0;border:0;background:none;color:#9da08f;font-size:12px;font-weight:700;cursor:pointer}
+.feed-comment-actions svg{width:14px;height:14px}
+.feed-comment-form{position:sticky;bottom:-16px;display:grid;grid-template-columns:1fr auto;align-items:end;gap:8px;padding:10px 0 4px;background:#0d0f0b}
+.feed-comment-form .create-notice{grid-column:1/-1}
+.feed-comment-form textarea{width:100%;max-height:120px;padding:10px 12px;border:1px solid #2c3024;border-radius:18px;background:#111310;color:#f2f1e9;font:14px/1.4 Inter,sans-serif;resize:none}
+.report-reasons{display:grid;gap:8px;font-size:14px}
+.report-reasons label{display:flex;align-items:center;gap:8px}
+.report-reasons input{accent-color:var(--feed-gold)}
+.feed-sheet .create-caption textarea{min-height:60px}
+.feed-hashtag-chip{position:absolute;z-index:16;left:50%;top:calc(56px + env(safe-area-inset-top));transform:translateX(-50%);display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--feed-gold);border-radius:20px;background:#000c;color:#fff;font-size:14px}
+.feed-hashtag-chip svg{width:15px;height:15px;color:var(--feed-gold)}
+.feed-hashtag-chip button{display:grid;place-items:center;padding:0;border:0;background:none;color:#c9cbbb;cursor:pointer}
+
+/* Pagina publica do post compartilhado. */
+.public-post{position:fixed;inset:0;height:auto}
+.public-post-bar a{color:inherit;text-decoration:none}
+.public-post-bar .button svg{width:15px;height:15px}
+.public-post-cta{position:absolute;z-index:30;left:0;right:0;bottom:0;display:flex;align-items:center;gap:10px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:#0d0f0bf2;border-top:1px solid var(--feed-gold);font-size:13px}
+.public-post-cta p{flex:1;margin:0}
+.public-post .feed-caption{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+.feed-moderation ul{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.feed-moderation li{display:grid;gap:6px;padding:12px;border:1px solid #2c3024;background:#111310}
+.feed-moderation li p{margin:0;font-size:13px}
+.feed-moderation blockquote{margin:0;padding-left:10px;border-left:2px solid var(--feed-gold);color:#c9cbbb;font-size:13px}
+.feed-moderation li>div{display:flex;gap:8px;justify-content:flex-end}
+.feed-moderation-details{color:#9da08f}
+.recon-viewer~.feed-sheet-backdrop,.recon-viewer~* .feed-sheet-backdrop{z-index:130}

@@ -1,9 +1,10 @@
-import { Archive, ChevronDown, Trash2, X } from 'lucide-react'
+import { Archive, ChevronDown, Flag, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { addReconToDossier, createDossier, deleteRecon, getAuthorRecons, getDossier, getDossiers, markReconViewed, mediaUrl, removeReconFromDossier,
+import { addReconToDossier, createDossier, deleteRecon, getAuthorRecons, getDossier, getDossiers, markReconViewed, mediaUrl, removeReconFromDossier, reportRecon,
   type DossierSummary, type ReconItem } from '../api'
 import { timeAgo } from './format'
 import { useVideoSource } from './useVideoSource'
+import { ReportSheet } from './FeedSheets'
 
 const IMAGE_MS = 5000
 const HOLD_MS = 220
@@ -129,6 +130,7 @@ export function ReconViewer({ usernames, start, onClose, onChanged }: { username
   const [authorIndex, setAuthorIndex] = useState(start)
   const [data, setData] = useState<{ username: string; own: boolean; items: ReconItem[] } | null>(null)
   const [saving, setSaving] = useState<ReconItem | null>(null)
+  const [reporting, setReporting] = useState<ReconItem | null>(null)
   const username = usernames[authorIndex]
   useEffect(() => {
     let active = true
@@ -156,8 +158,9 @@ export function ReconViewer({ usernames, start, onClose, onChanged }: { username
       actions={data.own ? item => <>
         <button type="button" onClick={() => setSaving(item)}><Archive/> Salvar no Dossiê</button>
         <button type="button" onClick={() => { if (window.confirm('Apagar este Recon?')) void deleteRecon(item.id).then(() => { onChanged(); onClose() }) }}><Trash2/> Apagar</button>
-      </> : undefined}/>
+      </> : item => <button type="button" onClick={() => setReporting(item)}><Flag/> Denunciar</button>}/>
     {saving && <SaveToDossier username={data.username} recon={saving} onClose={() => setSaving(null)}/>}
+    {reporting && <ReportSheet title="Denunciar Recon" onClose={() => setReporting(null)} onSubmit={(reason, details) => reportRecon(reporting.id, reason, details)}/>}
   </>
 }
 

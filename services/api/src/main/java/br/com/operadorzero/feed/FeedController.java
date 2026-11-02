@@ -30,8 +30,14 @@ public class FeedController {
     FeedDtos.FeedPage feed(@AuthenticationPrincipal AuthenticatedUser user,
                            @RequestParam(defaultValue = "for-you") String tab,
                            @RequestParam(required = false) String cursor,
+                           @RequestParam(required = false) String hashtag,
                            @RequestParam(required = false) Integer limit) {
-        return service.page(user, tab, cursor, limit);
+        return service.page(user, tab, hashtag, cursor, limit);
+    }
+
+    @GetMapping("/posts/{id}")
+    FeedDtos.FeedPostResponse post(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) {
+        return service.post(user, id);
     }
 
     @PostMapping("/posts")

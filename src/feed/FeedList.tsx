@@ -8,7 +8,7 @@ import type { FeedTab } from './FeedPage'
 const MOUNT_RADIUS = 2
 const LOAD_AHEAD = 3
 
-export function FeedList({ tab, onFindOperators, onScrolledChange }: { tab: FeedTab; onFindOperators: () => void; onScrolledChange?: (scrolled: boolean) => void }) {
+export function FeedList({ tab, hashtag, onHashtag, onFindOperators, onScrolledChange }: { tab: FeedTab; hashtag?: string | null; onHashtag: (tag: string) => void; onFindOperators: () => void; onScrolledChange?: (scrolled: boolean) => void }) {
   const [items, setItems] = useState<FeedPost[]>([])
   const [cursor, setCursor] = useState<string | null | undefined>(undefined)
   const [loading, setLoading] = useState(false)
@@ -23,7 +23,7 @@ export function FeedList({ tab, onFindOperators, onScrolledChange }: { tab: Feed
     loadingRef.current = true
     setLoading(true); setError('')
     try {
-      const page = await getFeed(tab, from)
+      const page = await getFeed(tab, from, hashtag)
       setItems(previous => reset ? page.items : [...previous, ...page.items.filter(item => !previous.some(existing => existing.id === item.id))])
       setCursor(page.nextCursor ?? null)
     } catch (e) {
@@ -32,7 +32,7 @@ export function FeedList({ tab, onFindOperators, onScrolledChange }: { tab: Feed
       loadingRef.current = false
       setLoading(false)
     }
-  }, [tab])
+  }, [tab, hashtag])
 
   useEffect(() => {
     setItems([]); setCursor(undefined); setActive(0)
@@ -65,7 +65,7 @@ export function FeedList({ tab, onFindOperators, onScrolledChange }: { tab: Feed
   if (!items.length && error) return <div className="feed-stream"><div className="feed-empty" role="alert"><Crosshair aria-hidden="true"/><h2>Não foi possível carregar o feed</h2><p>{error}</p><button type="button" className="button button--small" onClick={() => void load(undefined, true)}><RefreshCw/> Tentar novamente</button></div></div>
   if (!items.length && cursor === null) return <div className="feed-stream"><div className="feed-empty">
     <Crosshair aria-hidden="true"/>
-    <h2>{tab === 'following' ? 'Você ainda não segue ninguém' : 'Nenhum post por aqui ainda'}</h2>
+    <h2>{hashtag ? `Nenhum post com #${hashtag}` : tab === 'following' ? 'Você ainda não segue ninguém' : 'Nenhum post por aqui ainda'}</h2>
     <p>{tab === 'following' ? 'Siga operadores para ver os posts deles nesta aba, em ordem de publicação.' : 'Os posts da comunidade aparecerão aqui assim que forem publicados.'}</p>
     <button type="button" className="button button--small" onClick={onFindOperators}><Users/> Encontrar operadores</button>
   </div></div>
@@ -73,7 +73,8 @@ export function FeedList({ tab, onFindOperators, onScrolledChange }: { tab: Feed
   return <div className="feed-stream" ref={container}>
     {items.map((post, index) => <div className="feed-slot" key={post.id} data-index={index}>
       {Math.abs(index - active) <= MOUNT_RADIUS
-        ? <FeedItem post={post} mode={mode(index)} muted={muted} onToggleMute={() => setMuted(value => !value)} onHashtag={() => undefined}/>
+        ? <FeedItem post={post} mode={mode(index)} muted={muted} onToggleMute={() => setMuted(value => !value)} onHashtag={onHashtag}
+          onDeleted={id => setItems(previous => previous.filter(item => item.id !== id))}/>
         : null}
     </div>)}
     {loading && <div className="feed-slot"><FeedSkeleton/></div>}

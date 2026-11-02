@@ -40,6 +40,11 @@ public class FeedService {
 
     @Transactional(readOnly = true)
     public FeedPage page(AuthenticatedUser user, String tab, String cursor, Integer limit) {
+        return page(user, tab, null, cursor, limit);
+    }
+
+    @Transactional(readOnly = true)
+    public FeedPage page(AuthenticatedUser user, String tab, String hashtag, String cursor, Integer limit) {
         boolean following = switch (tab == null ? "for-you" : tab) {
             case "for-you" -> false;
             case "following" -> true;
@@ -48,19 +53,39 @@ public class FeedService {
         int size = limit == null ? DEFAULT_LIMIT : Math.max(1, Math.min(MAX_LIMIT, limit));
         Cursor position = Cursor.decode(cursor);
         // Ranking "Para voce" entra na etapa 7; ate la as duas abas sao cronologicas.
-        List<PostRow> rows = repository.chronological(user.internalId(), following,
-            position == null ? null : position.publishedAt(), position == null ? null : position.id(), size + 1);
+        String tag = hashtag == null || hashtag.isBlank() ? null : FeedText.normalizeTag(hashtag);
+        List<PostRow> rows = tag == null
+            ? repository.chronological(user.internalId(), following, position == null ? null : position.publishedAt(), position == null ? null : position.id(), size + 1)
+            : repository.query(user.internalId(), following, tag, null, false, position == null ? null : position.publishedAt(),
+                position == null ? null : position.id(), size + 1);
         boolean more = rows.size() > size;
         List<PostRow> page = more ? rows.subList(0, size) : rows;
+        List<FeedPostResponse> items = responses(page);
+        String next = more ? new Cursor(page.getLast().publishedAt(), page.getLast().publicId()).encode() : null;
+        return new FeedPage(items, next);
+    }
+
+    /** Um post para quem esta logado (link compartilhado aberto no app). */
+    @Transactional(readOnly = true)
+    public FeedPostResponse post(AuthenticatedUser user, UUID postId) {
+        return responses(repository.query(user.internalId(), false, null, postId, false, null, null, 1)).stream().findFirst()
+            .orElseThrow(() -> BusinessException.notFound("Post não encontrado."));
+    }
+
+    /** Pagina publica do link compartilhado: so posts com compartilhamento publico e sem estado de quem ve. */
+    @Transactional(readOnly = true)
+    public java.util.Optional<FeedPostResponse> publicPost(UUID postId) {
+        return responses(repository.query(-1, false, null, postId, true, null, null, 1)).stream().findFirst();
+    }
+
+    private List<FeedPostResponse> responses(List<PostRow> page) {
         List<Long> ids = page.stream().map(PostRow::id).toList();
         Map<Long, List<MediaRow>> media = repository.media(ids);
         Map<Long, List<String>> hashtags = repository.hashtags(ids);
-        List<FeedPostResponse> items = page.stream().map(row -> new FeedPostResponse(row.publicId(), row.postType(), row.author(),
+        return page.stream().map(row -> new FeedPostResponse(row.publicId(), row.postType(), row.author(),
             row.caption(), hashtags.getOrDefault(row.id(), List.of()),
             media.getOrDefault(row.id(), List.of()).stream().map(this::media).toList(),
             row.field(), row.team(), row.counts(), row.viewer(), row.publishedAt())).toList();
-        String next = more ? new Cursor(page.getLast().publishedAt(), page.getLast().publicId()).encode() : null;
-        return new FeedPage(items, next);
     }
 
     public MediaResponse media(MediaRow row) {

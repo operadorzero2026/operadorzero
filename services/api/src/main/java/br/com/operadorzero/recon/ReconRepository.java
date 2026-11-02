@@ -88,7 +88,7 @@ public class ReconRepository {
             JOIN app_user u ON u.id = r.author_user_id AND u.status = 'ACTIVE'
             JOIN operator_profile p ON p.user_id = u.id
             LEFT JOIN operator_xp x ON x.user_id = u.id
-            WHERE r.status = 'ACTIVE' AND r.expires_at > :now AND """ + VISIBLE_TO_VIEWER + """
+            WHERE r.status = 'ACTIVE' AND r.expires_at > :now AND""" + " " + VISIBLE_TO_VIEWER + """
             GROUP BY u.username, p.callsign, x.rank_code, r.author_user_id
             ORDER BY own DESC, has_unseen DESC, latest_at DESC
             LIMIT 60
@@ -116,7 +116,7 @@ public class ReconRepository {
         return jdbc.query("SELECT r.id, r.public_id, r.overlay_text, r.published_at, r.expires_at, "
             + "EXISTS (SELECT 1 FROM recon_view v WHERE v.recon_id = r.id AND v.viewer_user_id = :viewer) seen, " + MEDIA_COLUMNS + """
             FROM recon r JOIN media_asset a ON a.id = r.media_asset_id AND a.status = 'READY'
-            WHERE r.author_user_id = :author AND r.status = 'ACTIVE' AND r.expires_at > :now AND """ + VISIBLE_TO_VIEWER + """
+            WHERE r.author_user_id = :author AND r.status = 'ACTIVE' AND r.expires_at > :now AND""" + " " + VISIBLE_TO_VIEWER + """
             ORDER BY r.published_at, r.id
             """, Map.of("author", authorId, "viewer", viewer, "now", Timestamp.from(now)), (r, i) -> reconRow(r));
     }
@@ -126,7 +126,7 @@ public class ReconRepository {
         return jdbc.update("""
             INSERT INTO recon_view(recon_id, viewer_user_id, viewed_at)
             SELECT r.id, :viewer, :now FROM recon r
-            WHERE r.public_id = :recon AND r.status = 'ACTIVE' AND r.expires_at > :now AND """ + VISIBLE_TO_VIEWER + """
+            WHERE r.public_id = :recon AND r.status = 'ACTIVE' AND r.expires_at > :now AND""" + " " + VISIBLE_TO_VIEWER + """
             ON CONFLICT (recon_id, viewer_user_id) DO UPDATE SET viewed_at = recon_view.viewed_at
             """, new MapSqlParameterSource().addValue("recon", reconId).addValue("viewer", viewer).addValue("now", Timestamp.from(now))) > 0;
     }

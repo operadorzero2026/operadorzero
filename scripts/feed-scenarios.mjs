@@ -44,7 +44,7 @@ for (const fictional of ['[DEV]', 'dev_alfa']) assert.ok(!app.includes(fictional
 
 // Recons: barra some ao rolar, radar dourado quando ha nao visto, visualizador com segurar/arrastar e "Recon encerrado".
 const [bar, viewer, page, create, reconCss] = await Promise.all(['src/feed/ReconBar.tsx', 'src/feed/ReconViewer.tsx', 'src/feed/FeedPage.tsx', 'src/feed/CreateFlow.tsx', 'src/feed/feed.css'].map(file => readFile(file, 'utf8')))
-assert.match(page, /<ReconBar hidden=\{scrolled\}/, 'A barra de Recons some quando o feed rola.')
+assert.match(page, /<ReconBar hidden=\{scrolled \|\| Boolean\(hashtag\)\}/, 'A barra de Recons some quando o feed rola.')
 assert.match(bar, /recon-ring--unseen/)
 assert.match(reconCss, /\.recon-ring--unseen::before\{[^}]*conic-gradient[^}]*animation:recon-radar/, 'Radar dourado girando para Recon nao visto.')
 assert.match(reconCss, /\.recon-ring--seen::before\{background:#5d6057\}/, 'Aro cinza para Recon ja visto.')
@@ -55,4 +55,15 @@ assert.match(viewer, /Recon encerrado/)
 assert.match(viewer, /`Recon de @\$\{data\.username\}`/)
 assert.match(create, /MAX_VIDEO_S = \{ POST: 90, RECON: 30 \}/, 'Video de Recon ate 30 s.')
 
-console.log('Feed validado: redirecionamento, navegacao, virtualizacao, autoplay mudo, midia sem corte, cursor e Recons.')
+// Etapa 6: reacoes otimistas, toque duplo = Na mira, compartilhar com link /p/, pagina publica so leitura, hashtag.
+const [sheets, publicPage] = await Promise.all(['src/feed/FeedSheets.tsx', 'src/feed/PublicPostPage.tsx'].map(file => readFile(file, 'utf8')))
+assert.match(item, /void toggle\('onTarget', true\)/, 'Toque duplo marca Na mira.')
+assert.match(item, /setViewer\(previous => \(\{ \.\.\.previous, \[flag\]: !on \}\)\)/, 'Reacao desfeita se o servidor recusar.')
+assert.match(sheets, /https:\/\/wa\.me\/\?text=/, 'Compartilhar no WhatsApp.')
+assert.match(sheets, /navigator\.clipboard\.writeText\(url\)/, 'Copiar link.')
+assert.match(sheets, /navigator\.share\(/, 'Web Share nativo.')
+assert.match(sheets, /\/p\/\$\{post\.id\}/, 'Link curto com previa.')
+assert.match(publicPage, /readOnly=\{!loggedIn\}/, 'Pagina publica e so leitura para quem nao entrou.')
+assert.match(page, /hashtag=\{hashtag\}/, 'Hashtags filtram o feed.')
+
+console.log('Feed validado: redirecionamento, navegacao, virtualizacao, autoplay mudo, midia sem corte, cursor, Recons e interacoes.')

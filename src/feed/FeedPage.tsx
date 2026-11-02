@@ -1,4 +1,4 @@
-import { Bell } from 'lucide-react'
+import { Bell, Hash, X } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { FeedList } from './FeedList'
 import { ReconBar } from './ReconBar'
@@ -16,6 +16,7 @@ export function FeedPage({ unread, onOpenNotifications, onFindOperators, onCreat
   const [scrolled, setScrolled] = useState(false)
   const [viewer, setViewer] = useState<{ usernames: string[]; start: number } | null>(null)
   const [barKey, setBarKey] = useState(0)
+  const [hashtag, setHashtag] = useState<string | null>(null)
   const refreshBar = useCallback(() => setBarKey(value => value + 1), [])
   return <section className="feed-screen" aria-label="Feed">
     <div className="feed-column">
@@ -29,9 +30,10 @@ export function FeedPage({ unread, onOpenNotifications, onFindOperators, onCreat
         </button>
       </header>
       {/* Recons so aparecem no topo do feed; somem assim que a pessoa rola para o proximo post. */}
-      <ReconBar hidden={scrolled} refreshKey={barKey} onOpen={(usernames, start) => setViewer({ usernames, start })} onCreate={onCreateRecon}/>
+      {hashtag && <div className="feed-hashtag-chip"><Hash/><b>{hashtag}</b><button type="button" onClick={() => setHashtag(null)} aria-label="Sair da hashtag"><X/></button></div>}
+      <ReconBar hidden={scrolled || Boolean(hashtag)} refreshKey={barKey} onOpen={(usernames, start) => setViewer({ usernames, start })} onCreate={onCreateRecon}/>
       <div role="tabpanel" aria-label={tabs.find(item => item.id === tab)?.label}>
-        <FeedList key={tab} tab={tab} onFindOperators={onFindOperators} onScrolledChange={setScrolled}/>
+        <FeedList key={`${tab}:${hashtag ?? ''}`} tab={tab} hashtag={hashtag} onHashtag={setHashtag} onFindOperators={onFindOperators} onScrolledChange={setScrolled}/>
       </div>
     </div>
     {viewer && <ReconViewer usernames={viewer.usernames} start={viewer.start} onClose={() => setViewer(null)} onChanged={refreshBar}/>}

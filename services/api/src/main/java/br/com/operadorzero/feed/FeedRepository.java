@@ -26,6 +26,12 @@ public class FeedRepository {
 
     /** Pagina cronologica (mais recente primeiro), com cursor (published_at, public_id). */
     public List<PostRow> chronological(long viewerId, boolean followingOnly, Instant cursorAt, UUID cursorId, int limit) {
+        return query(viewerId, followingOnly, null, null, false, cursorAt, cursorId, limit);
+    }
+
+    /** Mesma consulta do feed com filtros opcionais: hashtag, um post especifico e so posts compartilhaveis (pagina publica). */
+    public List<PostRow> query(long viewerId, boolean followingOnly, String hashtag, UUID postId, boolean publicOnly,
+                               Instant cursorAt, UUID cursorId, int limit) {
         return jdbc.query("""
             SELECT fp.id, fp.public_id, fp.post_type, fp.caption, fp.published_at,
                    u.username, p.callsign, COALESCE(x.rank_code, 'RECRUTA') rank_code,
@@ -57,11 +63,14 @@ public class FeedRepository {
               AND (NOT :followingOnly OR EXISTS (SELECT 1 FROM operator_follow ff
                   WHERE ff.follower_user_id = :viewer AND ff.followed_user_id = fp.author_user_id))
               AND (CAST(:cursorAt AS timestamptz) IS NULL OR (fp.published_at, fp.public_id) < (CAST(:cursorAt AS timestamptz), CAST(:cursorId AS uuid)))
+              AND (CAST(:hashtag AS varchar) IS NULL OR EXISTS (SELECT 1 FROM feed_post_hashtag h WHERE h.post_id = fp.id AND h.tag = :hashtag))
+              AND (CAST(:postId AS uuid) IS NULL OR fp.public_id = :postId)
+              AND (NOT :publicOnly OR fp.public_share)
             ORDER BY fp.published_at DESC, fp.public_id DESC
             LIMIT :limit
             """, new MapSqlParameterSource().addValue("viewer", viewerId).addValue("followingOnly", followingOnly)
                 .addValue("cursorAt", cursorAt == null ? null : Timestamp.from(cursorAt)).addValue("cursorId", cursorId)
-                .addValue("limit", limit),
+                .addValue("limit", limit).addValue("hashtag", hashtag).addValue("postId", postId).addValue("publicOnly", publicOnly),
             (r, i) -> new PostRow(r.getLong("id"), r.getObject("public_id", UUID.class), r.getString("post_type"),
                 r.getString("caption"), r.getTimestamp("published_at").toInstant(),
                 new AuthorSummary(r.getString("username"), r.getString("callsign"), r.getString("rank_code")),
