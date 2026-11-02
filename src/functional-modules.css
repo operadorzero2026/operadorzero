@@ -778,3 +778,9 @@
 .operation-participant-admin li small { color: #a7a99f; }
 .operation-participant-admin li > span:last-child { display: flex; flex-wrap: wrap; gap: 8px; }
 .operation-participant-admin li button { padding: 8px 12px; font-size: 12px; }
+
+/* Central da operacao: configuracoes, funcoes, mover participante e moderacao do chat. */
+.operation-chat-messages p.moderated{opacity:.55}.operation-chat-tools{display:inline-flex;gap:6px;margin-left:auto}.operation-chat-tools button{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border:1px solid #3a3f2f;background:transparent;color:#b9bca9;font-size:11px;cursor:pointer}.operation-chat-tools button svg{width:12px;height:12px}.operation-chat-lock{margin-top:8px;display:inline-flex;align-items:center;gap:6px}
+.operation-structure-settings,.operation-roles,.operation-move{margin-top:18px;padding-top:14px;border-top:1px solid #34382b}.operation-check{display:flex!important;flex-direction:row!important;align-items:center;gap:8px}.operation-roles ul{list-style:none;padding:0;margin:8px 0;display:grid;gap:6px}.operation-roles li{display:flex;justify-content:space-between;align-items:center;gap:8px}.operation-roles li button,.operation-squad button{background:transparent;border:0;color:#b9bca9;cursor:pointer}.operation-roles li button svg,.operation-squad button svg{width:14px;height:14px}
+.operation-inline-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.operation-inline-form h4{flex-basis:100%;margin:0}.operation-inline-form select{min-width:160px;flex:1;height:40px;background:#0d0f0c;color:#f2f1e9;border:1px solid #3a3f2f;padding:0 8px}
+.operation-cover-tools{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.operation-cover-tools label{cursor:pointer}

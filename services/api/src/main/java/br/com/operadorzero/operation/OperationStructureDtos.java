@@ -37,7 +37,7 @@ public final class OperationStructureDtos {
                                         UUID commanderId, String commanderCallsign, UUID radioId,
                                         String radioCallsign, List<SquadResponse> squads) {}
     public record StructureResponse(UUID operationId, String operationStatus, String gameSize, Integer participantLimit, long participantCount,
-                                    boolean commandRolesEnabled, boolean allowRoleAccumulation,
+                                    boolean commandRolesEnabled, boolean allowRoleAccumulation, boolean generalChatPublicRead,
                                     boolean managedByCurrentUser, UUID currentUserSquadId, List<TeamStructureResponse> teams,
                                     List<RoleAssignmentResponse> roles) {}
 

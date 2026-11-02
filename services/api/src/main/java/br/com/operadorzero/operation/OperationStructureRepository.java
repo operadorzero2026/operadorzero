@@ -85,8 +85,10 @@ public class OperationStructureRepository {
             SELECT s.public_id FROM operation_participant p JOIN operation_squad s ON s.id=p.operation_squad_id
             WHERE p.operation_id=:operationId AND p.user_id=:userId AND p.status IN ('REQUESTED','APPROVED','WAITING_LIST','CONFIRMED','CHECKED_IN')
             """,Map.of("operationId",access.id(),"userId",userId),(r,i)->r.getObject("public_id",UUID.class)).stream().findFirst().orElse(null);
+        boolean publicRead=Boolean.TRUE.equals(jdbc.queryForObject("SELECT general_chat_public_read FROM airsoft_operation WHERE id=:id",
+            Map.of("id",access.id()),Boolean.class));
         return new StructureResponse(access.publicId(),access.status(),access.gameSize(),access.participantLimit(),count,
-            access.commandRolesEnabled(),access.allowRoleAccumulation(),access.owner()||access.operationAdmin(),currentUserSquadId,teams,roles);
+            access.commandRolesEnabled(),access.allowRoleAccumulation(),publicRead,access.owner()||access.operationAdmin(),currentUserSquadId,teams,roles);
     }
     public int updateSettings(OperationAccess a,UpdateStructureSettingsRequest r,String size,Instant now){int changed=jdbc.update("""
         UPDATE airsoft_operation SET game_size=:size,participant_limit=:limit,

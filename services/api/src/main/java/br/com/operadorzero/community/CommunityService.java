@@ -17,8 +17,10 @@ import br.com.operadorzero.community.CommunityDtos.ToggleResponse;
 import br.com.operadorzero.identity.AuthenticatedUser;
 import br.com.operadorzero.shared.audit.AuditEventRepository;
 import br.com.operadorzero.shared.image.SafeRasterImageProcessor;
+import br.com.operadorzero.shared.ratelimit.UserActionLimiter;
 import br.com.operadorzero.shared.web.BusinessException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
@@ -35,16 +37,18 @@ public class CommunityService {
         "SPAM", "HARASSMENT", "HATE", "THREAT", "PERSONAL_DATA", "FRAUD", "ILLEGAL", "OTHER");
     private final CommunityRepository repository;
     private final AuditEventRepository audit;
+    private final UserActionLimiter limiter;
     private final Clock clock;
 
     @Autowired
-    public CommunityService(CommunityRepository repository, AuditEventRepository audit) {
-        this(repository, audit, Clock.systemUTC());
+    public CommunityService(CommunityRepository repository, AuditEventRepository audit, UserActionLimiter limiter) {
+        this(repository, audit, limiter, Clock.systemUTC());
     }
 
-    CommunityService(CommunityRepository repository, AuditEventRepository audit, Clock clock) {
+    CommunityService(CommunityRepository repository, AuditEventRepository audit, UserActionLimiter limiter, Clock clock) {
         this.repository = repository;
         this.audit = audit;
+        this.limiter = limiter;
         this.clock = clock;
     }
 
@@ -93,6 +97,7 @@ public class CommunityService {
 
     @Transactional
     public PostResponse createPost(AuthenticatedUser user, CreatePostRequest request) {
+        limiter.check("community-post", user.internalId(), 5, Duration.ofHours(1));
         String title = clean(request.title());
         String body = clean(request.description());
         UUID id = repository.createPost(user.internalId(), normalizeSlug(request.categorySlug()), title, body,
@@ -106,6 +111,7 @@ public class CommunityService {
 
     @Transactional
     public MessageResponse addImage(AuthenticatedUser user, UUID postId, MultipartFile file) {
+        limiter.check("community-image", user.internalId(), 20, Duration.ofHours(1));
         var image = SafeRasterImageProcessor.process(file);
         UUID imageId = repository.addImage(postId, user.internalId(), image.contentType(), image.data(), clock.instant());
         if (imageId == null) {
@@ -129,6 +135,7 @@ public class CommunityService {
 
     @Transactional
     public MessageResponse comment(AuthenticatedUser user, UUID postId, CreateCommentRequest request) {
+        limiter.check("community-comment", user.internalId(), 20, Duration.ofMinutes(10));
         String body = clean(request.description());
         UUID commentId = repository.createComment(postId, request.parentCommentId(), user.internalId(), body,
             request.idempotencyKey(), clock.instant());
@@ -187,6 +194,7 @@ public class CommunityService {
 
     @Transactional
     public MessageResponse reportPost(AuthenticatedUser user, UUID postId, ReportRequest request) {
+        limiter.check("community-report", user.internalId(), 10, Duration.ofHours(1));
         String reason = reportReason(request.reason());
         if (!repository.reportPost(postId, user.internalId(), reason, nullable(request.details()), clock.instant())) {
             throw BusinessException.conflict("REPORT_ALREADY_OPEN", "Você já possui uma denúncia aberta para esta publicação.");
@@ -197,6 +205,7 @@ public class CommunityService {
 
     @Transactional
     public MessageResponse reportComment(AuthenticatedUser user, UUID commentId, ReportRequest request) {
+        limiter.check("community-report", user.internalId(), 10, Duration.ofHours(1));
         String reason = reportReason(request.reason());
         if (!repository.reportComment(commentId, user.internalId(), reason, nullable(request.details()), clock.instant())) {
             throw BusinessException.conflict("REPORT_ALREADY_OPEN", "Você já possui uma denúncia aberta para este comentário.");

@@ -28,6 +28,10 @@ public final class BusinessException extends RuntimeException {
         return new BusinessException(HttpStatus.CONFLICT, code, message);
     }
 
+    public static BusinessException tooManyRequests(String message) {
+        return new BusinessException(HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMITED", message);
+    }
+
     public HttpStatus status() {
         return status;
     }

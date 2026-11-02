@@ -14,6 +14,7 @@ import {
   getOperationStructure,
   getOperations,
   getOperatorProfile,
+  removeOperationCover,
   Operation,
   OperationRoster,
   OperationStructure,
@@ -570,6 +571,10 @@ export function OperationsPage() {
                 <label><span>Motivo da alteração</span><input name="reason" maxLength={500} required placeholder="Ex.: remarcação por condições climáticas"/></label>
                 <button className="module-primary" disabled={pending === `edit-${selected.id}`}>{pending === `edit-${selected.id}` ? 'Salvando…' : 'Salvar alterações'}</button>
               </form>
+              <div className="operation-cover-tools">
+                <label className="module-secondary"><input type="file" accept="image/png,image/jpeg" hidden onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void runOperationAction('cover', async () => setSelected(await uploadOperationCover(selected.id, file)), 'Capa atualizada.') }}/>{selected.hasCover ? 'Trocar capa' : 'Adicionar capa'}</label>
+                {selected.hasCover && <button type="button" className="module-secondary" disabled={pending === 'cover'} onClick={() => { if (window.confirm('Remover a capa desta operação?')) void runOperationAction('cover', () => removeOperationCover(selected.id), 'Capa removida.') }}>Remover capa</button>}
+              </div>
               <div className="operation-delete-zone">
                 <label><span>Motivo para excluir</span><textarea value={deleteReason} onChange={event=>setDeleteReason(event.target.value)} maxLength={500} placeholder="Explique por que esta operação será removida."/></label>
                 <button type="button" onClick={()=>void removeManagedOperation()} disabled={pending === `delete-${selected.id}`}><Trash2/>{pending === `delete-${selected.id}` ? 'Excluindo…' : 'Excluir operação'}</button>
@@ -599,7 +604,7 @@ export function OperationsPage() {
                 </li>)}</ul>
               </section>}
             </>}
-            {structureError ? <p className="module-feedback" role="alert">{structureError} <button type="button" onClick={() => void openOperation(selected)}>Tentar novamente</button></p> : <OperationCommandCenter operation={selected} initialStructure={structure} editMode={operationEditMode} onPublish={publish}/>}
+            {structureError ? <p className="module-feedback" role="alert">{structureError} <button type="button" onClick={() => void openOperation(selected)}>Tentar novamente</button></p> : <OperationCommandCenter operation={selected} initialStructure={structure} editMode={operationEditMode} onPublish={publish} participants={roster?.participants ?? []} onRosterChanged={() => void openOperation(selected, true)}/>}
           </section>
         </div>
       )}

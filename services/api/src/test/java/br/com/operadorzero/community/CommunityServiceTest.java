@@ -3,7 +3,13 @@ package br.com.operadorzero.community;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -11,6 +17,7 @@ import br.com.operadorzero.community.CommunityDtos.CreatePostRequest;
 import br.com.operadorzero.community.CommunityDtos.ReportRequest;
 import br.com.operadorzero.identity.AuthenticatedUser;
 import br.com.operadorzero.shared.audit.AuditEventRepository;
+import br.com.operadorzero.shared.ratelimit.UserActionLimiter;
 import br.com.operadorzero.shared.web.BusinessException;
 import java.time.Clock;
 import java.time.Instant;
@@ -21,6 +28,22 @@ import org.junit.jupiter.api.Test;
 
 class CommunityServiceTest {
     private static final Instant NOW = Instant.parse("2026-07-28T15:00:00Z");
+
+    @Test
+    void floodedAuthorIsStoppedBeforeAnythingIsWritten() {
+        CommunityRepository repository = mock(CommunityRepository.class);
+        UserActionLimiter limiter = mock(UserActionLimiter.class);
+        doThrow(BusinessException.tooManyRequests("limite")).when(limiter)
+            .check(eq("community-post"), anyLong(), anyInt(), any());
+        CommunityService service = new CommunityService(repository, mock(AuditEventRepository.class), limiter,
+            Clock.fixed(NOW, ZoneOffset.UTC));
+
+        assertThatThrownBy(() -> service.createPost(user(List.of("USER")),
+            new CreatePostRequest("duvidas", "Título válido", "Descrição", UUID.randomUUID())))
+            .isInstanceOfSatisfying(BusinessException.class,
+                exception -> assertThat(exception.code()).isEqualTo("RATE_LIMITED"));
+        verify(repository, never()).createPost(anyLong(), anyString(), anyString(), anyString(), any(), any());
+    }
 
     @Test
     void createPostRequiresAnActiveCategory() {
@@ -87,7 +110,7 @@ class CommunityServiceTest {
     }
 
     private CommunityService service(CommunityRepository repository) {
-        return new CommunityService(repository, mock(AuditEventRepository.class), Clock.fixed(NOW, ZoneOffset.UTC));
+        return new CommunityService(repository, mock(AuditEventRepository.class), mock(UserActionLimiter.class), Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     private AuthenticatedUser user(List<String> roles) {
