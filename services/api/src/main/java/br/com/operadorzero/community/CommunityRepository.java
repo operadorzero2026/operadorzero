@@ -354,6 +354,8 @@ public class CommunityRepository {
             JOIN app_user reporter ON reporter.id = r.reporter_user_id
             LEFT JOIN community_post p ON p.id = r.post_id
             LEFT JOIN community_comment cc ON cc.id = r.comment_id
+            -- Denuncias do feed (V28/V29) tem fila propria.
+            WHERE r.post_id IS NOT NULL OR r.comment_id IS NOT NULL
             ORDER BY CASE WHEN r.status = 'OPEN' THEN 0 ELSE 1 END, r.created_at, r.id
             LIMIT 200
             """, Map.of(), (row, index) -> new ReportResponse(

@@ -1,0 +1,55 @@
+/* Feed: coluna de ~480px centralizada no desktop, tela cheia no celular. */
+:root{--feed-gold:#c9a227;--feed-gold-soft:#e3c35a;--feed-olive:#6f7839;--feed-black:#030403;--feed-nav-h:72px}
+.feed-screen{position:relative;height:100svh;background:radial-gradient(circle at 50% 30%,#10130d,var(--feed-black) 70%);display:flex;justify-content:center}
+.feed-column{position:relative;width:100%;max-width:480px;height:100%;background:#000;overflow:hidden;box-shadow:0 0 0 1px #1b1e16}
+.feed-topbar{position:absolute;inset:0 0 auto;z-index:20;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 12px 18px;background:linear-gradient(#000c,transparent)}
+.feed-logo{font:800 22px/1 'Barlow Condensed',sans-serif;letter-spacing:-1px;color:#f2f1e9}
+.feed-logo b{color:var(--feed-gold)}
+.feed-tabs{display:flex;justify-content:center;gap:18px}
+.feed-tabs button{background:none;border:0;padding:6px 0;color:#c9cbbbaa;font-size:15px;font-weight:700;cursor:pointer;border-bottom:2px solid transparent;text-shadow:0 1px 3px #000}
+.feed-tabs button.active{color:#fff;border-bottom-color:var(--feed-gold)}
+.feed-tabs button:focus-visible,.feed-icon-button:focus-visible,.feed-bottom-nav button:focus-visible,.create-choice:focus-visible,.hub-grid button:focus-visible{outline:2px solid var(--feed-gold-soft);outline-offset:2px}
+.feed-icon-button{position:relative;display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:50%;background:#0006;color:#f2f1e9;cursor:pointer}
+.feed-icon-button svg{width:22px;height:22px}
+.feed-icon-button em{position:absolute;top:2px;right:0;min-width:18px;padding:1px 5px;border-radius:9px;background:var(--feed-gold);color:#120f04;font:800 10px/16px Inter,sans-serif;font-style:normal;text-align:center}
+.feed-stream{position:absolute;inset:0;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain}
+.feed-empty{min-height:100%;display:grid;place-content:center;justify-items:center;gap:12px;padding:96px 32px;text-align:center;color:#c9cbbb}
+.feed-empty svg{width:44px;height:44px;color:var(--feed-gold)}
+.feed-empty h2{margin:0;font-size:20px;color:#f2f1e9}
+.feed-empty p{margin:0;max-width:300px;font-size:14px;line-height:1.5}
+.feed-empty .button svg{width:16px;height:16px;color:inherit}
+
+/* Barra inferior: substitui a navegacao mobile antiga em todo o painel. */
+.feed-bottom-nav{display:none}
+@media(max-width:760px){
+  .app-shell .mobile-app-nav{display:none}
+  .feed-bottom-nav{display:grid;grid-template-columns:repeat(5,1fr);align-items:center;position:fixed;z-index:60;left:0;right:0;bottom:0;height:calc(var(--feed-nav-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:#050605;border-top:1px solid #1d2018}
+  .feed-bottom-nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:100%;border:0;background:none;color:#7b7f72;font-size:10px;cursor:pointer}
+  .feed-bottom-nav button svg{width:22px;height:22px}
+  .feed-bottom-nav button.active{color:var(--feed-gold-soft)}
+  .feed-bottom-nav .feed-create-button{justify-self:center;width:52px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--feed-olive),#3f4520);color:#fff;box-shadow:inset 0 0 0 1px var(--feed-gold)}
+  .feed-screen{position:fixed;inset:0 0 calc(var(--feed-nav-h) + env(safe-area-inset-bottom));height:auto}
+  .feed-column{max-width:none;box-shadow:none}
+}
+@media(min-width:761px){.feed-screen{position:sticky;top:0}}
+
+/* Paginas-hub (Explorar, Jogos, Perfil). */
+.hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.hub-grid button{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid #2c3024;background:#111310;color:#f2f1e9;text-align:left;cursor:pointer}
+.hub-grid button:hover{border-color:var(--feed-olive)}
+.hub-grid svg{flex:none;width:24px;height:24px;color:var(--feed-gold)}
+.hub-grid span{display:grid;gap:3px}
+.hub-grid small{color:#9da08f;font-size:12px}
+
+/* Folha de criacao (botao +). */
+.create-sheet-backdrop{position:fixed;inset:0;z-index:80;display:flex;align-items:flex-end;justify-content:center;background:#000a}
+.create-sheet{width:100%;max-width:480px;display:grid;gap:10px;padding:16px 16px calc(20px + env(safe-area-inset-bottom));background:#0d0f0b;border-top:2px solid var(--feed-gold);border-radius:16px 16px 0 0}
+.create-sheet header{display:flex;align-items:center;justify-content:space-between}
+.create-sheet h2{margin:0;font:800 22px/1 'Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.create-choice{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid #2c3024;border-radius:10px;background:#141711;color:#f2f1e9;text-align:left;cursor:pointer}
+.create-choice svg{width:26px;height:26px;color:var(--feed-gold)}
+.create-choice span{display:grid;gap:2px}
+.create-choice b{font:800 18px/1 'Barlow Condensed',sans-serif;letter-spacing:.08em}
+.create-choice small{color:#9da08f}
+.create-notice{margin:0;font-size:13px;color:#c9cbbb}
+@media(prefers-reduced-motion:reduce){.feed-stream{scroll-behavior:auto}}
