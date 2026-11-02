@@ -1,6 +1,6 @@
-import { Crown, LogOut, RefreshCw, Save, Send, Shield, UserPlus, Users } from 'lucide-react'
+import { Crown, LogOut, RefreshCw, Save, Search, Send, Shield, UserPlus, Users, X } from 'lucide-react'
 import { FormEvent, useEffect, useState } from 'react'
-import { acceptTeamInvitation, createTeam, declineTeamInvitation, getTeamWorkspace, inviteOperator, leaveTeam, teamLogoUrl, transferCaptaincy, type OperatorSummary, type Team, type TeamWorkspace, updateTeam, uploadTeamLogo } from './api'
+import { acceptTeamInvitation, acceptTeamJoinRequest, cancelTeamJoinRequest, changeTeamMemberRole, declineTeamJoinRequest, getTeamProfile, removeTeamMember, requestToJoinTeam, searchTeams, type TeamCard, type TeamProfile, createTeam, declineTeamInvitation, getTeamWorkspace, inviteOperator, leaveTeam, teamLogoUrl, transferCaptaincy, type OperatorSummary, type Team, type TeamWorkspace, updateTeam, uploadTeamLogo } from './api'
 import { BrazilLocationFields } from './BrazilLocationFields'
 import { OperatorSearch } from './OperatorSearch'
 
@@ -39,6 +39,7 @@ export function TeamPage() {
   return <main className="module-page"><header><p>ORGANIZAÇÃO</p><h1>Minha Equipe</h1><span>Convites, integrantes e administração em um único lugar.</span></header>{feedback && <p className={`module-feedback ${feedback.type === 'error' ? 'module-feedback--error' : ''}`} role="status">{feedback.text}</p>}
     {workspace.receivedInvitations.length > 0 && <section className="module-section"><div className="module-section-title"><div><small>CONVITES RECEBIDOS</small><h2>Equipes aguardando você</h2></div><UserPlus/></div><div className="invitation-list">{workspace.receivedInvitations.map(invitation => <div key={invitation.id}><div><b>{invitation.teamName} [{invitation.teamAcronym}]</b><small>Enviado por {invitation.inviterCallsign} · função {roleLabel(invitation.proposedRole)}</small>{invitation.message && <p>{invitation.message}</p>}</div><span><button disabled={!!pending} onClick={() => void run(invitation.id, () => acceptTeamInvitation(invitation.id), 'Convite aceito. Bem-vindo à equipe!')}>Aceitar</button><button disabled={!!pending} onClick={() => void run(invitation.id, () => declineTeamInvitation(invitation.id), 'Convite recusado.')}>Recusar</button></span></div>)}</div></section>}
     {!team ? <CreateTeamForm pending={pending} onCreate={createWithLogo}/> : <TeamWorkspaceView team={team} pending={pending} selectedOperator={selectedOperator} setSelectedOperator={setSelectedOperator} run={run}/>}
+    <TeamDirectory pending={pending} run={run}/>
   </main>
 }
 
@@ -75,13 +76,55 @@ function TeamWorkspaceView({ team, pending, selectedOperator, setSelectedOperato
   }
   return <>
     <section className="team-heading"><div>{team.hasLogo ? <img className="team-logo-image" src={teamLogoUrl(team.id, team.version)} alt={`Logo da equipe ${team.name}`}/> : <span>{team.acronym}</span>}<div><small>SUA EQUIPE · {roleLabel(team.currentUserRole)}</small><h2>{team.name}</h2><p>{team.city}/{team.stateCode} · {team.gameStyle}</p></div></div><strong>{recruitmentLabel(team.recruitmentStatus)}</strong></section>
-    <section className="module-section"><div className="module-section-title"><div><small>FORMAÇÃO ATUAL</small><h2>{team.members.length} {team.members.length === 1 ? 'integrante' : 'integrantes'}</h2></div><Shield/></div><div className="member-list">{team.members.map(member => <div key={member.operatorId}><span className="operator-avatar">{member.callsign.charAt(0).toUpperCase()}</span><div><b>{member.callsign}</b><small>{member.displayName} · @{member.username}</small></div><strong>{member.role === 'CAPTAIN' && <Crown/>}{roleLabel(member.role)}</strong></div>)}</div></section>
+    <section className="module-section"><div className="module-section-title"><div><small>FORMAÇÃO ATUAL</small><h2>{team.members.length} {team.members.length === 1 ? 'integrante' : 'integrantes'}</h2></div><Shield/></div><div className="member-list">{team.members.map(member => <div key={member.operatorId}><span className="operator-avatar">{member.callsign.charAt(0).toUpperCase()}</span><div><b>{member.callsign}</b><small>{member.displayName} · @{member.username}</small></div><strong>{member.role === 'CAPTAIN' && <Crown/>}{roleLabel(member.role)}</strong>{member.role !== 'CAPTAIN' && (isCaptain || (canManage && member.role === 'MEMBER')) && <span className="member-actions">{isCaptain && <button type="button" disabled={!!pending} onClick={() => void run(`role-${member.operatorId}`, () => changeTeamMemberRole(team.id, member.operatorId, member.role === 'MANAGER' ? 'MEMBER' : 'MANAGER'), 'Função atualizada.')}>{member.role === 'MANAGER' ? 'Tornar integrante' : 'Tornar gestor'}</button>}<button type="button" className="danger" disabled={!!pending} onClick={() => { if (window.confirm(`Remover ${member.callsign} da equipe?`)) void run(`remove-${member.operatorId}`, () => removeTeamMember(team.id, member.operatorId), 'Integrante removido.') }}>Remover</button></span>}</div>)}</div></section>
+    {canManage && (team.joinRequests?.length ?? 0) > 0 && <section className="module-section"><div className="module-section-title"><div><small>PEDIDOS DE ENTRADA</small><h2>{team.joinRequests!.length} aguardando resposta</h2></div><UserPlus/></div><div className="invitation-list">{team.joinRequests!.map(request => <div key={request.id}><div><b>{request.callsign}</b><small>{request.displayName} · @{request.username} · {new Date(request.createdAt).toLocaleDateString('pt-BR')}</small>{request.message && <p>{request.message}</p>}</div><span><button disabled={!!pending} onClick={() => void run(request.id, () => acceptTeamJoinRequest(request.id), `${request.callsign} entrou na equipe.`)}>Aceitar</button><button disabled={!!pending} onClick={() => void run(request.id, () => declineTeamJoinRequest(request.id), 'Pedido recusado.')}>Recusar</button></span></div>)}</div></section>}
     {canManage && <section className="module-section"><div className="module-section-title"><div><small>RECRUTAMENTO</small><h2>Convidar operador</h2></div><UserPlus/></div><OperatorSearch compact onSelect={setSelectedOperator}/>{selectedOperator && <form className="module-form invite-form" onSubmit={invite}><p>Selecionado: <b>{selectedOperator.callsign}</b> · @{selectedOperator.username}</p><label><span>Função</span><select name="proposedRole"><option value="MEMBER">Integrante</option>{isCaptain && <option value="MANAGER">Gestor</option>}</select></label><label><span>Mensagem</span><textarea name="message" maxLength={500}/></label><button className="module-primary" disabled={pending === 'invite'}><Send/> Enviar convite</button></form>}</section>}
     {canManage && <section className="module-section"><div className="module-section-title"><div><small>IDENTIDADE VISUAL</small><h2>Logo da equipe</h2><p>A imagem é validada e reprocessada antes de ser armazenada.</p></div></div><form className="module-form module-form--inline" onSubmit={uploadLogo}><label><span>Nova logo</span><input name="logo" type="file" accept="image/png,image/jpeg" required/><small>PNG ou JPEG, até 2 MB e 2048 × 2048 pixels.</small></label><button className="module-secondary" disabled={pending === 'logo'}>{pending === 'logo' ? 'Enviando…' : 'Atualizar logo'}</button></form></section>}
     {canManage && <section className="module-section"><div className="module-section-title"><div><small>ADMINISTRAÇÃO</small><h2>Dados da equipe</h2></div></div><form className="module-form" onSubmit={update} key={`team-${team.version}`}><div className="form-grid"><label><span>Nome</span><input name="name" defaultValue={team.name} minLength={3} maxLength={80} required/></label><label><span>Sigla</span><input name="acronym" defaultValue={team.acronym} pattern="(?=.*[A-Za-z0-9])[A-Za-z0-9.\-]{2,12}" maxLength={12} title="Use de 2 a 12 caracteres: letras, números, pontos ou hífens." required/></label><BrazilLocationFields namePrefix="team" defaultState={team.stateCode} defaultCity={team.city}/><label><span>Estilo</span><input name="gameStyle" defaultValue={team.gameStyle} maxLength={80} required/></label><label><span>Recrutamento</span><select name="recruitmentStatus" defaultValue={team.recruitmentStatus}><option value="OPEN">Aberto</option><option value="INVITE_ONLY">Somente por convite</option><option value="CLOSED">Fechado</option></select></label></div><label><span>Descrição</span><textarea name="description" defaultValue={team.description || ''} maxLength={500}/></label><label className="check-field"><input type="checkbox" name="ownsField" defaultChecked={team.ownsField}/> A equipe possui campo próprio</label><button className="module-primary" disabled={pending === 'update'}><Save/> Salvar equipe</button></form></section>}
     {isCaptain && team.members.length > 1 && <section className="module-section module-section--danger"><div className="module-section-title"><div><small>RESPONSABILIDADE</small><h2>Transferir capitania</h2></div><Crown/></div><form className="module-form" onSubmit={transfer}><label><span>Novo capitão</span><select name="operatorId" required><option value="">Selecione</option>{team.members.filter(member => member.role !== 'CAPTAIN').map(member => <option value={member.operatorId} key={member.operatorId}>{member.callsign} · {roleLabel(member.role)}</option>)}</select></label><label><span>Motivo</span><input name="reason" maxLength={500}/></label><button className="module-secondary" disabled={pending === 'captaincy'}>Transferir capitania</button></form></section>}
     {!isCaptain && <section className="module-section module-section--danger"><div><small>VÍNCULO</small><h2>Sair da equipe</h2><p>Seu histórico de participação será preservado.</p></div><button className="module-secondary" disabled={pending === 'leave'} onClick={() => void run('leave', leaveTeam, 'Você saiu da equipe.')}><LogOut/> Sair da equipe</button></section>}
   </>
+}
+
+function TeamDirectory({ pending, run }: { pending: string; run: (key: string, action: () => Promise<unknown>, success: string) => Promise<void> }) {
+  const [query, setQuery] = useState('')
+  const [stateCode, setStateCode] = useState('')
+  const [items, setItems] = useState<TeamCard[] | null>(null)
+  const [profile, setProfile] = useState<TeamProfile | null>(null)
+  const [error, setError] = useState('')
+  const search = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault(); setError('')
+    try { setItems((await searchTeams(query.trim(), stateCode.trim().toUpperCase())).items) } catch (e) { setError(e instanceof Error ? e.message : 'Não foi possível buscar equipes.') }
+  }
+  const open = async (teamId: string) => {
+    setError('')
+    try { setProfile(await getTeamProfile(teamId)) } catch (e) { setError(e instanceof Error ? e.message : 'Não foi possível abrir o perfil.') }
+  }
+  const act = async (key: string, action: () => Promise<unknown>, success: string) => {
+    if (!profile) return
+    await run(key, action, success)
+    await open(profile.team.id)
+  }
+  useEffect(() => { void search() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  return <section className="module-section team-directory"><div className="module-section-title"><div><small>DIRETÓRIO</small><h2>Encontrar equipes</h2><p>Veja o perfil público das equipes e peça para entrar nas que estão recrutando.</p></div><Users/></div>
+    <form className="module-search" onSubmit={search}><Search/><input value={query} onChange={e => setQuery(e.target.value)} maxLength={80} placeholder="Nome ou sigla"/><input className="team-state-filter" value={stateCode} onChange={e => setStateCode(e.target.value)} maxLength={2} placeholder="UF"/><button>Pesquisar</button></form>
+    {error && <p className="module-feedback module-feedback--error" role="alert">{error}</p>}
+    {items && items.length === 0 && <p className="module-empty">Nenhuma equipe encontrada.</p>}
+    {items && items.length > 0 && <div className="team-directory-grid">{items.map(item => <button type="button" key={item.id} onClick={() => void open(item.id)}>
+      {item.hasLogo ? <img src={teamLogoUrl(item.id, 0)} alt=""/> : <span>{item.acronym}</span>}
+      <b>{item.name}</b><small>{item.city}/{item.stateCode} · {item.memberCount} {item.memberCount === 1 ? 'integrante' : 'integrantes'}</small><em>{recruitmentLabel(item.recruitmentStatus)}</em>
+    </button>)}</div>}
+    {profile && <div className="classified-modal-backdrop" role="presentation" onClick={() => setProfile(null)}><section className="classified-modal team-profile-modal" role="dialog" aria-modal="true" aria-label={`Perfil de ${profile.team.name}`} onClick={e => e.stopPropagation()}>
+      <button type="button" className="classified-modal-close" aria-label="Fechar" onClick={() => setProfile(null)}><X/></button>
+      <div className="team-heading"><div>{profile.team.hasLogo ? <img className="team-logo-image" src={teamLogoUrl(profile.team.id, 0)} alt={`Logo da equipe ${profile.team.name}`}/> : <span>{profile.team.acronym}</span>}<div><small>{profile.team.acronym}</small><h2>{profile.team.name}</h2><p>{profile.team.city}/{profile.team.stateCode} · {profile.team.gameStyle}{profile.ownsField ? ' · possui campo' : ''}</p></div></div><strong>{recruitmentLabel(profile.team.recruitmentStatus)}</strong></div>
+      {profile.description && <p>{profile.description}</p>}
+      <h3>Integrantes</h3>
+      <div className="member-list">{profile.members.map(member => <div key={member.operatorId}><span className="operator-avatar">{member.callsign.charAt(0).toUpperCase()}</span><div><b>{member.callsign}</b><small>{member.displayName}</small></div><strong>{member.role === 'CAPTAIN' && <Crown/>}{roleLabel(member.role)}</strong></div>)}</div>
+      {profile.currentUserMember && <p className="module-feedback">Esta é a sua equipe.</p>}
+      {profile.joinRequestPending && <p className="module-feedback">Seu pedido está aguardando a gestão da equipe. <button type="button" disabled={!!pending} onClick={() => void act('cancel-join', () => cancelTeamJoinRequest(profile.team.id), 'Pedido cancelado.')}>Cancelar pedido</button></p>}
+      {profile.canRequestToJoin && <button type="button" className="module-primary" disabled={!!pending} onClick={() => { const message = window.prompt('Mensagem para a equipe (opcional):'); if (message === null) return; void act('join', () => requestToJoinTeam(profile.team.id, message.trim()), 'Pedido enviado à equipe.') }}><UserPlus/> Pedir para entrar</button>}
+    </section></div>}
+  </section>
 }
 
 function teamPayload(data: FormData): Record<string, unknown> {

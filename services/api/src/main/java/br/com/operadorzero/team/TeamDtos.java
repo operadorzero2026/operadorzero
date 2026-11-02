@@ -63,7 +63,8 @@ public final class TeamDtos {
         String currentUserRole,
         List<MemberResponse> members,
         boolean hasLogo,
-        long version
+        long version,
+        List<JoinRequestResponse> joinRequests
     ) {}
 
     public record MemberResponse(
@@ -86,6 +87,21 @@ public final class TeamDtos {
         Instant createdAt,
         Instant expiresAt
     ) {}
+
+    public record JoinRequestCreate(@Size(max = 500) String message) {}
+    public record ChangeMemberRoleRequest(@NotBlank @Size(max = 24) String role) {}
+
+    public record JoinRequestResponse(UUID id, UUID operatorId, String username, String callsign, String displayName,
+                                      String message, Instant createdAt) {}
+
+    public record TeamCardResponse(UUID id, String name, String acronym, String city, String stateCode, String gameStyle,
+                                   String recruitmentStatus, long memberCount, boolean hasLogo) {}
+    public record TeamDirectoryResponse(List<TeamCardResponse> items) {}
+
+    /** Perfil publico: nao expoe e-mail nem dados internos dos integrantes. */
+    public record TeamProfileResponse(TeamCardResponse team, String description, boolean ownsField,
+                                      List<MemberResponse> members, boolean currentUserMember,
+                                      boolean joinRequestPending, boolean canRequestToJoin) {}
 
     public record MessageResponse(String message) {}
 }

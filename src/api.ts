@@ -85,7 +85,12 @@ export type Team = {
   members: TeamMember[]
   hasLogo: boolean
   version: number
+  joinRequests?: TeamJoinRequest[]
 }
+
+export type TeamJoinRequest = { id: string; operatorId: string; username: string; callsign: string; displayName: string; message?: string | null; createdAt: string }
+export type TeamCard = { id: string; name: string; acronym: string; city: string; stateCode: string; gameStyle: string; recruitmentStatus: string; memberCount: number; hasLogo: boolean }
+export type TeamProfile = { team: TeamCard; description?: string | null; ownsField: boolean; members: TeamMember[]; currentUserMember: boolean; joinRequestPending: boolean; canRequestToJoin: boolean }
 
 export type TeamInvitation = {
   id: string
@@ -393,6 +398,14 @@ export const acceptTeamInvitation = (invitationId: string) =>
   apiRequest<Team>(`/api/teams/invitations/${encodeURIComponent(invitationId)}/accept`, json('POST', {}))
 export const declineTeamInvitation = (invitationId: string) =>
   apiRequest<{ message: string }>(`/api/teams/invitations/${encodeURIComponent(invitationId)}/decline`, json('POST', {}))
+export const searchTeams = (query = '', stateCode = '') => apiRequest<{ items: TeamCard[] }>(`/api/teams?q=${encodeURIComponent(query)}&stateCode=${encodeURIComponent(stateCode)}&limit=50`)
+export const getTeamProfile = (teamId: string) => apiRequest<TeamProfile>(`/api/teams/${encodeURIComponent(teamId)}/profile`)
+export const requestToJoinTeam = (teamId: string, message: string) => apiRequest<{ message: string }>(`/api/teams/${encodeURIComponent(teamId)}/join-requests`, json('POST', { message: message || null }))
+export const cancelTeamJoinRequest = (teamId: string) => apiRequest<{ message: string }>(`/api/teams/${encodeURIComponent(teamId)}/join-requests/cancel`, json('POST', {}))
+export const acceptTeamJoinRequest = (requestId: string) => apiRequest<Team>(`/api/teams/join-requests/${encodeURIComponent(requestId)}/accept`, json('POST', {}))
+export const declineTeamJoinRequest = (requestId: string) => apiRequest<Team>(`/api/teams/join-requests/${encodeURIComponent(requestId)}/decline`, json('POST', {}))
+export const removeTeamMember = (teamId: string, operatorId: string) => apiRequest<Team>(`/api/teams/${encodeURIComponent(teamId)}/members/${encodeURIComponent(operatorId)}`, json('DELETE'))
+export const changeTeamMemberRole = (teamId: string, operatorId: string, role: 'MANAGER' | 'MEMBER') => apiRequest<Team>(`/api/teams/${encodeURIComponent(teamId)}/members/${encodeURIComponent(operatorId)}/role`, json('PATCH', { role }))
 export const leaveTeam = () => apiRequest<{ message: string }>('/api/teams/leave', json('POST', {}))
 export const transferCaptaincy = (teamId: string, operatorId: string, reason: string) =>
   apiRequest<Team>(`/api/teams/${encodeURIComponent(teamId)}/captaincy`, json('POST', { operatorId, reason }))

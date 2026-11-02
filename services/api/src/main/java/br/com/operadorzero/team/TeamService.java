@@ -6,7 +6,12 @@ import br.com.operadorzero.operator.BrazilLocationValidator;
 import br.com.operadorzero.operator.BrazilLocationValidator.Location;
 import br.com.operadorzero.shared.audit.AuditEventRepository;
 import br.com.operadorzero.shared.web.BusinessException;
+import br.com.operadorzero.team.TeamDtos.ChangeMemberRoleRequest;
 import br.com.operadorzero.team.TeamDtos.CreateTeamRequest;
+import br.com.operadorzero.team.TeamDtos.JoinRequestCreate;
+import br.com.operadorzero.team.TeamDtos.TeamCardResponse;
+import br.com.operadorzero.team.TeamDtos.TeamDirectoryResponse;
+import br.com.operadorzero.team.TeamDtos.TeamProfileResponse;
 import br.com.operadorzero.team.TeamDtos.InvitationResponse;
 import br.com.operadorzero.team.TeamDtos.InviteRequest;
 import br.com.operadorzero.team.TeamDtos.MessageResponse;
@@ -16,6 +21,7 @@ import br.com.operadorzero.team.TeamDtos.TeamWorkspaceResponse;
 import br.com.operadorzero.team.TeamDtos.TransferCaptaincyRequest;
 import br.com.operadorzero.team.TeamDtos.UpdateTeamRequest;
 import br.com.operadorzero.team.TeamRepository.InvitationRow;
+import br.com.operadorzero.team.TeamRepository.JoinRequestRow;
 import br.com.operadorzero.team.TeamRepository.MembershipRow;
 import br.com.operadorzero.team.TeamRepository.TeamRow;
 import br.com.operadorzero.team.TeamRepository.UserRow;
@@ -167,6 +173,7 @@ public class TeamService {
             repository.addMember(invitation.teamId(), user.internalId(), invitation.proposedRole(), invitation.inviterUserId(), now);
             repository.respondInvitation(invitation.id(), "ACCEPTED", now);
             repository.cancelOtherInvitations(user.internalId(), invitation.id(), now);
+            repository.cancelPendingForUser(user.internalId(), now);
             repository.history(invitation.teamId(), user.internalId(), "JOINED", null, invitation.proposedRole(),
                 user.internalId(), "Convite aceito", now);
         } catch (DataIntegrityViolationException exception) {
@@ -226,6 +233,129 @@ public class TeamService {
     }
 
     @Transactional(readOnly = true)
+    public TeamDirectoryResponse directory(String query, String stateCode, String city, int limit) {
+        return new TeamDirectoryResponse(repository.searchTeams(normalize(query), upper(stateCode), normalize(city),
+            Math.max(1, Math.min(limit, 100))));
+    }
+
+    @Transactional(readOnly = true)
+    public TeamProfileResponse profile(AuthenticatedUser user, UUID teamId) {
+        TeamCardResponse card = repository.teamCard(teamId).orElseThrow(() -> BusinessException.notFound("Equipe não encontrada."));
+        TeamRow team = repository.findTeam(repository.teamInternalId(teamId).orElseThrow(() -> BusinessException.notFound("Equipe não encontrada.")))
+            .orElseThrow(() -> BusinessException.notFound("Equipe não encontrada."));
+        var ownMembership = repository.activeMembership(user.internalId());
+        boolean member = ownMembership.map(m -> m.teamId() == team.id()).orElse(false);
+        boolean pending = repository.hasPendingJoinRequest(team.id(), user.internalId());
+        boolean canRequest = ownMembership.isEmpty() && !pending && "OPEN".equals(team.recruitmentStatus());
+        return new TeamProfileResponse(card, team.description(), team.ownsField(), repository.members(team.id()),
+            member, pending, canRequest);
+    }
+
+    @Transactional
+    public MessageResponse requestToJoin(AuthenticatedUser user, UUID teamId, JoinRequestCreate request,
+                                         HttpServletRequest servletRequest) {
+        long internalTeamId = repository.teamInternalId(teamId).orElseThrow(() -> BusinessException.notFound("Equipe não encontrada."));
+        TeamRow team = repository.findTeam(internalTeamId).orElseThrow(() -> BusinessException.notFound("Equipe não encontrada."));
+        if (repository.activeMembership(user.internalId()).isPresent()) {
+            throw BusinessException.conflict("ACTIVE_TEAM_EXISTS", "Você já participa de uma equipe ativa.");
+        }
+        if (!"OPEN".equals(team.recruitmentStatus())) {
+            throw BusinessException.conflict("TEAM_NOT_RECRUITING", "Esta equipe não está aceitando pedidos de entrada.");
+        }
+        rateLimiter.check("team-join-request", servletRequest, Long.toString(user.internalId()), 10, Duration.ofDays(1));
+        Instant now = clock.instant();
+        try {
+            UUID id = repository.createJoinRequest(team.id(), user.internalId(), request == null ? null : nullable(request.message()), now);
+            audit.record(user.internalId(), "TEAM_JOIN_REQUESTED", "TEAM_JOIN_REQUEST", id, null, now);
+        } catch (DataIntegrityViolationException exception) {
+            throw BusinessException.conflict("JOIN_REQUEST_PENDING", "Você já tem um pedido pendente para esta equipe.");
+        }
+        return new MessageResponse("Pedido enviado. A gestão da equipe vai analisar.");
+    }
+
+    @Transactional
+    public MessageResponse cancelJoinRequest(AuthenticatedUser user, UUID teamId) {
+        long internalTeamId = repository.teamInternalId(teamId).orElseThrow(() -> BusinessException.notFound("Equipe não encontrada."));
+        if (repository.cancelOwnJoinRequest(internalTeamId, user.internalId(), clock.instant()) == 0) {
+            throw BusinessException.notFound("Não há pedido pendente para esta equipe.");
+        }
+        return new MessageResponse("Pedido cancelado.");
+    }
+
+    @Transactional
+    public TeamResponse respondJoinRequest(AuthenticatedUser user, UUID requestId, boolean accept) {
+        JoinRequestRow request = repository.lockJoinRequest(requestId)
+            .orElseThrow(() -> BusinessException.notFound("Pedido não encontrado."));
+        MembershipRow actor = managedMembership(user.internalId(), request.teamPublicId());
+        if (!"PENDING".equals(request.status())) {
+            throw BusinessException.conflict("JOIN_REQUEST_NOT_PENDING", "Este pedido já foi respondido.");
+        }
+        Instant now = clock.instant();
+        if (!accept) {
+            repository.respondJoinRequest(request.id(), "DECLINED", user.internalId(), now);
+            audit.record(user.internalId(), "TEAM_JOIN_REQUEST_DECLINED", "TEAM_JOIN_REQUEST", requestId, null, now);
+            return response(actor);
+        }
+        if (repository.activeMembership(request.userId()).isPresent()) {
+            repository.respondJoinRequest(request.id(), "CANCELLED", user.internalId(), now);
+            throw BusinessException.conflict("OPERATOR_HAS_TEAM", "Este operador já entrou em outra equipe.");
+        }
+        try {
+            repository.addMember(request.teamId(), request.userId(), "MEMBER", user.internalId(), now);
+        } catch (DataIntegrityViolationException exception) {
+            throw BusinessException.conflict("MEMBERSHIP_CONFLICT", "O vínculo do operador mudou. Atualize a página.");
+        }
+        repository.respondJoinRequest(request.id(), "ACCEPTED", user.internalId(), now);
+        repository.cancelPendingForUser(request.userId(), now);
+        repository.history(request.teamId(), request.userId(), "JOINED", null, "MEMBER", user.internalId(), "Pedido aceito", now);
+        audit.record(user.internalId(), "TEAM_JOIN_REQUEST_ACCEPTED", "TEAM_JOIN_REQUEST", requestId, null, now);
+        return response(actor);
+    }
+
+    @Transactional
+    public TeamResponse removeMember(AuthenticatedUser user, UUID teamId, UUID operatorId) {
+        MembershipRow actor = managedMembership(user.internalId(), teamId);
+        MembershipRow target = repository.memberByOperator(actor.teamId(), operatorId)
+            .orElseThrow(() -> BusinessException.notFound("Integrante não encontrado nesta equipe."));
+        if (target.userId() == user.internalId()) {
+            throw BusinessException.badRequest("SELF_REMOVAL", "Para sair da equipe, use a opção Sair.");
+        }
+        if ("CAPTAIN".equals(target.role()) || ("MANAGER".equals(actor.role()) && "MANAGER".equals(target.role()))) {
+            throw BusinessException.forbidden("Você não pode remover este integrante.");
+        }
+        Instant now = clock.instant();
+        repository.leave(actor.teamId(), target.userId(), now);
+        repository.history(actor.teamId(), target.userId(), "REMOVED", target.role(), null, user.internalId(), null, now);
+        audit.record(user.internalId(), "TEAM_MEMBER_REMOVED", "TEAM", teamId, null, now);
+        return response(actor);
+    }
+
+    @Transactional
+    public TeamResponse changeMemberRole(AuthenticatedUser user, UUID teamId, UUID operatorId, ChangeMemberRoleRequest request) {
+        MembershipRow actor = repository.activeMembership(user.internalId(), teamId)
+            .orElseThrow(() -> BusinessException.notFound("Equipe não encontrada."));
+        if (!"CAPTAIN".equals(actor.role())) {
+            throw BusinessException.forbidden("Somente o capitão pode alterar funções.");
+        }
+        String role = upper(request.role());
+        if (!INVITABLE_ROLES.contains(role)) {
+            throw BusinessException.badRequest("INVALID_TEAM_ROLE", "Selecione uma função válida.");
+        }
+        MembershipRow target = repository.memberByOperator(actor.teamId(), operatorId)
+            .orElseThrow(() -> BusinessException.notFound("Integrante não encontrado nesta equipe."));
+        if (role.equals(target.role())) {
+            return response(actor);
+        }
+        if (repository.changeRole(actor.teamId(), target.userId(), role) != 1) {
+            throw BusinessException.conflict("ROLE_CHANGE_INVALID", "Não é possível alterar a função deste integrante.");
+        }
+        Instant now = clock.instant();
+        repository.history(actor.teamId(), target.userId(), "ROLE_CHANGED", target.role(), role, user.internalId(), null, now);
+        audit.record(user.internalId(), "TEAM_MEMBER_ROLE_CHANGED", "TEAM", teamId, role, now);
+        return response(actor);
+    }
+
+    @Transactional(readOnly = true)
     public TeamSummaryResponse summary() {
         return new TeamSummaryResponse(repository.countActiveTeams());
     }
@@ -269,7 +399,8 @@ public class TeamService {
             .orElseThrow(() -> BusinessException.notFound("Equipe não encontrada."));
         return new TeamResponse(team.publicId(), team.name(), team.acronym(), team.city(), team.stateCode(),
             team.gameStyle(), team.ownsField(), team.description(), team.recruitmentStatus(), membership.role(),
-            repository.members(team.id()), repository.hasLogo(team.id()), team.version());
+            repository.members(team.id()), repository.hasLogo(team.id()), team.version(),
+            MANAGEMENT_ROLES.contains(membership.role()) ? repository.pendingJoinRequests(team.id()) : List.of());
     }
 
     private SanitizedLogo sanitizeLogo(MultipartFile file) {

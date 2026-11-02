@@ -105,4 +105,49 @@ class TeamServiceTest {
             .isInstanceOfSatisfying(BusinessException.class,
                 exception -> org.assertj.core.api.Assertions.assertThat(exception.code()).isEqualTo("INVALID_TEAM_LOGO"));
     }
+
+    @Test
+    void joinRequestNeedsAnOpenTeam() {
+        when(repository.teamInternalId(teamId)).thenReturn(Optional.of(20L));
+        when(repository.findTeam(20L)).thenReturn(Optional.of(new TeamRepository.TeamRow(20L, teamId, "Alfa", "ALF",
+            "Campinas", "SP", "Milsim", false, null, "INVITE_ONLY", 1)));
+        when(repository.activeMembership(user.internalId())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.requestToJoin(user, teamId, new TeamDtos.JoinRequestCreate(null), mock(HttpServletRequest.class)))
+            .isInstanceOfSatisfying(BusinessException.class,
+                exception -> org.assertj.core.api.Assertions.assertThat(exception.code()).isEqualTo("TEAM_NOT_RECRUITING"));
+        verify(repository, org.mockito.Mockito.never()).createJoinRequest(org.mockito.ArgumentMatchers.anyLong(),
+            org.mockito.ArgumentMatchers.anyLong(), any(), any());
+    }
+
+    @Test
+    void managerCannotRemoveAnotherManagerOrTheCaptain() {
+        UUID other = UUID.randomUUID();
+        when(repository.activeMembership(user.internalId(), teamId))
+            .thenReturn(Optional.of(new MembershipRow(20L, user.internalId(), "MANAGER", teamId)));
+        when(repository.memberByOperator(20L, other)).thenReturn(Optional.of(new MembershipRow(20L, 99L, "MANAGER", teamId)));
+
+        assertThatThrownBy(() -> service.removeMember(user, teamId, other))
+            .isInstanceOfSatisfying(BusinessException.class,
+                exception -> org.assertj.core.api.Assertions.assertThat(exception.status().value()).isEqualTo(403));
+        verify(repository, org.mockito.Mockito.never()).leave(org.mockito.ArgumentMatchers.anyLong(),
+            org.mockito.ArgumentMatchers.anyLong(), any());
+    }
+
+    @Test
+    void acceptingRequestOfOperatorWhoJoinedElsewhereCancelsIt() {
+        UUID requestId = UUID.randomUUID();
+        when(repository.lockJoinRequest(requestId))
+            .thenReturn(Optional.of(new TeamRepository.JoinRequestRow(5L, requestId, 20L, 77L, "PENDING", teamId)));
+        when(repository.activeMembership(user.internalId(), teamId))
+            .thenReturn(Optional.of(new MembershipRow(20L, user.internalId(), "CAPTAIN", teamId)));
+        when(repository.activeMembership(77L)).thenReturn(Optional.of(new MembershipRow(30L, 77L, "MEMBER", UUID.randomUUID())));
+
+        assertThatThrownBy(() -> service.respondJoinRequest(user, requestId, true))
+            .isInstanceOfSatisfying(BusinessException.class,
+                exception -> org.assertj.core.api.Assertions.assertThat(exception.code()).isEqualTo("OPERATOR_HAS_TEAM"));
+        verify(repository).respondJoinRequest(5L, "CANCELLED", user.internalId(), clock.instant());
+        verify(repository, org.mockito.Mockito.never()).addMember(org.mockito.ArgumentMatchers.anyLong(),
+            org.mockito.ArgumentMatchers.anyLong(), any(), any(), any());
+    }
 }

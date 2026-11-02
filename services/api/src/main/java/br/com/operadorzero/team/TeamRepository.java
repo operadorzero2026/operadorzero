@@ -1,6 +1,8 @@
 package br.com.operadorzero.team;
 
 import br.com.operadorzero.team.TeamDtos.InvitationResponse;
+import br.com.operadorzero.team.TeamDtos.JoinRequestResponse;
+import br.com.operadorzero.team.TeamDtos.TeamCardResponse;
 import br.com.operadorzero.team.TeamDtos.MemberResponse;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -256,6 +258,106 @@ public class TeamRepository {
                 .addValue("actorUserId", actorUserId).addValue("reason", reason).addValue("now", Timestamp.from(now)));
     }
 
+    public List<TeamCardResponse> searchTeams(String query, String stateCode, String city, int limit) {
+        return jdbc.query("""
+            SELECT t.id, t.public_id, t.name, t.acronym, t.city, t.state_code, t.game_style, t.recruitment_status,
+                   (SELECT COUNT(*) FROM team_member tm WHERE tm.team_id = t.id AND tm.left_at IS NULL) AS member_count,
+                   EXISTS(SELECT 1 FROM team_logo tl WHERE tl.team_id = t.id) AS has_logo
+            FROM team t
+            WHERE t.status = 'ACTIVE'
+              AND (:query = '' OR lower(t.name) LIKE :pattern OR lower(t.acronym) LIKE :pattern)
+              AND (:stateCode = '' OR t.state_code = :stateCode)
+              AND (:city = '' OR lower(t.city) = lower(:city))
+            ORDER BY CASE t.recruitment_status WHEN 'OPEN' THEN 0 WHEN 'INVITE_ONLY' THEN 1 ELSE 2 END, lower(t.name)
+            LIMIT :limit
+            """, new MapSqlParameterSource().addValue("query", query).addValue("pattern", "%" + query.toLowerCase() + "%")
+                .addValue("stateCode", stateCode).addValue("city", city).addValue("limit", limit), this::mapCard);
+    }
+
+    public Optional<TeamCardResponse> teamCard(UUID teamId) {
+        return jdbc.query("""
+            SELECT t.id, t.public_id, t.name, t.acronym, t.city, t.state_code, t.game_style, t.recruitment_status,
+                   (SELECT COUNT(*) FROM team_member tm WHERE tm.team_id = t.id AND tm.left_at IS NULL) AS member_count,
+                   EXISTS(SELECT 1 FROM team_logo tl WHERE tl.team_id = t.id) AS has_logo
+            FROM team t WHERE t.public_id = :teamId AND t.status = 'ACTIVE'
+            """, Map.of("teamId", teamId), this::mapCard).stream().findFirst();
+    }
+
+    public Optional<Long> teamInternalId(UUID teamId) {
+        return jdbc.query("SELECT id FROM team WHERE public_id = :teamId AND status = 'ACTIVE'", Map.of("teamId", teamId),
+            (row, index) -> row.getLong("id")).stream().findFirst();
+    }
+
+    public UUID createJoinRequest(long teamId, long userId, String message, Instant now) {
+        return jdbc.queryForObject("""
+            INSERT INTO team_join_request(team_id, user_id, message, created_at) VALUES (:teamId, :userId, :message, :now)
+            RETURNING public_id
+            """, new MapSqlParameterSource().addValue("teamId", teamId).addValue("userId", userId)
+                .addValue("message", message).addValue("now", Timestamp.from(now)), UUID.class);
+    }
+
+    public boolean hasPendingJoinRequest(long teamId, long userId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject(
+            "SELECT EXISTS(SELECT 1 FROM team_join_request WHERE team_id = :teamId AND user_id = :userId AND status = 'PENDING')",
+            Map.of("teamId", teamId, "userId", userId), Boolean.class));
+    }
+
+    public int cancelOwnJoinRequest(long teamId, long userId, Instant now) {
+        return jdbc.update("""
+            UPDATE team_join_request SET status = 'CANCELLED', responded_at = :now
+            WHERE team_id = :teamId AND user_id = :userId AND status = 'PENDING'
+            """, Map.of("teamId", teamId, "userId", userId, "now", Timestamp.from(now)));
+    }
+
+    public List<JoinRequestResponse> pendingJoinRequests(long teamId) {
+        return jdbc.query("""
+            SELECT r.public_id, p.public_id AS operator_id, u.username, p.callsign, p.display_name, r.message, r.created_at
+            FROM team_join_request r
+            JOIN app_user u ON u.id = r.user_id AND u.status = 'ACTIVE'
+            JOIN operator_profile p ON p.user_id = u.id
+            WHERE r.team_id = :teamId AND r.status = 'PENDING'
+            ORDER BY r.created_at
+            """, Map.of("teamId", teamId), (row, index) -> new JoinRequestResponse(row.getObject("public_id", UUID.class),
+                row.getObject("operator_id", UUID.class), row.getString("username"), row.getString("callsign"),
+                row.getString("display_name"), row.getString("message"), row.getTimestamp("created_at").toInstant()));
+    }
+
+    public Optional<JoinRequestRow> lockJoinRequest(UUID requestId) {
+        return jdbc.query("""
+            SELECT r.id, r.public_id, r.team_id, r.user_id, r.status, t.public_id AS team_public_id
+            FROM team_join_request r JOIN team t ON t.id = r.team_id
+            WHERE r.public_id = :requestId FOR UPDATE OF r
+            """, Map.of("requestId", requestId), (row, index) -> new JoinRequestRow(row.getLong("id"),
+                row.getObject("public_id", UUID.class), row.getLong("team_id"), row.getLong("user_id"),
+                row.getString("status"), row.getObject("team_public_id", UUID.class))).stream().findFirst();
+    }
+
+    public void respondJoinRequest(long requestId, String status, long actorUserId, Instant now) {
+        jdbc.update("UPDATE team_join_request SET status = :status, responded_at = :now, responded_by = :actor WHERE id = :id",
+            Map.of("status", status, "now", Timestamp.from(now), "actor", actorUserId, "id", requestId));
+    }
+
+    /** Ao entrar numa equipe, outros pedidos e convites pendentes do operador deixam de valer. */
+    public void cancelPendingForUser(long userId, Instant now) {
+        jdbc.update("UPDATE team_join_request SET status = 'CANCELLED', responded_at = :now WHERE user_id = :userId AND status = 'PENDING'",
+            Map.of("userId", userId, "now", Timestamp.from(now)));
+        jdbc.update("UPDATE team_invitation SET status = 'CANCELLED', responded_at = :now WHERE invitee_user_id = :userId AND status = 'PENDING'",
+            Map.of("userId", userId, "now", Timestamp.from(now)));
+    }
+
+    public int changeRole(long teamId, long userId, String role) {
+        return jdbc.update("""
+            UPDATE team_member SET role = :role, version = version + 1
+            WHERE team_id = :teamId AND user_id = :userId AND left_at IS NULL AND role <> 'CAPTAIN'
+            """, Map.of("role", role, "teamId", teamId, "userId", userId));
+    }
+
+    private TeamCardResponse mapCard(ResultSet row, int index) throws SQLException {
+        return new TeamCardResponse(row.getObject("public_id", UUID.class), row.getString("name"), row.getString("acronym"),
+            row.getString("city"), row.getString("state_code"), row.getString("game_style"),
+            row.getString("recruitment_status"), row.getLong("member_count"), row.getBoolean("has_logo"));
+    }
+
     private MembershipRow mapMembership(ResultSet row, int index) throws SQLException {
         return new MembershipRow(row.getLong("team_id"), row.getLong("user_id"), row.getString("role"),
             row.getObject("team_public_id", UUID.class));
@@ -275,5 +377,6 @@ public class TeamRepository {
     public record InvitationRow(long id, UUID publicId, long teamId, long inviteeUserId, long inviterUserId,
                                 String proposedRole, String status, Instant expiresAt, UUID teamPublicId) {}
     public record LogoRow(String contentType, byte[] imageData) {}
+    public record JoinRequestRow(long id, UUID publicId, long teamId, long userId, String status, UUID teamPublicId) {}
 }
 
