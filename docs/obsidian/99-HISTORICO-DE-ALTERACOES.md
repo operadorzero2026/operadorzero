@@ -8,7 +8,7 @@
 - Site: `src/OperatorActions.tsx` (novo), `OperatorSearch.tsx`, `OperatorsSocialPage.tsx`, `NotificationsPage.tsx`, `App.tsx`, `api.ts`, `functional-modules.css`.
 
 ### O que foi feito
-- No cartão do operador encontrado na busca: "Adicionar amigo" conforme o estado (pedido enviado/cancelar, aceitar, Amigos) e "Ver perfil".
+- No cartão do operador encontrado na busca: "Seguir"/"Seguindo" (publicações no feed Seguindo), "Adicionar amigo" conforme o estado (pedido enviado/cancelar, aceitar, Amigos) e "Ver perfil".
 - Entre amigos: "Convidar para <minha equipe>" (capitão ou gestor, alvo sem equipe; usa o convite de equipe existente) e "Convidar para um jogo" com os jogos futuros de inscrição aberta que a pessoa organiza ou joga. O mesmo bloco aparece no perfil de um amigo.
 - `GET /api/operators/{username}/invite-options` e `POST /api/operations/{id}/invitations {username}`.
 - O amigo recebe um aviso que abre direto a Convocação do jogo (`/convocacao/{id}`), onde pode se alistar.

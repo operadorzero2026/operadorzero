@@ -1,26 +1,27 @@
-import { Check, Shield, Swords, UserPlus, UserRound } from 'lucide-react'
+import { Check, Rss, Shield, Swords, UserPlus, UserRound } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import {
-  acceptOperatorFriendship, cancelOperatorFriendship, getOperatorConnectionStatus, getOperatorInviteOptions, inviteFriendToGame,
-  inviteOperator, requestOperatorFriendship, type OperatorConnectionStatus, type OperatorInviteOptions,
+  acceptOperatorFriendship, cancelOperatorFriendship, followOperator, getFollowStats, getOperatorConnectionStatus, getOperatorInviteOptions,
+  inviteFriendToGame, inviteOperator, requestOperatorFriendship, type OperatorConnectionStatus, type OperatorInviteOptions,
 } from './api'
 
 const day = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })
 
 /**
- * Acoes sobre um operador encontrado: amizade e, entre amigos, convite para a equipe (capitao/gestor) e para jogos.
+ * Acoes sobre um operador encontrado: seguir (ver as publicacoes no feed "Seguindo"), amizade e, entre amigos, convite para a equipe (capitao/gestor) e para jogos.
  * Convites so entre amigos evitam spam; o servidor repete todas as regras.
  */
 export function OperatorActions({ username, showFriendButton = true, onViewProfile }: { username: string; showFriendButton?: boolean; onViewProfile?: () => void }) {
   const [connection, setConnection] = useState<OperatorConnectionStatus | null>(null)
   const [options, setOptions] = useState<OperatorInviteOptions | null>(null)
+  const [follows, setFollows] = useState<boolean | null>(null)
   const [pending, setPending] = useState('')
   const [sent, setSent] = useState<string[]>([])
   const [notice, setNotice] = useState('')
   const load = useCallback(async () => {
     try {
-      const [status, invites] = await Promise.all([getOperatorConnectionStatus(username), getOperatorInviteOptions(username)])
-      setConnection(status); setOptions(invites)
+      const [status, invites, follow] = await Promise.all([getOperatorConnectionStatus(username), getOperatorInviteOptions(username), getFollowStats(username)])
+      setConnection(status); setOptions(invites); setFollows(follow.follows)
     } catch { setNotice('Não foi possível carregar as ações agora.') }
   }, [username])
   useEffect(() => { setSent([]); setNotice(''); void load() }, [load])
@@ -38,6 +39,11 @@ export function OperatorActions({ username, showFriendButton = true, onViewProfi
       else if (connection.status === 'PENDING_RECEIVED' && connection.connectionId) { await acceptOperatorFriendship(connection.connectionId); await load() }
     } catch (e) { setNotice(e instanceof Error ? e.message : 'Não foi possível concluir.') } finally { setPending('') }
   }
+  const toggleFollow = async () => {
+    if (follows === null) return
+    setPending('follow'); setNotice('')
+    try { setFollows((await followOperator(username, !follows)).follows) } catch (e) { setNotice(e instanceof Error ? e.message : 'Não foi possível concluir.') } finally { setPending('') }
+  }
   const status = connection?.status
   const friendLabel = status === 'ACCEPTED' ? <><Check/> Amigos</> : status === 'PENDING_SENT' ? 'Pedido enviado · cancelar' : status === 'PENDING_RECEIVED' ? <><Check/> Aceitar amizade</> : <><UserPlus/> Adicionar amigo</>
   const team = options?.team
@@ -45,6 +51,8 @@ export function OperatorActions({ username, showFriendButton = true, onViewProfi
   return <div className="operator-actions">
     <div className="operator-actions-row">
       {showFriendButton && status !== 'BLOCKED' && <button type="button" className={status === 'ACCEPTED' ? 'is-done' : 'is-primary'} disabled={!connection || pending === 'friend' || status === 'ACCEPTED'} onClick={() => void friend()}>{friendLabel}</button>}
+      {showFriendButton && status !== 'BLOCKED' && <button type="button" className={follows ? 'is-done' : ''} aria-pressed={Boolean(follows)} disabled={follows === null || pending === 'follow'} onClick={() => void toggleFollow()}>
+        {follows ? <><Check/> Seguindo</> : <><Rss/> Seguir</>}</button>}
       {onViewProfile && <button type="button" onClick={onViewProfile}><UserRound/> Ver perfil</button>}
     </div>
     {options?.friends && <>
