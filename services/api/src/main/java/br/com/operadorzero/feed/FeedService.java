@@ -89,6 +89,18 @@ public class FeedService {
         return responses(repository.query(-1, false, null, postId, true, null, null, 1)).stream().findFirst();
     }
 
+    public record IdentifiedPost(long internalId, FeedPostResponse post) {}
+
+    /** Posts escolhidos por outro modulo (ex.: Quadro de Honra), no formato do feed e com o estado de quem ve. */
+    @Transactional(readOnly = true)
+    public List<IdentifiedPost> postsByIds(AuthenticatedUser user, List<Long> ids) {
+        List<PostRow> rows = repository.byIds(user.internalId(), ids);
+        List<FeedPostResponse> posts = responses(rows);
+        List<IdentifiedPost> result = new ArrayList<>();
+        for (int i = 0; i < rows.size(); i++) result.add(new IdentifiedPost(rows.get(i).id(), posts.get(i)));
+        return result;
+    }
+
     private List<FeedPostResponse> responses(List<PostRow> page) {
         List<Long> ids = page.stream().map(PostRow::id).toList();
         Map<Long, List<MediaRow>> media = repository.media(ids);

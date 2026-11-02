@@ -11,7 +11,7 @@ const tabs: { id: FeedTab; label: string }[] = [
   { id: 'following', label: 'Seguindo' },
 ]
 
-export function FeedPage({ unread, onOpenNotifications, onFindOperators, onCreateRecon }: { unread: number; onOpenNotifications: () => void; onFindOperators: () => void; onCreateRecon: () => void }) {
+export function FeedPage({ unread, onOpenNotifications, onFindOperators, onCreateRecon, onOpenHonorBoard }: { unread: number; onOpenNotifications: () => void; onFindOperators: () => void; onCreateRecon: () => void; onOpenHonorBoard: () => void }) {
   const [tab, setTab] = useState<FeedTab>('for-you')
   const [scrolled, setScrolled] = useState(false)
   const [viewer, setViewer] = useState<{ usernames: string[]; start: number } | null>(null)
@@ -33,7 +33,7 @@ export function FeedPage({ unread, onOpenNotifications, onFindOperators, onCreat
       {hashtag && <div className="feed-hashtag-chip"><Hash/><b>{hashtag}</b><button type="button" onClick={() => setHashtag(null)} aria-label="Sair da hashtag"><X/></button></div>}
       <ReconBar hidden={scrolled || Boolean(hashtag)} refreshKey={barKey} onOpen={(usernames, start) => setViewer({ usernames, start })} onCreate={onCreateRecon}/>
       <div role="tabpanel" aria-label={tabs.find(item => item.id === tab)?.label}>
-        <FeedList key={`${tab}:${hashtag ?? ''}`} tab={tab} hashtag={hashtag} onHashtag={setHashtag} onFindOperators={onFindOperators} onScrolledChange={setScrolled}/>
+        <FeedList key={`${tab}:${hashtag ?? ''}`} tab={tab} hashtag={hashtag} onHashtag={setHashtag} onFindOperators={onFindOperators} onScrolledChange={setScrolled} onOpenHonorBoard={onOpenHonorBoard}/>
       </div>
     </div>
     {viewer && <ReconViewer usernames={viewer.usernames} start={viewer.start} onClose={() => setViewer(null)} onChanged={refreshBar}/>}

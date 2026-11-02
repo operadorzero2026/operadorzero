@@ -1,7 +1,8 @@
-import { Bookmark, Crosshair, Flag, MessageCircle, MoreHorizontal, Plus, Send, Skull, Trash2, Volume2, VolumeX } from 'lucide-react'
+import { Bookmark, Crosshair, Flag, Medal, MessageCircle, MoreHorizontal, Plus, Send, Skull, Trash2, Volume2, VolumeX } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { deleteFeedPost, followOperator, mediaUrl, reactToPost, recordPostView, reportFeedComment, reportFeedPost, savePost, type FeedComment, type FeedMedia, type FeedPost, type PostCounts } from '../api'
 import { CommentsSheet, ReportSheet, ShareSheet, Sheet } from './FeedSheets'
+import { DecorateSheet } from './DecorateSheet'
 import { RankInsignia } from './RankInsignia'
 import { timeAgo } from './format'
 import { useVideoSource } from './useVideoSource'
@@ -71,7 +72,7 @@ export function FeedItem({ post, mode, muted, onToggleMute, onHashtag, onDeleted
   const [burst, setBurst] = useState(0)
   const [counts, setCounts] = useState(post.counts)
   const [viewer, setViewer] = useState(post.viewer)
-  const [sheet, setSheet] = useState<'comments' | 'share' | 'menu' | 'report' | null>(null)
+  const [sheet, setSheet] = useState<'comments' | 'share' | 'menu' | 'report' | 'decorate' | null>(null)
   const [reportComment, setReportComment] = useState<FeedComment | null>(null)
   const [notice, setNotice] = useState('')
   const lastTap = useRef(0)
@@ -130,12 +131,15 @@ export function FeedItem({ post, mode, muted, onToggleMute, onHashtag, onDeleted
     {burst > 0 && <span key={burst} className="feed-burst" aria-hidden="true"><Crosshair/></span>}
     {isVideo && mode === 'active' && <span className="feed-sound-badge" aria-hidden="true">{muted ? <VolumeX/> : <Volume2/>}</span>}
     {notice && <p className="feed-toast" role="status">{notice}</p>}
+    {counts.decorations > 0 && <span className="feed-decorated" aria-label={`Condecorado ${counts.decorations} ${counts.decorations === 1 ? 'vez' : 'vezes'}`}><Medal/>{compact.format(counts.decorations)}</span>}
     {!readOnly && <aside className="feed-actions" aria-label="Ações do post">
       <span className="feed-author-avatar">{post.author.callsign.charAt(0).toUpperCase()}<RankInsignia code={post.author.rankCode}/>
         {!viewer.followsAuthor && !viewer.ownPost && <button type="button" className="feed-follow" onClick={() => void follow()} aria-label={`Seguir @${post.author.username}`}><Plus/></button>}
       </span>
       <button type="button" onClick={() => void toggle('onTarget')} aria-label={`Na mira, ${counts.onTarget}`} aria-pressed={viewer.onTarget}><Crosshair/><span>{compact.format(counts.onTarget)}</span></button>
       <button type="button" onClick={() => void toggle('eliminated')} aria-label={`Eliminado, ${counts.eliminated}`} aria-pressed={viewer.eliminated}><Skull/><span>{compact.format(counts.eliminated)}</span></button>
+      <button type="button" className="feed-decorate" onClick={() => viewer.ownPost ? flash('Não é possível condecorar o próprio post.') : viewer.decorated ? flash('Você já condecorou este post.') : setSheet('decorate')}
+        aria-label={`Condecorar, ${counts.decorations}`} aria-pressed={viewer.decorated}><Medal/><span>{compact.format(counts.decorations)}</span></button>
       <button type="button" onClick={() => setSheet('comments')} aria-label={`Comentários, ${counts.comments}`}><MessageCircle/><span>{compact.format(counts.comments)}</span></button>
       <button type="button" onClick={() => setSheet('share')} aria-label="Compartilhar"><Send/><span>{compact.format(counts.shares)}</span></button>
       <button type="button" onClick={() => void toggle('saved')} aria-label="Salvar" aria-pressed={viewer.saved}><Bookmark/><span>{compact.format(counts.saves)}</span></button>
@@ -150,6 +154,11 @@ export function FeedItem({ post, mode, muted, onToggleMute, onHashtag, onDeleted
     </div>
     {sheet === 'comments' && <CommentsSheet post={{ ...post, counts: { ...post.counts, ...counts } }} onClose={() => setSheet(null)} onCounts={applyCounts}
       onReport={comment => { setReportComment(comment); setSheet('report') }}/>}
+    {sheet === 'decorate' && <DecorateSheet post={post} onClose={() => setSheet(null)} onDecorated={(decorations, balance) => {
+      setCounts(previous => ({ ...previous, decorations }))
+      setViewer(previous => ({ ...previous, decorated: true }))
+      flash(`Condecorado! ${balance.remaining}/${balance.quota} restantes na semana`)
+    }}/>}
     {sheet === 'share' && <ShareSheet post={post} onClose={() => setSheet(null)} onShared={() => setCounts(previous => ({ ...previous, shares: previous.shares + 1 }))}/>}
     {sheet === 'menu' && <Sheet title="Opções" onClose={() => setSheet(null)} labelledBy="post-menu-title">
       {viewer.ownPost

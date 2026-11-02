@@ -21,7 +21,7 @@ public final class FeedDtos {
 
     public record Counts(long onTarget, long eliminated, long comments, long shares, long saves, long decorations) {}
 
-    public record ViewerState(boolean onTarget, boolean eliminated, boolean saved, boolean followsAuthor, boolean ownPost) {}
+    public record ViewerState(boolean onTarget, boolean eliminated, boolean saved, boolean followsAuthor, boolean ownPost, boolean decorated) {}
 
     /** URLs relativas a raiz publica de midias; o cliente resolve contra a origem da API. */
     public record MediaResponse(UUID id, String kind, int width, int height, Integer durationMs, String posterUrl,

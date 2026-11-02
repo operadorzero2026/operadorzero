@@ -1,5 +1,30 @@
 # Histórico de alterações
 
+## 2026-11-02 - Feed: Condecorar e Quadro de Honra
+
+### Arquivos alterados
+- Servidor: `gamification/DecorationRepository`, `DecorationService`, `DecorationController`; `FeedService.postsByIds`; `viewer.decorated` no feed.
+- Site: `src/feed/DecorateSheet.tsx`, `HonorBoard.tsx` (página e card de segunda), botão e medalha em `FeedItem.tsx`, destaque em `FeedList.tsx`, atalho em Explorar e no menu lateral.
+
+### O que foi feito
+- Cota semanal (padrão 3, `gamification_setting.decoration.weekly_quota`) que zera segunda 00h de Brasília e não acumula; trava por operador contra cliques simultâneos.
+- Não vale condecorar o próprio post nem o mesmo post duas vezes.
+- Botão "Condecorar" na coluna de ações com saldo "N/3 restantes"; post condecorado exibe medalha com contador.
+- XP `DECORATION_RECEIVED` para o autor (desconto para o mesmo par de contas) e aviso "condecorou seu post"; o ranking já pesa condecorações (×3).
+- Quadro de Honra (esta semana / semana passada) e card com o pódio da semana passada no topo do feed às segundas.
+
+### Motivo
+- Fase 1 do plano do feed (Condecorar).
+
+### Impacto
+- Rotas `POST /api/feed/posts/{id}/decorations`, `GET /api/feed/decorations/balance`, `GET /api/feed/honor-board`. Sem migration nova (tabela da V30).
+
+### Testes
+- 173 testes do servidor (4 novos); cenários do site; ponta a ponta pela API (saldo, recusas, cota esgotada, XP/aviso, quadro) e pelo navegador (card de segunda, botão, página).
+
+### Pendências
+- Filtros táticos; publicação desta etapa.
+
 ## 2026-11-02 - Feed: Convocação
 
 ### Arquivos alterados

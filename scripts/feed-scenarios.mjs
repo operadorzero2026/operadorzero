@@ -80,4 +80,12 @@ assert.match(callUpCard, /Últimas \{callUp\.remaining\}/, 'Destaque de ultimas 
 assert.match(callUpCard, /https:\/\/wa\.me\/\?text=/, 'Compartilhar convocacao no WhatsApp.')
 for (const label of ['ALISTADO', 'PEDIDO ENVIADO', 'NA LISTA DE ESPERA', 'LOTADO']) assert.ok(callUpCard.includes(`'${label}'`), label)
 
-console.log('Feed validado: redirecionamento, navegacao, virtualizacao, autoplay mudo, midia sem corte, cursor, Recons, interacoes, ranking e Convocacoes.')
+// Condecorar: botao com saldo semanal, medalha com contador e Quadro de Honra (destaque nas segundas).
+const [decorate, honorBoard] = await Promise.all(['src/feed/DecorateSheet.tsx', 'src/feed/HonorBoard.tsx'].map(file => readFile(file, 'utf8')))
+assert.match(item, /className="feed-decorated"/, 'Post condecorado mostra medalha com contador.')
+assert.match(item, /viewer\.ownPost \? flash\('Não é possível condecorar o próprio post\.'\)/)
+assert.match(decorate, /\{balance\.remaining\}\/\{balance\.quota\}<\/b> restantes/, 'Saldo "2/3 restantes".')
+assert.match(list, /isMondayInBrasilia\(\)\) getHonorBoard\(true\)/, 'Quadro de Honra da semana passada abre o feed nas segundas.')
+assert.match(honorBoard, /Semana passada/)
+
+console.log('Feed validado: redirecionamento, navegacao, virtualizacao, autoplay mudo, midia sem corte, cursor, Recons, interacoes, ranking, Convocacoes e Condecorar.')

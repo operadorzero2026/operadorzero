@@ -271,3 +271,27 @@
 .callup-share svg{width:20px;height:20px}
 .callup-note{margin:0;font-size:12px;color:#9da08f}
 @media(prefers-reduced-motion:reduce){.callup-spots--last .callup-bar i{animation:none}}
+
+/* Condecorar e Quadro de Honra. */
+.feed-decorate[aria-pressed="true"] svg,.feed-actions .feed-decorate:hover svg{color:var(--feed-gold)}
+.feed-decorated{position:absolute;z-index:5;left:12px;top:calc(110px + env(safe-area-inset-top));display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border:1px solid var(--feed-gold);border-radius:14px;background:#000b;color:var(--feed-gold-soft);font:800 13px/1 Inter,sans-serif}
+.feed-decorated svg{width:15px;height:15px}
+.decorate-sheet{display:grid;justify-items:center;gap:10px;text-align:center}
+.decorate-sheet p{margin:0;font-size:14px;color:#d8d9cc}
+.decorate-medal{width:54px;height:54px;color:var(--feed-gold);filter:drop-shadow(0 0 10px #c9a22766)}
+.decorate-balance b{color:var(--feed-gold-soft);font-size:18px}
+.decorate-sheet .callup-enlist{width:100%}
+.honor-range{margin:0;color:#9da08f;font-size:13px}
+.honor-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.honor-list button{display:grid;grid-template-columns:auto 56px 1fr auto;align-items:center;gap:12px;width:100%;padding:10px;border:1px solid #2c3024;background:#111310;color:#f2f1e9;text-align:left;cursor:pointer}
+.honor-list img,.honor-thumb{width:56px;height:70px;object-fit:cover;background:#1d2116}
+.honor-text{display:grid;gap:3px;min-width:0}
+.honor-text small{overflow:hidden;color:#9da08f;text-overflow:ellipsis;white-space:nowrap}
+.honor-position{min-width:34px;font:800 22px/1 'Barlow Condensed',sans-serif;color:#9da08f;text-align:center}
+.honor-position--1{color:var(--feed-gold-soft)}.honor-position--2{color:#d6d6d6}.honor-position--3{color:#c98a5a}
+.honor-count{display:inline-flex;align-items:center;gap:4px;color:var(--feed-gold-soft);font-weight:800}
+.honor-count svg{width:16px;height:16px}
+.honor-podium{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;font-size:12px}
+.honor-podium li{display:grid;justify-items:center;gap:4px;min-width:0}
+.honor-podium img,.honor-podium .honor-thumb{width:100%;aspect-ratio:4/5;height:auto;object-fit:cover}
+.honor-podium b{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

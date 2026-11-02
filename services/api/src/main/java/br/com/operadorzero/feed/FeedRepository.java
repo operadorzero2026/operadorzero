@@ -122,7 +122,8 @@ public class FeedRepository {
                    EXISTS (SELECT 1 FROM feed_reaction r WHERE r.post_id = fp.id AND r.user_id = :viewer AND r.kind = 'ELIMINATED') viewer_eliminated,
                    EXISTS (SELECT 1 FROM feed_save s WHERE s.post_id = fp.id AND s.user_id = :viewer) viewer_saved,
                    EXISTS (SELECT 1 FROM operator_follow ff WHERE ff.follower_user_id = :viewer AND ff.followed_user_id = fp.author_user_id) follows_author,
-                   fp.author_user_id = :viewer own_post
+                   fp.author_user_id = :viewer own_post,
+                   EXISTS (SELECT 1 FROM decoration d WHERE d.post_id = fp.id AND d.giver_user_id = :viewer) viewer_decorated
             FROM feed_post fp
             JOIN app_user u ON u.id = fp.author_user_id AND u.status = 'ACTIVE'
             JOIN operator_profile p ON p.user_id = u.id
@@ -158,7 +159,7 @@ public class FeedRepository {
                 r.getObject("team_id", UUID.class) == null ? null : new TeamSummary(r.getObject("team_id", UUID.class), r.getString("team_name"), r.getString("team_acronym")),
                 new Counts(r.getLong("on_target"), r.getLong("eliminated"), r.getLong("comments"), r.getLong("shares"), r.getLong("saves"), r.getLong("decorations")),
                 new ViewerState(r.getBoolean("viewer_on_target"), r.getBoolean("viewer_eliminated"), r.getBoolean("viewer_saved"),
-                    r.getBoolean("follows_author"), r.getBoolean("own_post"))));
+                    r.getBoolean("follows_author"), r.getBoolean("own_post"), r.getBoolean("viewer_decorated"))));
     }
 
     public Map<Long, List<MediaRow>> media(List<Long> postIds) {

@@ -11,6 +11,7 @@ const hubs: Record<HubId, { eyebrow: string; title: string; links: HubLink[] }> 
     { view: 'Operadores', label: 'Operadores', description: 'Encontre e siga operadores.', icon: UserRound },
     { view: 'Minha equipe', label: 'Equipes', description: 'Busque equipes e peça para entrar.', icon: Users },
     { view: 'Rankings', label: 'Rankings', description: 'Classificação geral dos operadores.', icon: Trophy },
+    { view: 'Quadro de Honra', label: 'Quadro de Honra', description: 'Os posts mais condecorados da semana.', icon: Medal },
     { view: 'Comunidade', label: 'Comunidade', description: 'Fórum de discussões do airsoft.', icon: Compass },
   ] },
   Jogos: { eyebrow: 'OPERAÇÕES', title: 'Jogos', links: [
@@ -31,7 +32,7 @@ const hubs: Record<HubId, { eyebrow: string; title: string; links: HubLink[] }> 
 const hubOf = (view: string): HubId | 'Feed' | null => {
   if (view === 'Feed') return 'Feed'
   if (view === 'Explorar' || view === 'Jogos' || view === 'Perfil') return view
-  if (['Operadores', 'Rankings', 'Comunidade'].includes(view)) return 'Explorar'
+  if (['Operadores', 'Rankings', 'Comunidade', 'Quadro de Honra'].includes(view)) return 'Explorar'
   if (['Operações', 'Campos', 'Mapas', 'Desempenho'].includes(view)) return 'Jogos'
   return 'Perfil'
 }

@@ -426,7 +426,7 @@ export const markNotificationRead = (id:string) => apiRequest<void>(`/api/me/not
 export const markAllNotificationsRead = () => apiRequest<void>('/api/me/notifications/read-all', json('POST', {}))
 export const getMyAchievements = () => apiRequest<AchievementPage>('/api/me/achievements')
 export type FeedMedia = { id:string; kind:'IMAGE'|'VIDEO'; width:number; height:number; durationMs?:number|null; posterUrl?:string|null; blurPlaceholder?:string|null; hlsUrl?:string|null; mp4Url?:string|null; images:{width:number;url:string}[] }
-export type FeedPost = { id:string; postType:string; author:{username:string;callsign:string;rankCode:string}; caption?:string|null; hashtags:string[]; media:FeedMedia[]; field?:{id:string;name:string}|null; team?:{id:string;name:string;acronym:string}|null; counts:{onTarget:number;eliminated:number;comments:number;shares:number;saves:number;decorations:number}; viewer:{onTarget:boolean;eliminated:boolean;saved:boolean;followsAuthor:boolean;ownPost:boolean}; publishedAt:string }
+export type FeedPost = { id:string; postType:string; author:{username:string;callsign:string;rankCode:string}; caption?:string|null; hashtags:string[]; media:FeedMedia[]; field?:{id:string;name:string}|null; team?:{id:string;name:string;acronym:string}|null; counts:{onTarget:number;eliminated:number;comments:number;shares:number;saves:number;decorations:number}; viewer:{onTarget:boolean;eliminated:boolean;saved:boolean;followsAuthor:boolean;ownPost:boolean;decorated:boolean}; publishedAt:string }
 export type FeedPage = { items:FeedPost[]; nextCursor?:string|null }
 export const getFeed = (tab:'for-you'|'following', cursor?:string|null, hashtag?:string|null) =>
   apiRequest<FeedPage>(`/api/feed?tab=${tab}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}${hashtag ? `&hashtag=${encodeURIComponent(hashtag)}` : ''}`)
@@ -488,6 +488,11 @@ export const deleteDossier = (id:string) => apiRequest<void>(`/api/dossiers/${en
 export type CallUpSquad = { id:string; name:string; capacity:number; occupied:number }
 export type CallUpTeam = { id:string; name:string; capacity:number; occupied:number; squads:CallUpSquad[] }
 export type CallUp = { id:string; name:string; date:string; presentationTime?:string|null; startTime:string; city:string; stateCode:string; fieldName:string; directionsUrl?:string|null; modality:string; customModality?:string|null; gameSize:'SMALL'|'MEDIUM'|'LARGE'; status:string; occupied:number; limit?:number|null; remaining?:number|null; lastSpots:boolean; price?:number|null; approvalRequired:boolean; waitingListEnabled:boolean; viewerStatus?:string|null; teams:CallUpTeam[]; shareUrl:string }
+export type DecorationBalance = { quota:number; used:number; remaining:number; resetsAt:string }
+export type HonorBoard = { weekStart:string; weekEnd:string; current:boolean; items:{ position:number; decorations:number; post:FeedPost }[] }
+export const getDecorationBalance = () => apiRequest<DecorationBalance>('/api/feed/decorations/balance')
+export const decoratePost = (id:string) => apiRequest<{ decorations:number; balance:DecorationBalance }>(`/api/feed/posts/${encodeURIComponent(id)}/decorations`, json('POST', {}))
+export const getHonorBoard = (previous = false) => apiRequest<HonorBoard>(`/api/feed/honor-board?previous=${previous}`)
 export const getCallUps = (limit = 10) => apiRequest<{ items:CallUp[] }>(`/api/feed/callups?limit=${limit}`)
 export const getCallUp = (id:string) => apiRequest<CallUp>(`/api/feed/callups/${encodeURIComponent(id)}`)
 export const getPublicCallUp = (id:string) => apiRequest<CallUp>(`/api/public/callups/${encodeURIComponent(id)}`)

@@ -135,6 +135,6 @@ class FeedServiceTest {
     private PostRow post(long id, Instant publishedAt) {
         return new PostRow(id, UUID.randomUUID(), "MEDIA", "post " + id, publishedAt,
             new AuthorSummary("op" + id, "OP" + id, "RECRUTA"), null, null,
-            new Counts(0, 0, 0, 0, 0, 0), new ViewerState(false, false, false, false, false));
+            new Counts(0, 0, 0, 0, 0, 0), new ViewerState(false, false, false, false, false, false));
     }
 }

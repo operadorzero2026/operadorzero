@@ -1,7 +1,8 @@
 import { Crosshair, RefreshCw, Users } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getCallUps, getFeed, type CallUp, type FeedPost } from '../api'
+import { getCallUps, getFeed, getHonorBoard, type CallUp, type FeedPost, type HonorBoard } from '../api'
 import { CallUpCard } from './CallUpCard'
+import { HonorBoardCard } from './HonorBoard'
 import { FeedItem, FeedSkeleton, type ItemMode } from './FeedItem'
 import type { FeedTab } from './FeedPage'
 
@@ -12,7 +13,10 @@ const LOAD_AHEAD = 3
 const FIRST_CALLUP_AFTER = 3
 const CALLUP_EVERY = 6
 
-type Entry = { kind: 'post'; post: FeedPost } | { kind: 'callup'; callUp: CallUp }
+type Entry = { kind: 'post'; post: FeedPost } | { kind: 'callup'; callUp: CallUp } | { kind: 'honor'; board: HonorBoard }
+
+/** Segunda-feira em Brasilia: o Quadro de Honra da semana que acabou abre o feed. */
+const isMondayInBrasilia = () => new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', weekday: 'short' }).format(new Date()) === 'Mon'
 
 function interleave(posts: FeedPost[], callUps: CallUp[], finished: boolean): Entry[] {
   const entries: Entry[] = []
@@ -29,7 +33,7 @@ function interleave(posts: FeedPost[], callUps: CallUp[], finished: boolean): En
   return entries
 }
 
-export function FeedList({ tab, hashtag, onHashtag, onFindOperators, onScrolledChange }: { tab: FeedTab; hashtag?: string | null; onHashtag: (tag: string) => void; onFindOperators: () => void; onScrolledChange?: (scrolled: boolean) => void }) {
+export function FeedList({ tab, hashtag, onHashtag, onFindOperators, onScrolledChange, onOpenHonorBoard }: { tab: FeedTab; hashtag?: string | null; onHashtag: (tag: string) => void; onFindOperators: () => void; onScrolledChange?: (scrolled: boolean) => void; onOpenHonorBoard?: () => void }) {
   const [items, setItems] = useState<FeedPost[]>([])
   const [cursor, setCursor] = useState<string | null | undefined>(undefined)
   const [loading, setLoading] = useState(false)
@@ -37,6 +41,7 @@ export function FeedList({ tab, hashtag, onHashtag, onFindOperators, onScrolledC
   const [active, setActive] = useState(0)
   const [muted, setMuted] = useState(true)
   const [callUps, setCallUps] = useState<CallUp[]>([])
+  const [honor, setHonor] = useState<HonorBoard | null>(null)
   const container = useRef<HTMLDivElement>(null)
   const loadingRef = useRef(false)
 
@@ -60,10 +65,14 @@ export function FeedList({ tab, hashtag, onHashtag, onFindOperators, onScrolledC
     if (tab !== 'for-you' || hashtag) return
     let active = true
     getCallUps().then(result => { if (active) setCallUps(result.items) }).catch(() => undefined)
+    if (isMondayInBrasilia()) getHonorBoard(true).then(result => { if (active && result.items.length) setHonor(result) }).catch(() => undefined)
     return () => { active = false }
   }, [tab, hashtag])
 
-  const entries = useMemo(() => interleave(items, tab === 'for-you' && !hashtag ? callUps : [], cursor === null), [items, callUps, cursor, tab, hashtag])
+  const entries = useMemo(() => {
+    const list = interleave(items, tab === 'for-you' && !hashtag ? callUps : [], cursor === null)
+    return honor && tab === 'for-you' && !hashtag ? [{ kind: 'honor', board: honor } as Entry, ...list] : list
+  }, [items, callUps, cursor, tab, hashtag, honor])
 
   useEffect(() => {
     setItems([]); setCursor(undefined); setActive(0)
@@ -102,9 +111,10 @@ export function FeedList({ tab, hashtag, onHashtag, onFindOperators, onScrolledC
   </div></div>
 
   return <div className="feed-stream" ref={container}>
-    {entries.map((entry, index) => <div className="feed-slot" key={entry.kind === 'post' ? entry.post.id : `callup-${entry.callUp.id}`} data-index={index}>
+    {entries.map((entry, index) => <div className="feed-slot" key={entry.kind === 'post' ? entry.post.id : entry.kind === 'callup' ? `callup-${entry.callUp.id}` : 'honor-board'} data-index={index}>
       {Math.abs(index - active) > MOUNT_RADIUS ? null
         : entry.kind === 'callup' ? <CallUpCard callUp={entry.callUp}/>
+        : entry.kind === 'honor' ? <HonorBoardCard board={entry.board} onOpen={() => onOpenHonorBoard?.()}/>
         : <FeedItem post={entry.post} mode={mode(index)} muted={muted} onToggleMute={() => setMuted(value => !value)} onHashtag={onHashtag}
           onDeleted={id => setItems(previous => previous.filter(item => item.id !== id))}/>}
     </div>)}
