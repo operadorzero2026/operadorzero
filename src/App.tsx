@@ -10,6 +10,7 @@ import {
   Eye,
   EyeOff,
   LayoutDashboard,
+  MapPin,
   LockKeyhole,
   LogOut,
   Mail,
@@ -27,6 +28,8 @@ import {
 import {
   ApiClientError,
   getCurrentSession,
+  getPublicAgenda,
+  type PublicOperation,
   markAuthenticatedAreaUsable,
   prepareAuthentication,
   getOperations,
@@ -304,6 +307,24 @@ function MfaPanel({ user, onUserUpdated }: { user: SessionUser; onUserUpdated: (
   </section>
 }
 
+function PublicAgenda({ onJoin }: { onJoin: () => void }) {
+  const [items, setItems] = useState<PublicOperation[] | null>(null)
+  useEffect(() => {
+    let active = true
+    getPublicAgenda().then(result => { if (active) setItems(result.items) }).catch(() => { if (active) setItems([]) })
+    return () => { active = false }
+  }, [])
+  const price = (value?: number | null) => value ? value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'Gratuita'
+  return <section className="operations section" id="operacoes"><div className="section-heading"><div><p className="eyebrow"><span/> Agenda pública</p><h2>Operações publicadas</h2></div></div>
+    {items && items.length > 0 ? <div className="public-agenda">{items.map(item => <article key={item.id}>
+      <time dateTime={item.operationDate}><b>{new Date(`${item.operationDate}T12:00:00`).toLocaleDateString('pt-BR', { day: '2-digit' })}</b><span>{new Date(`${item.operationDate}T12:00:00`).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}</span></time>
+      <div><h3>{item.name}</h3><p><MapPin/> {item.fieldName} · {item.city}/{item.stateCode}</p><small>Início {item.startTime.slice(0, 5)} · {item.participantCount}/{item.participantLimit ?? '∞'} confirmados · {price(item.registrationPrice)}</small></div>
+      <button type="button" onClick={onJoin}>Participar</button>
+    </article>)}</div>
+    : <div className="public-empty-state"><CalendarDays/><h3>{items ? 'Nenhuma operação publicada ainda' : 'Carregando agenda…'}</h3><p>As próximas operações da comunidade aparecerão aqui.</p></div>}
+  </section>
+}
+
 function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommunity, user, googleNotice = '', onDismissGoogleNotice }: { path:string; onNavigate:(path:string)=>void; onLogout: () => Promise<boolean>; onUserUpdated: (user: SessionUser) => void; onNavigateCommunity: () => void; user: SessionUser; googleNotice?: string; onDismissGoogleNotice?: () => void }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [activeView, setActiveView] = useState(path.startsWith('/operadores') ? 'Operadores' : 'Visão geral')
@@ -456,7 +477,7 @@ export default function App() {
     <header className="topbar"><Brand compact/><nav className="desktop-nav" aria-label="Navegação principal">{nav.map(item => item === 'Comunidade' ? <a key={item} href="/comunidade" onClick={event => { event.preventDefault(); navigate('/comunidade') }}>{item}</a> : <a key={item} href={`#${item.toLowerCase().replaceAll(' ', '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`}>{item}</a>)}</nav><div className="header-actions">{sessionRestoring && <span className="session-status" role="status">Verificando acesso...</span>}<button className="button button--small" onClick={() => setAuthMode('login')}>Entrar</button><button className="text-button" onClick={() => setAuthMode('signup')}>Criar perfil gratuito</button></div><button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-label="Abrir menu">{menuOpen ? <X/> : <Menu/>}</button>{menuOpen && <div className="mobile-menu">{nav.map(item => item === 'Comunidade' ? <a key={item} href="/comunidade" onClick={event => { event.preventDefault(); setMenuOpen(false); navigate('/comunidade') }}>{item}</a> : <a key={item} onClick={() => setMenuOpen(false)} href={`#${item.toLowerCase().replaceAll(' ', '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`}>{item}</a>)}<button onClick={() => { setMenuOpen(false); setAuthMode('login') }}>Entrar</button><button onClick={() => { setMenuOpen(false); setAuthMode('signup') }}>Criar perfil gratuito</button></div>}</header>
     <main>
       <section className="hero" id="inicio"><div className="hero-art" aria-hidden="true"><img src="/operador-zero-identity.jpeg" alt=""/></div><div className="hero-shade"/><div className="hero-content"><p className="eyebrow reveal reveal--1"><span/> A plataforma do airsoft brasileiro</p><h1 className="reveal reveal--2">O airsoft brasileiro<br/><em>em um só lugar.</em></h1><p className="hero-copy reveal reveal--3">Encontre eventos, equipes, campos e operadores de todo o Brasil. Crie seu perfil e participe da comunidade.</p><div className="hero-actions reveal reveal--4"><button className="button" onClick={() => setAuthMode('login')}>Entrar <ArrowRight size={18}/></button><button className="text-button link-button" onClick={() => setAuthMode('signup')}>Criar perfil gratuito</button></div></div><div className="hero-index"><span>01</span><i/><small>AIRSOFT BRASIL</small></div></section>
-      <section className="operations section" id="operacoes"><div className="section-heading"><div><p className="eyebrow"><span/> Agenda pública</p><h2>Operações publicadas</h2></div></div><div className="public-empty-state"><CalendarDays/><h3>Nenhuma operação publicada ainda</h3><p>As próximas operações da comunidade aparecerão aqui.</p></div></section>
+      <PublicAgenda onJoin={() => setAuthMode('signup')}/>
       <section className="manifesto" id="como-funciona"><div className="manifesto-copy"><p className="eyebrow"><span/> Sua jornada</p><h2>Jogue. Registre.<br/><em>Evolua.</em></h2><p>Crie sua identidade, encontre a comunidade da sua região e construa seu histórico no airsoft.</p></div><div className="steps"><div><UserRound/><span>01</span><div className="step-content"><h3>Cadastre-se</h3><p>Crie sua conta com e-mail e senha e confirme seu endereço.</p></div></div><div><CalendarDays/><span>02</span><div className="step-content"><h3>Participe</h3><p>Encontre equipes e operações perto de você.</p></div></div><div><Trophy/><span>03</span><div className="step-content"><h3>Evolua</h3><p>Acompanhe sua trajetória e suas conquistas.</p></div></div></div></section>
       <section className="community community--link" id="comunidade" role="link" tabIndex={0} onClick={() => navigate('/comunidade')} onKeyDown={event => (event.key === 'Enter' || event.key === ' ') && navigate('/comunidade')}><div><Users/><p className="eyebrow">Comunidade Operador Zero</p><h2>Conecte-se com quem vive o esporte.</h2><p>Compartilhe experiências, encontre equipes e acompanhe o airsoft da sua região.</p><span className="button">Abrir comunidade <ArrowRight size={18}/></span></div></section>
       <section className="trust-section" id="sobre"><div><p className="eyebrow"><span/> Plataforma gratuita</p><h2>Organize sua jornada no airsoft.</h2><p>Crie seu perfil, encontre operações, forme equipes e participe da comunidade sem cobrança pela plataforma.</p></div><div className="trust-grid"><article id="termos"><h3>Termos de Uso</h3><p>Ao criar uma conta, você concorda em usar a plataforma com respeito, legalidade e informações verdadeiras.</p></article><article id="privacidade"><h3>Privacidade</h3><p>Você controla as informações que compartilha com outros operadores e equipes.</p></article><article id="regras"><h3>Regras da Comunidade</h3><p>Fair play, convivência respeitosa, segurança e procedência legal dos equipamentos são obrigatórios.</p></article><article id="seguranca"><h3>Segurança e denúncias</h3><p>Suspeitas de abuso ou falha podem ser comunicadas pelo canal oficial de atendimento.</p><a href="mailto:operadorzerosac@gmail.com">operadorzerosac@gmail.com</a></article></div></section>

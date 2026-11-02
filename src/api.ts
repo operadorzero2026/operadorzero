@@ -416,6 +416,8 @@ export const getMaps = (fieldId = '') => apiRequest<{items:VenueMap[]}>(`/api/ma
 export const updateField = (id:string,version:number,field:Record<string,unknown>) => apiRequest<VenueField>(`/api/fields/${encodeURIComponent(id)}?version=${version}`,json('PATCH',field))
 export const updateVenueMap = (id:string,version:number,map:Record<string,unknown>) => apiRequest<VenueMap>(`/api/maps/${encodeURIComponent(id)}?version=${version}`,json('PATCH',map))
 export const createVenueMap = (fieldId:string,map:Record<string,unknown>) => apiRequest<VenueMap>(`/api/fields/${encodeURIComponent(fieldId)}/maps`,json('POST',map))
+export type PublicOperation = { id:string; name:string; operationDate:string; startTime:string; city:string; stateCode:string; fieldName:string; modality:string; status:string; participantCount:number; participantLimit?:number|null; registrationPrice?:number|null }
+export const getPublicAgenda = () => apiRequest<{items:PublicOperation[]}>('/api/public/operations')
 export const getOperations = (query = '') => apiRequest<{items:Operation[]}>(`/api/operations?q=${encodeURIComponent(query)}&limit=100`)
 export const getOperation = (id:string) => apiRequest<Operation>(`/api/operations/${encodeURIComponent(id)}`)
 export const getOperationRoster = (id:string) => apiRequest<OperationRoster>(`/api/operations/${encodeURIComponent(id)}/roster`)
