@@ -42,4 +42,17 @@ assert.match(item, /aria-label=\{`Na mira, /)
 assert.match(item, /alt=\{alt\}/)
 for (const fictional of ['[DEV]', 'dev_alfa']) assert.ok(!app.includes(fictional) && !list.includes(fictional), 'Dados de seed nao podem ir para o codigo do site.')
 
-console.log('Feed validado: redirecionamento, navegacao, virtualizacao, autoplay mudo, midia sem corte e cursor.')
+// Recons: barra some ao rolar, radar dourado quando ha nao visto, visualizador com segurar/arrastar e "Recon encerrado".
+const [bar, viewer, page, create, reconCss] = await Promise.all(['src/feed/ReconBar.tsx', 'src/feed/ReconViewer.tsx', 'src/feed/FeedPage.tsx', 'src/feed/CreateFlow.tsx', 'src/feed/feed.css'].map(file => readFile(file, 'utf8')))
+assert.match(page, /<ReconBar hidden=\{scrolled\}/, 'A barra de Recons some quando o feed rola.')
+assert.match(bar, /recon-ring--unseen/)
+assert.match(reconCss, /\.recon-ring--unseen::before\{[^}]*conic-gradient[^}]*animation:recon-radar/, 'Radar dourado girando para Recon nao visto.')
+assert.match(reconCss, /\.recon-ring--seen::before\{background:#5d6057\}/, 'Aro cinza para Recon ja visto.')
+assert.match(viewer, /const HOLD_MS = \d+/, 'Segurar pausa.')
+assert.match(viewer, /const CLOSE_DRAG_PX = \d+/, 'Arrastar para baixo fecha.')
+assert.match(viewer, /bounds\.width \* 0\.3\) prev\(\); else next\(\)/, 'Toque a esquerda volta, a direita avanca.')
+assert.match(viewer, /Recon encerrado/)
+assert.match(viewer, /`Recon de @\$\{data\.username\}`/)
+assert.match(create, /MAX_VIDEO_S = \{ POST: 90, RECON: 30 \}/, 'Video de Recon ate 30 s.')
+
+console.log('Feed validado: redirecionamento, navegacao, virtualizacao, autoplay mudo, midia sem corte, cursor e Recons.')

@@ -65,6 +65,27 @@ SELECT fp.id, t.tag FROM feed_post fp JOIN seed_post s ON s.caption = fp.caption
 INSERT INTO feed_post_metrics(post_id, on_target, eliminated, comments)
 SELECT fp.id, s.on_target, s.eliminated, s.comments FROM feed_post fp JOIN seed_post s ON s.caption = fp.caption;
 
+-- Recons de exemplo (24 h a partir de agora): dev_alfa com video e foto, dev_bravo com foto.
+DELETE FROM recon WHERE overlay_text LIKE '[DEV]%';
+DELETE FROM media_asset a WHERE a.purpose = 'RECON' AND a.storage_prefix LIKE 'dev-seed/%'
+  AND NOT EXISTS (SELECT 1 FROM recon r WHERE r.media_asset_id = a.id);
+WITH recon_media AS (
+    INSERT INTO media_asset(owner_user_id, purpose, kind, status, original_bytes, width, height, duration_ms, storage_prefix, renditions, poster_key, ready_at)
+    SELECT u.id, 'RECON', x.kind, 'READY', 1000000, x.w, x.h, x.ms, x.prefix, x.renditions::jsonb, x.poster, now()
+    FROM (VALUES
+        ('dev_alfa', 'VIDEO', 720, 1280, 8000, 'dev-seed/v2', '[{"type":"mp4","path":"720.mp4","height":1280}]', 'poster.webp', '[DEV] Chegando no campo', 90),
+        ('dev_alfa', 'IMAGE', 1080, 1350, NULL, 'dev-seed/i1', '[{"type":"image","path":"1080.webp","width":1080}]', NULL, '[DEV] Briefing às 9h', 30),
+        ('dev_bravo', 'IMAGE', 1080, 1080, NULL, 'dev-seed/i2', '[{"type":"image","path":"1080.webp","width":1080}]', NULL, '[DEV] Equipamento pronto', 200)
+    ) x(username, kind, w, h, ms, prefix, renditions, poster, overlay, minutes_ago)
+    JOIN app_user u ON u.username = x.username
+    RETURNING id, owner_user_id, storage_prefix
+)
+INSERT INTO recon(author_user_id, media_asset_id, overlay_text, status, created_at, published_at, expires_at)
+SELECT m.owner_user_id, m.id, x.overlay, 'ACTIVE', now() - make_interval(mins => x.minutes_ago), now() - make_interval(mins => x.minutes_ago),
+       now() - make_interval(mins => x.minutes_ago) + interval '24 hours'
+FROM recon_media m JOIN (VALUES ('dev-seed/v2', '[DEV] Chegando no campo', 90), ('dev-seed/i1', '[DEV] Briefing às 9h', 30),
+                                ('dev-seed/i2', '[DEV] Equipamento pronto', 200)) x(prefix, overlay, minutes_ago) ON x.prefix = m.storage_prefix;
+
 -- Todo usuario local que nao e de seed passa a seguir dev_alfa, para a aba "Seguindo" ter conteudo.
 INSERT INTO operator_follow(follower_user_id, followed_user_id)
 SELECT u.id, alfa.id FROM app_user u, app_user alfa

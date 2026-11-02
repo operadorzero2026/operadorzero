@@ -443,6 +443,22 @@ export const getMediaStatus = (mediaId:string) => apiRequest<MediaStatus>(`/api/
 export const createFeedPost = (body:{ mediaId:string; caption?:string|null; fieldId?:string|null; teamId?:string|null; taggedUsernames?:string[]; idempotencyKey:string }) =>
   apiRequest<{ id:string; status:string }>('/api/feed/posts', json('POST', body))
 export const deleteFeedPost = (postId:string) => apiRequest<void>(`/api/feed/posts/${encodeURIComponent(postId)}`, { method:'DELETE' })
+export type ReconBarEntry = { username:string; callsign:string; rankCode:string; count:number; hasUnseen:boolean; latestAt:string; own:boolean }
+export type ReconItem = { id:string; overlayText?:string|null; media:FeedMedia; publishedAt?:string|null; expiresAt:string; seen:boolean }
+export type AuthorRecons = { username:string; callsign:string; rankCode:string; own:boolean; items:ReconItem[] }
+export type DossierSummary = { id:string; title:string; coverUrl?:string|null; count:number }
+export type DossierDetail = { id:string; title:string; ownerUsername:string; own:boolean; items:ReconItem[] }
+export const getReconBar = () => apiRequest<{ items:ReconBarEntry[]; ownProcessing:boolean }>('/api/recons/bar')
+export const getAuthorRecons = (username:string) => apiRequest<AuthorRecons>(`/api/recons/by/${encodeURIComponent(username)}`)
+export const markReconViewed = (id:string) => apiRequest<void>(`/api/recons/${encodeURIComponent(id)}/view`, json('POST', {}))
+export const createRecon = (body:{ mediaId:string; overlayText?:string|null }) => apiRequest<{ id:string; status:string }>('/api/recons', json('POST', body))
+export const deleteRecon = (id:string) => apiRequest<void>(`/api/recons/${encodeURIComponent(id)}`, { method:'DELETE' })
+export const getDossiers = (username:string) => apiRequest<DossierSummary[]>(`/api/dossiers/by/${encodeURIComponent(username)}`)
+export const getDossier = (id:string) => apiRequest<DossierDetail>(`/api/dossiers/${encodeURIComponent(id)}`)
+export const createDossier = (title:string) => apiRequest<DossierSummary>('/api/dossiers', json('POST', { title }))
+export const addReconToDossier = (dossierId:string, reconId:string) => apiRequest<void>(`/api/dossiers/${encodeURIComponent(dossierId)}/recons`, json('POST', { reconId }))
+export const removeReconFromDossier = (dossierId:string, reconId:string) => apiRequest<void>(`/api/dossiers/${encodeURIComponent(dossierId)}/recons/${encodeURIComponent(reconId)}`, { method:'DELETE' })
+export const deleteDossier = (id:string) => apiRequest<void>(`/api/dossiers/${encodeURIComponent(id)}`, { method:'DELETE' })
 /** Midias vem com caminho relativo (/media/...); em desenvolvimento a API fica em outra origem. */
 export const mediaUrl = (url?:string|null) => !url ? undefined : /^(https?:|data:)/.test(url) ? url : `${getApiBaseUrl()}${url}`
 export type PublicOperation = { id:string; name:string; operationDate:string; startTime:string; city:string; stateCode:string; fieldName:string; modality:string; status:string; participantCount:number; participantLimit?:number|null; registrationPrice?:number|null }

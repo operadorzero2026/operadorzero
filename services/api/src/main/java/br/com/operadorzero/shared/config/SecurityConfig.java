@@ -94,7 +94,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/community/**").hasAnyRole("ADMIN", "MODERATOR")
                 .requestMatchers("/api/community/**").authenticated()
                 .requestMatchers("/api/operators/**", "/api/teams/**", "/api/operations/**",
-                    "/api/fields/**", "/api/maps/**", "/api/rankings/**", "/api/performance/**", "/api/me/**", "/api/feed/**", "/api/media/**").authenticated()
+                    "/api/fields/**", "/api/maps/**", "/api/rankings/**", "/api/performance/**", "/api/me/**", "/api/feed/**", "/api/media/**", "/api/recons/**", "/api/dossiers/**").authenticated()
                 .anyRequest().denyAll())
             .httpBasic(httpBasic -> httpBasic.disable())
             .formLogin(form -> form.disable())

@@ -1,14 +1,16 @@
-import { completeMediaUpload, createFeedPost, getMediaStatus, getMediaUpload, putMediaChunk, startMediaUpload, type MediaCrop } from '../api'
+import { completeMediaUpload, createFeedPost, createRecon, getMediaStatus, getMediaUpload, putMediaChunk, startMediaUpload, type MediaCrop } from '../api'
 
 /**
  * Fila de envios fora dos componentes: o envio continua enquanto a pessoa navega pelo app.
  * O arquivo sobe assim que o enquadramento e confirmado; a descricao chega depois e o post e criado quando os dois estiverem prontos.
  */
 export type UploadPhase = 'uploading' | 'waiting-details' | 'publishing' | 'processing' | 'done' | 'error' | 'cancelled'
-export type UploadTask = { id: string; kind: 'IMAGE' | 'VIDEO'; progress: number; phase: UploadPhase; message?: string; postId?: string }
+export type UploadPurpose = 'POST' | 'RECON'
+export type UploadTask = { id: string; purpose: UploadPurpose; kind: 'IMAGE' | 'VIDEO'; progress: number; phase: UploadPhase; message?: string; postId?: string }
 export type PostDetails = { caption?: string; fieldId?: string | null; teamId?: string | null; taggedUsernames?: string[] }
+export type ReconDetails = { overlayText?: string | null }
 
-type Internal = UploadTask & { mediaId?: string; uploaded: boolean; details?: PostDetails; idempotencyKey: string; cancelled: boolean }
+type Internal = UploadTask & { mediaId?: string; uploaded: boolean; details?: PostDetails | ReconDetails; idempotencyKey: string; cancelled: boolean }
 
 const MAX_RETRIES = 5
 const POLL_MS = 3000
@@ -17,7 +19,7 @@ let snapshot: UploadTask[] = []
 const listeners = new Set<() => void>()
 
 const publish = () => {
-  snapshot = tasks.filter(task => task.phase !== 'cancelled').map(({ id, kind, progress, phase, message, postId }) => ({ id, kind, progress, phase, message, postId }))
+  snapshot = tasks.filter(task => task.phase !== 'cancelled').map(({ id, purpose, kind, progress, phase, message, postId }) => ({ id, purpose, kind, progress, phase, message, postId }))
   listeners.forEach(listener => listener())
 }
 const update = (id: string, patch: Partial<Internal>) => {
@@ -33,15 +35,15 @@ export const uploadStore = {
   getSnapshot: () => snapshot,
 }
 
-export function startPostUpload(file: Blob, kind: 'IMAGE' | 'VIDEO', crop: MediaCrop | null): string {
+export function startPostUpload(file: Blob, kind: 'IMAGE' | 'VIDEO', crop: MediaCrop | null, purpose: UploadPurpose = 'POST'): string {
   const id = crypto.randomUUID()
-  tasks = [...tasks, { id, kind, progress: 0, phase: 'uploading', uploaded: false, idempotencyKey: crypto.randomUUID(), cancelled: false }]
+  tasks = [...tasks, { id, purpose, kind, progress: 0, phase: 'uploading', uploaded: false, idempotencyKey: crypto.randomUUID(), cancelled: false }]
   publish()
-  void run(id, file, kind, crop)
+  void run(id, file, kind, crop, purpose)
   return id
 }
 
-export function submitPostDetails(id: string, details: PostDetails) {
+export function submitPostDetails(id: string, details: PostDetails | ReconDetails) {
   const task = find(id)
   if (!task || task.cancelled) return
   update(id, { details, phase: task.uploaded ? 'publishing' : task.phase })
@@ -57,9 +59,9 @@ export function dismissUpload(id: string) {
   publish()
 }
 
-async function run(id: string, file: Blob, kind: 'IMAGE' | 'VIDEO', crop: MediaCrop | null) {
+async function run(id: string, file: Blob, kind: 'IMAGE' | 'VIDEO', crop: MediaCrop | null, purpose: UploadPurpose) {
   try {
-    const upload = await startMediaUpload({ purpose: 'POST', kind, contentType: file.type || 'application/octet-stream', totalBytes: file.size, crop })
+    const upload = await startMediaUpload({ purpose, kind, contentType: file.type || 'application/octet-stream', totalBytes: file.size, crop })
     let offset = upload.receivedBytes
     let failures = 0
     while (offset < file.size) {
@@ -90,8 +92,10 @@ async function createPost(id: string) {
   const task = find(id)
   if (!task?.mediaId || !task.details || task.phase === 'processing' || task.phase === 'done') return
   try {
-    const post = await createFeedPost({ mediaId: task.mediaId, idempotencyKey: task.idempotencyKey, ...task.details })
-    if (post.status === 'PUBLISHED') { update(id, { phase: 'done', postId: post.id }); return }
+    const post = task.purpose === 'RECON'
+      ? await createRecon({ mediaId: task.mediaId, ...(task.details as ReconDetails) })
+      : await createFeedPost({ mediaId: task.mediaId, idempotencyKey: task.idempotencyKey, ...(task.details as PostDetails) })
+    if (post.status === 'PUBLISHED' || post.status === 'ACTIVE') { update(id, { phase: 'done', postId: post.id }); return }
     update(id, { phase: 'processing', postId: post.id })
     for (;;) {
       await sleep(POLL_MS)
@@ -100,6 +104,6 @@ async function createPost(id: string) {
       if (media?.status === 'FAILED') { update(id, { phase: 'error', message: 'Não foi possível processar o arquivo. Tente outro.' }); return }
     }
   } catch (error) {
-    update(id, { phase: 'error', message: errorMessage(error, 'Não foi possível publicar o post.') })
+    update(id, { phase: 'error', message: errorMessage(error, task.purpose === 'RECON' ? 'Não foi possível publicar o Recon.' : 'Não foi possível publicar o post.') })
   }
 }

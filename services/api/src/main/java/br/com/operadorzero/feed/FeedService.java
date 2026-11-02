@@ -63,7 +63,7 @@ public class FeedService {
         return new FeedPage(items, next);
     }
 
-    MediaResponse media(MediaRow row) {
+    public MediaResponse media(MediaRow row) {
         List<Rendition> renditions;
         try {
             renditions = json.readValue(row.renditionsJson(), RENDITIONS);

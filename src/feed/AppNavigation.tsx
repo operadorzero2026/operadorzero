@@ -1,5 +1,5 @@
 import { Building2, ClipboardCheck, Clapperboard, Compass, Film, Image as ImageIcon, LayoutDashboard, Map, Medal, Bell, Plus, Target, Trophy, UserRound, Users, X, type LucideIcon } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 
 export type HubId = 'Explorar' | 'Jogos' | 'Perfil'
 
@@ -49,9 +49,10 @@ export function BottomNav({ activeView, onSelect, onCreate }: { activeView: stri
   </nav>
 }
 
-export function HubPage({ hub, onSelect }: { hub: HubId; onSelect: (view: string) => void }) {
+export function HubPage({ hub, onSelect, extra }: { hub: HubId; onSelect: (view: string) => void; extra?: ReactNode }) {
   const config = hubs[hub]
   return <main className="module-page hub-page"><header><p>{config.eyebrow}</p><h1>{config.title}</h1></header>
+    {extra}
     <div className="hub-grid">{config.links.map(({ view, label, description, icon: Icon }) => <button type="button" key={label} onClick={() => onSelect(view)}><Icon/><span><b>{label}</b><small>{description}</small></span></button>)}</div>
   </main>
 }

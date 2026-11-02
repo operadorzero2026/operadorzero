@@ -7,14 +7,17 @@ import { cancelUpload, startPostUpload, submitPostDetails } from './uploadQueue'
 
 const MB = 1024 * 1024
 const LIMITS = { IMAGE: 20 * MB, VIDEO: 300 * MB }
-const MAX_POST_VIDEO_S = 90
+const MAX_VIDEO_S = { POST: 90, RECON: 30 }
 const PHOTO_ASPECTS = [{ label: '4:5', value: 4 / 5 }, { label: '1:1', value: 1 }, { label: '9:16', value: 9 / 16 }]
 const VIDEO_ASPECT = 9 / 16
 const CAPTION_MAX = 2200
+const OVERLAY_MAX = 140
+
+export type CreateMode = 'POST' | 'RECON'
 
 type Picked = { file: File; kind: 'IMAGE' | 'VIDEO'; url: string; size: Box; durationS?: number }
 
-async function inspect(file: File): Promise<Picked> {
+async function inspect(file: File, mode: CreateMode): Promise<Picked> {
   const kind = file.type.startsWith('video/') ? 'VIDEO' : file.type.startsWith('image/') || /\.(heic|heif)$/i.test(file.name) ? 'IMAGE' : null
   if (!kind) throw new Error('Escolha uma foto ou um vídeo.')
   if (file.size > LIMITS[kind]) throw new Error(kind === 'VIDEO' ? 'O vídeo pode ter no máximo 300 MB.' : 'A foto pode ter no máximo 20 MB.')
@@ -35,7 +38,10 @@ async function inspect(file: File): Promise<Picked> {
     video.onerror = () => reject(new Error('Não foi possível abrir este vídeo.'))
     video.src = url
   })
-  if (meta.durationS > MAX_POST_VIDEO_S + 0.5) { URL.revokeObjectURL(url); throw new Error('O vídeo do post pode ter no máximo 90 segundos.') }
+  if (meta.durationS > MAX_VIDEO_S[mode] + 0.5) {
+    URL.revokeObjectURL(url)
+    throw new Error(mode === 'RECON' ? 'O vídeo do Recon pode ter no máximo 30 segundos.' : 'O vídeo do post pode ter no máximo 90 segundos.')
+  }
   return { file, kind, url, size: meta.size, durationS: meta.durationS }
 }
 
@@ -52,12 +58,14 @@ async function exportPhoto(picked: Picked, aspect: number, framing: Framing): Pr
   return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Falha ao preparar a foto.')), 'image/jpeg', 0.9))
 }
 
-export function CreateFlow({ onClose }: { onClose: () => void }) {
+export function CreateFlow({ mode = 'POST', onClose }: { mode?: CreateMode; onClose: () => void }) {
+  const recon = mode === 'RECON'
   const [step, setStep] = useState<'pick' | 'frame' | 'details'>('pick')
   const [picked, setPicked] = useState<Picked | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const [aspect, setAspect] = useState(PHOTO_ASPECTS[0].value)
+  const [aspect, setAspect] = useState(recon ? VIDEO_ASPECT : PHOTO_ASPECTS[0].value)
+  const [overlay, setOverlay] = useState('')
   const [reframe, setReframe] = useState(false)
   const [framing, setFraming] = useState<Framing>({ x: 0.5, y: 0.5, zoom: 1 })
   const [taskId, setTaskId] = useState<string | null>(null)
@@ -79,7 +87,7 @@ export function CreateFlow({ onClose }: { onClose: () => void }) {
     if (!file) return
     setError(''); setBusy(true)
     try {
-      const result = await inspect(file)
+      const result = await inspect(file, mode)
       setPicked(result)
       setFraming({ x: 0.5, y: 0.5, zoom: 1 })
       setReframe(false)
@@ -96,8 +104,8 @@ export function CreateFlow({ onClose }: { onClose: () => void }) {
     setError(''); setBusy(true)
     try {
       const id = picked.kind === 'IMAGE'
-        ? startPostUpload(await exportPhoto(picked, aspect, framing), 'IMAGE', null)
-        : startPostUpload(picked.file, 'VIDEO', reframe ? { x: round(framing.x), y: round(framing.y), zoom: round(framing.zoom) } : null)
+        ? startPostUpload(await exportPhoto(picked, aspect, framing), 'IMAGE', null, mode)
+        : startPostUpload(picked.file, 'VIDEO', reframe ? { x: round(framing.x), y: round(framing.y), zoom: round(framing.zoom) } : null, mode)
       setTaskId(id)
       setStep('details')
     } catch (e) {
@@ -116,6 +124,7 @@ export function CreateFlow({ onClose }: { onClose: () => void }) {
   const publishPost = () => {
     if (!taskId) return
     published.current = true
+    if (recon) { submitPostDetails(taskId, { overlayText: overlay.trim() || null }); onClose(); return }
     submitPostDetails(taskId, {
       caption: caption.trim() || undefined,
       fieldId: fieldId || null,
@@ -134,7 +143,7 @@ export function CreateFlow({ onClose }: { onClose: () => void }) {
     <header>
       {step === 'pick' ? <button type="button" className="feed-icon-button" onClick={onClose} aria-label="Fechar"><X/></button>
         : <button type="button" className="feed-icon-button" onClick={back} aria-label="Voltar"><ArrowLeft/></button>}
-      <h2 id="create-flow-title">{step === 'pick' ? 'Novo post' : step === 'frame' ? 'Enquadrar' : 'Descrição'}</h2>
+      <h2 id="create-flow-title">{step === 'pick' ? (recon ? 'Novo Recon' : 'Novo post') : step === 'frame' ? 'Enquadrar' : recon ? 'Texto do Recon' : 'Descrição'}</h2>
       {step === 'frame' && <button type="button" className="button button--small" disabled={busy} onClick={() => void confirmFrame()}>Avançar</button>}
       {step === 'details' && <button type="button" className="button button--small" onClick={publishPost}><Send/> Publicar</button>}
     </header>
@@ -143,13 +152,14 @@ export function CreateFlow({ onClose }: { onClose: () => void }) {
     {step === 'pick' && <div className="create-pick">
       <input ref={gallery} type="file" accept="image/*,video/*" hidden onChange={event => void choose(event.target.files?.[0])}/>
       <input ref={camera} type="file" accept="image/*,video/*" capture="environment" hidden onChange={event => void choose(event.target.files?.[0])}/>
-      <button type="button" className="create-choice" disabled={busy} onClick={() => gallery.current?.click()}><ImagePlus/><span><b>GALERIA</b><small>Foto (até 20 MB) ou vídeo (até 90 s e 300 MB).</small></span></button>
+      <button type="button" className="create-choice" disabled={busy} onClick={() => gallery.current?.click()}><ImagePlus/><span><b>GALERIA</b><small>{recon ? 'Foto ou vídeo de até 30 s. Some em 24 horas.' : 'Foto (até 20 MB) ou vídeo (até 90 s e 300 MB).'}</small></span></button>
       <button type="button" className="create-choice" disabled={busy} onClick={() => camera.current?.click()}><Camera/><span><b>CÂMERA</b><small>Grave ou fotografe agora.</small></span></button>
       {busy && <p className="create-notice" role="status">Abrindo arquivo…</p>}
     </div>}
 
     {step === 'frame' && picked && <div className="create-frame">
-      {picked.kind === 'IMAGE'
+      {picked.kind === 'IMAGE' && recon ? <p className="create-notice">Recons usam a tela inteira (9:16).</p>
+        : picked.kind === 'IMAGE'
         ? <div className="create-segmented" role="radiogroup" aria-label="Proporção">{PHOTO_ASPECTS.map(option => <button type="button" key={option.label} role="radio"
             aria-checked={aspect === option.value} className={aspect === option.value ? 'active' : ''} onClick={() => setAspect(option.value)}>{option.label}</button>)}</div>
         : <div className="create-segmented" role="radiogroup" aria-label="Enquadramento do vídeo">
@@ -161,7 +171,15 @@ export function CreateFlow({ onClose }: { onClose: () => void }) {
         : <FrameEditor src={picked.url} kind={picked.kind} media={picked.size} aspect={picked.kind === 'IMAGE' ? aspect : VIDEO_ASPECT} framing={framing} onChange={setFraming}/>}
     </div>}
 
-    {step === 'details' && <div className="create-details">
+    {step === 'details' && recon && <div className="create-details">
+      <label className="create-caption"><span>Texto sobre o Recon (opcional)</span>
+        <input value={overlay} maxLength={OVERLAY_MAX} onChange={event => setOverlay(event.target.value)} placeholder="Ex.: Saindo para a patrulha"/>
+        <small>{overlay.length}/{OVERLAY_MAX}</small>
+      </label>
+      <p className="create-notice">O Recon fica visível por 24 horas para quem segue você.</p>
+    </div>}
+
+    {step === 'details' && !recon && <div className="create-details">
       <label className="create-caption"><span className="sr-only">Descrição</span>
         <textarea value={caption} maxLength={CAPTION_MAX} rows={5} placeholder="Conte o que rolou. Use #hashtags e @menções." onChange={event => setCaption(event.target.value)}/>
         <small>{caption.length}/{CAPTION_MAX}</small>

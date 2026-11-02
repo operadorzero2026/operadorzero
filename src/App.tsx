@@ -62,6 +62,7 @@ import { AchievementsPage, NotificationsPage } from './NotificationsPage'
 import { FeedPage } from './feed/FeedPage'
 import { CreateFlow } from './feed/CreateFlow'
 import { UploadStatus } from './feed/UploadStatus'
+import { DossierStrip } from './feed/DossierStrip'
 import { BottomNav, CreateSheet, HubPage, type HubId } from './feed/AppNavigation'
 import { OperationsPage } from './OperationsPage'
 import { VenuesPage } from './VenuesPage'
@@ -338,7 +339,7 @@ function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommun
   const [activeView, setActiveView] = useState(path.startsWith('/operadores') ? 'Operadores' : path === '/feed' ? 'Feed' : 'Visão geral')
   const [createOpen, setCreateOpen] = useState(false)
   const [createNotice, setCreateNotice] = useState('')
-  const [composer, setComposer] = useState(false)
+  const [composer, setComposer] = useState<'POST' | 'RECON' | null>(null)
   // O feed tem rota propria; as demais telas do painel ficam em /painel ("/" logado leva ao feed).
   const select = (view: string) => {
     if (view === 'Comunidade') return onNavigateCommunity()
@@ -380,11 +381,11 @@ function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommun
   return <div className="app-shell">
     <aside className="app-sidebar"><Brand compact/><nav aria-label="Navegação do operador">{dashboardNav.map(({ label, icon: Icon }) => <button onClick={() => select(label)} className={activeView === label ? 'active' : ''} key={label}><Icon/><span>{label}</span>{label === 'Notificações' && unread > 0 && <em className="nav-badge" aria-label={`${unread} não lidas`}>{unread > 99 ? '99+' : unread}</em>}{activeView === label && <i/>}</button>)}</nav><div className="sidebar-footer"><p>Jogue. Registre.<br/><b>Evolua.</b></p></div></aside>
     <div className="app-main">
-      {activeView === 'Feed' ? <FeedPage unread={unread} onOpenNotifications={() => select('Notificações')} onFindOperators={() => select('Operadores')}/> : <>
+      {activeView === 'Feed' ? <FeedPage unread={unread} onOpenNotifications={() => select('Notificações')} onFindOperators={() => select('Operadores')} onCreateRecon={() => setComposer('RECON')}/> : <>
       <header className="app-topbar"><OperatorSearch/><div className="profile-control"><button onClick={() => setProfileOpen(!profileOpen)} aria-expanded={profileOpen}><span className="profile-avatar">{initial}</span><span><b>{callsign}</b><small>@{user.username}</small></span><ChevronDown/></button>{profileOpen && <div className="profile-menu"><p>{user.email}</p><button disabled={logoutPending} onClick={async () => { setLogoutPending(true); setLogoutError(''); const completed = await onLogout(); setLogoutPending(false); if (!completed) setLogoutError('Não foi possível encerrar a sessão. Verifique sua conexão e tente novamente.') }}><LogOut/> {logoutPending ? 'Encerrando...' : 'Sair da conta'}</button>{logoutError && <small className="logout-error" role="alert">{logoutError}</small>}</div>}</div></header>
       {user.mfaRequired && activeView !== 'Meu Operador' && <p className="auth-notice google-notice" role="status">{user.mfaEnabled ? 'Confirme o código da verificação em duas etapas para usar as ferramentas de moderação.' : 'Ative a verificação em duas etapas para usar as ferramentas de moderação.'} <button type="button" onClick={() => setActiveView('Meu Operador')}>Abrir Meu Operador</button></p>}
       {googleNotice && <p className="auth-notice google-notice" role="status">{googleNotice} <button type="button" onClick={onDismissGoogleNotice}>Fechar</button></p>}
-      {activeView === 'Operadores' ? <OperatorsSocialPage path={path.startsWith('/operadores')?path:'/operadores'} currentUsername={user.username} onNavigate={onNavigate} onEditProfile={()=>setActiveView('Meu Operador')}/> : activeView === 'Meu Operador' ? <><OperatorPage onUserUpdated={updated => onUserUpdated({ ...user, ...updated })}/><GoogleAccountPanel user={user} onUserUpdated={onUserUpdated}/><MfaPanel user={user} onUserUpdated={onUserUpdated}/></> : activeView === 'Minha equipe' ? <TeamPage/> : activeView === 'Operações' ? <OperationsPage/> : activeView === 'Campos' ? <VenuesPage mode="fields"/> : activeView === 'Mapas' ? <VenuesPage mode="maps"/> : activeView === 'Desempenho' ? <PerformancePage/> : activeView === 'Rankings' ? <RankingsPage/> : activeView === 'Explorar' || activeView === 'Jogos' || activeView === 'Perfil' ? <HubPage hub={activeView as HubId} onSelect={select}/> : activeView === 'Notificações' ? <NotificationsPage onOpen={view => setActiveView(view)} onChanged={refreshUnread}/> : activeView === 'Conquistas' ? <AchievementsPage/> : activeView !== 'Visão geral' ? <EmptyWorkspace area={activeView} onHome={() => setActiveView('Visão geral')}/> : <main className="dashboard real-dashboard">
+      {activeView === 'Operadores' ? <OperatorsSocialPage path={path.startsWith('/operadores')?path:'/operadores'} currentUsername={user.username} onNavigate={onNavigate} onEditProfile={()=>setActiveView('Meu Operador')}/> : activeView === 'Meu Operador' ? <><OperatorPage onUserUpdated={updated => onUserUpdated({ ...user, ...updated })}/><GoogleAccountPanel user={user} onUserUpdated={onUserUpdated}/><MfaPanel user={user} onUserUpdated={onUserUpdated}/></> : activeView === 'Minha equipe' ? <TeamPage/> : activeView === 'Operações' ? <OperationsPage/> : activeView === 'Campos' ? <VenuesPage mode="fields"/> : activeView === 'Mapas' ? <VenuesPage mode="maps"/> : activeView === 'Desempenho' ? <PerformancePage/> : activeView === 'Rankings' ? <RankingsPage/> : activeView === 'Explorar' || activeView === 'Jogos' || activeView === 'Perfil' ? <HubPage hub={activeView as HubId} onSelect={select} extra={activeView === 'Perfil' ? <DossierStrip username={user.username} own/> : undefined}/> : activeView === 'Notificações' ? <NotificationsPage onOpen={view => setActiveView(view)} onChanged={refreshUnread}/> : activeView === 'Conquistas' ? <AchievementsPage/> : activeView !== 'Visão geral' ? <EmptyWorkspace area={activeView} onHome={() => setActiveView('Visão geral')}/> : <main className="dashboard real-dashboard">
         <section className="dashboard-welcome"><div><p>BEM-VINDO</p><h1>Olá, <em>{callsign}.</em></h1></div></section>
         <section className="operator-strip real-operator-strip"><div className="operator-identity"><span className="operator-avatar">{initial}</span><div><small>OPERADOR</small><h2>{callsign}</h2><p>{user.displayName} · @{user.username}</p></div></div><div><small>STATUS DO PERFIL</small><strong>ATIVO</strong><span>Conta disponível</span></div></section>
         <section className="real-dashboard-intro"><div><p className="eyebrow"><span/> SUA JORNADA</p><h2>Comece pelo que importa.</h2><p>Encontre operações, organize sua equipe e acompanhe sua participação na comunidade.</p></div></section>
@@ -399,8 +400,8 @@ function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommun
       </>}
     </div>
     <BottomNav activeView={activeView} onSelect={select} onCreate={() => { setCreateNotice(''); setCreateOpen(true) }}/>
-    {createOpen && <CreateSheet notice={createNotice} onClose={() => setCreateOpen(false)} onPick={kind => { if (kind === 'POST') { setCreateOpen(false); setComposer(true) } else setCreateNotice('Os Recons chegam na etapa 5.') }}/>}
-    {composer && <CreateFlow onClose={() => setComposer(false)}/>}
+    {createOpen && <CreateSheet notice={createNotice} onClose={() => setCreateOpen(false)} onPick={kind => { setCreateOpen(false); setComposer(kind) }}/>}
+    {composer && <CreateFlow key={composer} mode={composer} onClose={() => setComposer(null)}/>}
     <UploadStatus/>
   </div>
 }

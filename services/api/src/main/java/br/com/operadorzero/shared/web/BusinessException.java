@@ -28,6 +28,11 @@ public final class BusinessException extends RuntimeException {
         return new BusinessException(HttpStatus.CONFLICT, code, message);
     }
 
+    /** Conteudo que existiu mas saiu do ar (ex.: Recon expirado). */
+    public static BusinessException gone(String code, String message) {
+        return new BusinessException(HttpStatus.GONE, code, message);
+    }
+
     public static BusinessException tooManyRequests(String message) {
         return new BusinessException(HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMITED", message);
     }

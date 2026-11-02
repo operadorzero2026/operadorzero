@@ -25,7 +25,7 @@ export function FrameEditor({ src, kind, media, aspect, framing, onChange }: { s
     if (Math.abs(centered.x - framing.x) > 0.001 || Math.abs(centered.y - framing.y) > 0.001) onChange(centered)
   }, [framing, media, onChange, rect.height, rect.width, rect.x, rect.y])
   const down = (event: ReactPointerEvent) => {
-    event.currentTarget.setPointerCapture(event.pointerId)
+    try { event.currentTarget.setPointerCapture(event.pointerId) } catch { /* ponteiro ja liberado: o gesto segue sem captura */ }
     drag.current = { x: event.clientX, y: event.clientY, start: framing }
   }
   const move = (event: ReactPointerEvent) => {
@@ -36,7 +36,7 @@ export function FrameEditor({ src, kind, media, aspect, framing, onChange }: { s
   }
   const style = { width: media.width * scale, height: media.height * scale, transform: `translate(${left}px, ${top}px)` }
   return <div className="frame-editor">
-    <div ref={frame} className="frame-editor-window" style={{ aspectRatio: String(aspect) }} onPointerDown={down} onPointerMove={move}
+    <div ref={frame} className="frame-editor-window" style={{ aspectRatio: String(aspect), maxWidth: `calc(62svh * ${aspect})` }} onPointerDown={down} onPointerMove={move}
       onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }} role="application" aria-label="Arraste para enquadrar">
       {kind === 'IMAGE' ? <img src={src} alt="" draggable={false} style={style}/> : <video src={src} muted loop autoPlay playsInline style={style}/>}
       <span className="frame-editor-grid" aria-hidden="true"/>

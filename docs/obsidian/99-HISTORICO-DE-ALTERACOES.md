@@ -1,5 +1,33 @@
 # Histórico de alterações
 
+## 2026-11-02 - Feed (etapa 5): Recons e Dossiês
+
+### Arquivos alterados
+- Servidor: pacote `recon` (`ReconService`, `ReconRepository`, `ReconController`, `ReconExpiryJob`), `shared/config/SchedulingConfig`, `BusinessException.gone`.
+- Site: `src/feed/ReconBar.tsx`, `ReconViewer.tsx`, `DossierStrip.tsx`, `CreateFlow.tsx` (modo Recon), `uploadQueue.ts`, `FeedPage.tsx`, `feed.css`.
+- Desenvolvimento: Recons de exemplo em `services/api/dev/seed-feed.sql`.
+
+### O que foi feito
+- Recon: foto 9:16 ou vídeo de até 30 s, texto opcional sobreposto; expira 24 h após a criação.
+- Visível só para o autor e para quem o segue, sem bloqueio nos dois sentidos.
+- Barra no topo do feed: "Seu Recon" primeiro, radar dourado girando para não visto, aro cinza para visto; some ao rolar.
+- Visualizador 9:16: barras de progresso, tocar à direita/esquerda, segurar pausa, arrastar para baixo fecha, "Recon de @usuário · há 2 h"; Recon vencido mostra "Recon encerrado" (API 410).
+- Dossiês: guardar Recons próprios (ativos ou já vencidos com mídia), fileira no Perfil, remover e apagar.
+- Tarefa a cada 10 min encerra Recons vencidos e apaga a mídia dos que não estão em Dossiê.
+
+### Motivo
+- Etapa 5 do plano do feed.
+
+### Impacto
+- Rotas novas `/api/recons/**` e `/api/dossiers/**` (autenticadas). Sem migration nova (tabelas da V29).
+
+### Testes
+- 156 testes do servidor (7 novos de Recon); SQL real testado (visibilidade, bloqueio, visto, expiração, Dossiê preserva mídia).
+- Ponta a ponta local: Recon criado pelo app, barra, visualizador (pausa, avançar, voltar, arrastar), salvar no Dossiê, fileira no Perfil, 410 para Recon vencido.
+
+### Pendências
+- Etapas 6 e 7 (reações, comentários, seguir, compartilhar; ranking "Para você").
+
 ## 2026-11-02 - Feed (etapas 1 a 4): modelo de dados, tela, feed vertical e envio de mídia
 
 ### Arquivos alterados

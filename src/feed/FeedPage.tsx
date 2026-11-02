@@ -1,6 +1,8 @@
 import { Bell } from 'lucide-react'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { FeedList } from './FeedList'
+import { ReconBar } from './ReconBar'
+import { ReconViewer } from './ReconViewer'
 
 export type FeedTab = 'for-you' | 'following'
 
@@ -9,8 +11,12 @@ const tabs: { id: FeedTab; label: string }[] = [
   { id: 'following', label: 'Seguindo' },
 ]
 
-export function FeedPage({ unread, onOpenNotifications, onFindOperators }: { unread: number; onOpenNotifications: () => void; onFindOperators: () => void }) {
+export function FeedPage({ unread, onOpenNotifications, onFindOperators, onCreateRecon }: { unread: number; onOpenNotifications: () => void; onFindOperators: () => void; onCreateRecon: () => void }) {
   const [tab, setTab] = useState<FeedTab>('for-you')
+  const [scrolled, setScrolled] = useState(false)
+  const [viewer, setViewer] = useState<{ usernames: string[]; start: number } | null>(null)
+  const [barKey, setBarKey] = useState(0)
+  const refreshBar = useCallback(() => setBarKey(value => value + 1), [])
   return <section className="feed-screen" aria-label="Feed">
     <div className="feed-column">
       <header className="feed-topbar">
@@ -22,9 +28,12 @@ export function FeedPage({ unread, onOpenNotifications, onFindOperators }: { unr
           <Bell/>{unread > 0 && <em>{unread > 99 ? '99+' : unread}</em>}
         </button>
       </header>
+      {/* Recons so aparecem no topo do feed; somem assim que a pessoa rola para o proximo post. */}
+      <ReconBar hidden={scrolled} refreshKey={barKey} onOpen={(usernames, start) => setViewer({ usernames, start })} onCreate={onCreateRecon}/>
       <div role="tabpanel" aria-label={tabs.find(item => item.id === tab)?.label}>
-        <FeedList key={tab} tab={tab} onFindOperators={onFindOperators}/>
+        <FeedList key={tab} tab={tab} onFindOperators={onFindOperators} onScrolledChange={setScrolled}/>
       </div>
     </div>
+    {viewer && <ReconViewer usernames={viewer.usernames} start={viewer.start} onClose={() => setViewer(null)} onChanged={refreshBar}/>}
   </section>
 }

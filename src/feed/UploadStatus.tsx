@@ -8,7 +8,7 @@ const label = (task: UploadTask) => {
     case 'waiting-details': return 'Arquivo enviado'
     case 'publishing': return 'Publicando…'
     case 'processing': return task.kind === 'VIDEO' ? 'Processando vídeo…' : 'Processando foto…'
-    case 'done': return 'Post publicado'
+    case 'done': return task.purpose === 'RECON' ? 'Recon no ar' : 'Post publicado'
     case 'error': return task.message ?? 'Falha no envio'
     default: return ''
   }
