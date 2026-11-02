@@ -1,6 +1,7 @@
 package br.com.operadorzero.operation;
 
 import br.com.operadorzero.identity.AuthenticatedUser;
+import br.com.operadorzero.notification.Notifier;
 import br.com.operadorzero.operation.OperationDtos.MessageResponse;
 import br.com.operadorzero.operation.OperationDtos.OperationFilter;
 import br.com.operadorzero.operation.OperationDtos.OperationListResponse;
@@ -61,14 +62,18 @@ public class OperationService {
             "Check-in desfeito.", "Este check-in não pode ser desfeito."));
     private final OperationRepository repository;
     private final AuditEventRepository audit;
+    private final Notifier notifier;
     private final Clock clock;
 
     @Autowired
-    public OperationService(OperationRepository repository, AuditEventRepository audit) {
-        this(repository, audit, Clock.systemUTC());
+    public OperationService(OperationRepository repository, AuditEventRepository audit, Notifier notifier) {
+        this(repository, audit, notifier, Clock.systemUTC());
     }
     OperationService(OperationRepository repository, AuditEventRepository audit, Clock clock) {
-        this.repository = repository; this.audit = audit; this.clock = clock;
+        this(repository, audit, Notifier.none(), clock);
+    }
+    OperationService(OperationRepository repository, AuditEventRepository audit, Notifier notifier, Clock clock) {
+        this.repository = repository; this.audit = audit; this.notifier = notifier; this.clock = clock;
     }
 
     public OperationListResponse search(AuthenticatedUser user, OperationFilter filter) {
@@ -126,7 +131,17 @@ public class OperationService {
         if ("REGISTRATION_OPEN".equals(status)) {
             repository.lockOwnedOperation(id, user.internalId()).ifPresent(operationId -> repository.promoteWaitingList(operationId, now));
         }
-        return detail(user, id);
+        OperationResponse updated = detail(user, id);
+        if ("CANCELLED".equals(status)) {
+            notifier.toOperationParticipants(id, "OPERATION_CANCELLED", "Operação cancelada: " + updated.name(),
+                "Motivo: " + request.reason().trim(), "Operações");
+        } else if ("FINISHED".equals(status)) {
+            notifier.toOperationParticipants(id, "OPERATION_FINISHED", "Operação finalizada: " + updated.name(),
+                "Registre seu desempenho para entrar no ranking.", "Desempenho");
+        } else if ("IN_PROGRESS".equals(status)) {
+            notifier.toOperationParticipants(id, "OPERATION_STARTED", "Operação iniciada: " + updated.name(), null, "Operações");
+        }
+        return updated;
     }
 
     /** Organizador aprova, recusa, confirma presenca ou faz check-in de um participante. */
@@ -145,6 +160,17 @@ public class OperationService {
         }
         audit.record(user.internalId(), "OPERATION_PARTICIPANT_" + action, "OPERATION", id,
             operatorId + (nullable(request.reason()) == null ? "" : ": " + request.reason().trim()), now);
+        String title = switch (action) {
+            case "APPROVE" -> "Inscrição aprovada";
+            case "REJECT" -> "Inscrição recusada";
+            case "CONFIRM" -> "Presença confirmada pelo organizador";
+            default -> null;
+        };
+        if (title != null) {
+            String name = repository.find(id, user.internalId()).map(OperationResponse::name).orElse("operação");
+            notifier.toOperator(operatorId, "OPERATION_PARTICIPATION", title + ": " + name,
+                "REJECT".equals(action) ? nullable(request.reason()) : null, "Operações");
+        }
         return new MessageResponse(decision.successMessage());
     }
 

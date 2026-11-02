@@ -416,6 +416,15 @@ export const getMaps = (fieldId = '') => apiRequest<{items:VenueMap[]}>(`/api/ma
 export const updateField = (id:string,version:number,field:Record<string,unknown>) => apiRequest<VenueField>(`/api/fields/${encodeURIComponent(id)}?version=${version}`,json('PATCH',field))
 export const updateVenueMap = (id:string,version:number,map:Record<string,unknown>) => apiRequest<VenueMap>(`/api/maps/${encodeURIComponent(id)}?version=${version}`,json('PATCH',map))
 export const createVenueMap = (fieldId:string,map:Record<string,unknown>) => apiRequest<VenueMap>(`/api/fields/${encodeURIComponent(fieldId)}/maps`,json('POST',map))
+export type UserNotification = { id:string; kind:string; title:string; body?:string|null; targetView?:string|null; createdAt:string; readAt?:string|null }
+export type NotificationPage = { items:UserNotification[]; unread:number }
+export type Achievement = { code:string; name:string; category:string; description:string; current:number; target:number; unlocked:boolean }
+export type AchievementPage = { items:Achievement[]; unlocked:number }
+export const getNotifications = () => apiRequest<NotificationPage>('/api/me/notifications')
+export const getUnreadNotifications = () => apiRequest<{unread:number}>('/api/me/notifications/unread')
+export const markNotificationRead = (id:string) => apiRequest<void>(`/api/me/notifications/${encodeURIComponent(id)}/read`, json('POST', {}))
+export const markAllNotificationsRead = () => apiRequest<void>('/api/me/notifications/read-all', json('POST', {}))
+export const getMyAchievements = () => apiRequest<AchievementPage>('/api/me/achievements')
 export type PublicOperation = { id:string; name:string; operationDate:string; startTime:string; city:string; stateCode:string; fieldName:string; modality:string; status:string; participantCount:number; participantLimit?:number|null; registrationPrice?:number|null }
 export const getPublicAgenda = () => apiRequest<{items:PublicOperation[]}>('/api/public/operations')
 export const getOperations = (query = '') => apiRequest<{items:Operation[]}>(`/api/operations?q=${encodeURIComponent(query)}&limit=100`)

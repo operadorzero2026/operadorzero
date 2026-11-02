@@ -77,6 +77,19 @@ class OperationLifecycleTest {
     }
 
     @Test
+    void rejectedOperatorIsNotifiedWithTheReason() {
+        br.com.operadorzero.notification.Notifier notifier = mock(br.com.operadorzero.notification.Notifier.class);
+        OperationService notifying = new OperationService(repository, mock(AuditEventRepository.class), notifier, Clock.fixed(now, ZoneOffset.UTC));
+        when(repository.lockOwnedOperation(operationId, organizer.internalId())).thenReturn(Optional.of(5L));
+        when(repository.transitionParticipant(eq(5L), eq(operatorId), any(), eq("REJECTED"), any(), eq(now))).thenReturn(1);
+
+        notifying.decideParticipant(organizer, operationId, operatorId, new ParticipantDecisionRequest("REJECT", "Sem equipamento obrigatório"));
+
+        verify(notifier).toOperator(eq(operatorId), eq("OPERATION_PARTICIPATION"), org.mockito.ArgumentMatchers.startsWith("Inscrição recusada"),
+            eq("Sem equipamento obrigatório"), eq("Operações"));
+    }
+
+    @Test
     void unavailableTransitionIsReportedAsConflict() {
         when(repository.lockOwnedOperation(operationId, organizer.internalId())).thenReturn(Optional.of(5L));
         when(repository.transitionParticipant(anyLong(), any(), any(), anyString(), any(), any())).thenReturn(0);

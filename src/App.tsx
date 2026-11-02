@@ -29,6 +29,7 @@ import {
   ApiClientError,
   getCurrentSession,
   getPublicAgenda,
+  getUnreadNotifications,
   type PublicOperation,
   markAuthenticatedAreaUsable,
   prepareAuthentication,
@@ -56,6 +57,7 @@ import {
 import { OperatorPage } from './OperatorPage'
 import { OperatorSearch } from './OperatorSearch'
 import { TeamPage } from './TeamPage'
+import { AchievementsPage, NotificationsPage } from './NotificationsPage'
 import { OperationsPage } from './OperationsPage'
 import { VenuesPage } from './VenuesPage'
 import { RankingsPage } from './RankingsPage'
@@ -328,6 +330,9 @@ function PublicAgenda({ onJoin }: { onJoin: () => void }) {
 function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommunity, user, googleNotice = '', onDismissGoogleNotice }: { path:string; onNavigate:(path:string)=>void; onLogout: () => Promise<boolean>; onUserUpdated: (user: SessionUser) => void; onNavigateCommunity: () => void; user: SessionUser; googleNotice?: string; onDismissGoogleNotice?: () => void }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [activeView, setActiveView] = useState(path.startsWith('/operadores') ? 'Operadores' : 'Visão geral')
+  const [unread, setUnread] = useState(0)
+  const refreshUnread = () => { getUnreadNotifications().then(result => setUnread(result.unread)).catch(() => undefined) }
+  useEffect(() => { refreshUnread(); const timer = window.setInterval(refreshUnread, 60000); return () => window.clearInterval(timer) }, [])
   const [logoutPending, setLogoutPending] = useState(false)
   const [logoutError, setLogoutError] = useState('')
   const [overview, setOverview] = useState<{ operations: Operation[]; teamTotal: number; ranking: RankingEntry[] }>({ operations: [], teamTotal: 0, ranking: [] })
@@ -357,12 +362,12 @@ function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommun
   }, [])
   const operationDate = (value: string) => new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(`${value}T12:00:00`))
   return <div className="app-shell">
-    <aside className="app-sidebar"><Brand compact/><nav aria-label="Navegação do operador">{dashboardNav.map(({ label, icon: Icon }) => <button onClick={() => label === 'Comunidade' ? onNavigateCommunity() : label === 'Operadores' ? onNavigate('/operadores') : (onNavigate('/'), setActiveView(label))} className={activeView === label ? 'active' : ''} key={label}><Icon/><span>{label}</span>{activeView === label && <i/>}</button>)}</nav><div className="sidebar-footer"><p>Jogue. Registre.<br/><b>Evolua.</b></p></div></aside>
+    <aside className="app-sidebar"><Brand compact/><nav aria-label="Navegação do operador">{dashboardNav.map(({ label, icon: Icon }) => <button onClick={() => label === 'Comunidade' ? onNavigateCommunity() : label === 'Operadores' ? onNavigate('/operadores') : (onNavigate('/'), setActiveView(label))} className={activeView === label ? 'active' : ''} key={label}><Icon/><span>{label}</span>{label === 'Notificações' && unread > 0 && <em className="nav-badge" aria-label={`${unread} não lidas`}>{unread > 99 ? '99+' : unread}</em>}{activeView === label && <i/>}</button>)}</nav><div className="sidebar-footer"><p>Jogue. Registre.<br/><b>Evolua.</b></p></div></aside>
     <div className="app-main">
       <header className="app-topbar"><OperatorSearch/><div className="profile-control"><button onClick={() => setProfileOpen(!profileOpen)} aria-expanded={profileOpen}><span className="profile-avatar">{initial}</span><span><b>{callsign}</b><small>@{user.username}</small></span><ChevronDown/></button>{profileOpen && <div className="profile-menu"><p>{user.email}</p><button disabled={logoutPending} onClick={async () => { setLogoutPending(true); setLogoutError(''); const completed = await onLogout(); setLogoutPending(false); if (!completed) setLogoutError('Não foi possível encerrar a sessão. Verifique sua conexão e tente novamente.') }}><LogOut/> {logoutPending ? 'Encerrando...' : 'Sair da conta'}</button>{logoutError && <small className="logout-error" role="alert">{logoutError}</small>}</div>}</div></header>
       {user.mfaRequired && activeView !== 'Meu Operador' && <p className="auth-notice google-notice" role="status">{user.mfaEnabled ? 'Confirme o código da verificação em duas etapas para usar as ferramentas de moderação.' : 'Ative a verificação em duas etapas para usar as ferramentas de moderação.'} <button type="button" onClick={() => setActiveView('Meu Operador')}>Abrir Meu Operador</button></p>}
       {googleNotice && <p className="auth-notice google-notice" role="status">{googleNotice} <button type="button" onClick={onDismissGoogleNotice}>Fechar</button></p>}
-      {activeView === 'Operadores' ? <OperatorsSocialPage path={path.startsWith('/operadores')?path:'/operadores'} currentUsername={user.username} onNavigate={onNavigate} onEditProfile={()=>setActiveView('Meu Operador')}/> : activeView === 'Meu Operador' ? <><OperatorPage onUserUpdated={updated => onUserUpdated({ ...user, ...updated })}/><GoogleAccountPanel user={user} onUserUpdated={onUserUpdated}/><MfaPanel user={user} onUserUpdated={onUserUpdated}/></> : activeView === 'Minha equipe' ? <TeamPage/> : activeView === 'Operações' ? <OperationsPage/> : activeView === 'Campos' ? <VenuesPage mode="fields"/> : activeView === 'Mapas' ? <VenuesPage mode="maps"/> : activeView === 'Desempenho' ? <PerformancePage/> : activeView === 'Rankings' ? <RankingsPage/> : activeView !== 'Visão geral' ? <EmptyWorkspace area={activeView} onHome={() => setActiveView('Visão geral')}/> : <main className="dashboard real-dashboard">
+      {activeView === 'Operadores' ? <OperatorsSocialPage path={path.startsWith('/operadores')?path:'/operadores'} currentUsername={user.username} onNavigate={onNavigate} onEditProfile={()=>setActiveView('Meu Operador')}/> : activeView === 'Meu Operador' ? <><OperatorPage onUserUpdated={updated => onUserUpdated({ ...user, ...updated })}/><GoogleAccountPanel user={user} onUserUpdated={onUserUpdated}/><MfaPanel user={user} onUserUpdated={onUserUpdated}/></> : activeView === 'Minha equipe' ? <TeamPage/> : activeView === 'Operações' ? <OperationsPage/> : activeView === 'Campos' ? <VenuesPage mode="fields"/> : activeView === 'Mapas' ? <VenuesPage mode="maps"/> : activeView === 'Desempenho' ? <PerformancePage/> : activeView === 'Rankings' ? <RankingsPage/> : activeView === 'Notificações' ? <NotificationsPage onOpen={view => setActiveView(view)} onChanged={refreshUnread}/> : activeView === 'Conquistas' ? <AchievementsPage/> : activeView !== 'Visão geral' ? <EmptyWorkspace area={activeView} onHome={() => setActiveView('Visão geral')}/> : <main className="dashboard real-dashboard">
         <section className="dashboard-welcome"><div><p>BEM-VINDO</p><h1>Olá, <em>{callsign}.</em></h1></div></section>
         <section className="operator-strip real-operator-strip"><div className="operator-identity"><span className="operator-avatar">{initial}</span><div><small>OPERADOR</small><h2>{callsign}</h2><p>{user.displayName} · @{user.username}</p></div></div><div><small>STATUS DO PERFIL</small><strong>ATIVO</strong><span>Conta disponível</span></div></section>
         <section className="real-dashboard-intro"><div><p className="eyebrow"><span/> SUA JORNADA</p><h2>Comece pelo que importa.</h2><p>Encontre operações, organize sua equipe e acompanhe sua participação na comunidade.</p></div></section>

@@ -2,6 +2,7 @@ package br.com.operadorzero.team;
 
 import br.com.operadorzero.identity.AuthRateLimiter;
 import br.com.operadorzero.identity.AuthenticatedUser;
+import br.com.operadorzero.notification.Notifier;
 import br.com.operadorzero.operator.BrazilLocationValidator;
 import br.com.operadorzero.operator.BrazilLocationValidator.Location;
 import br.com.operadorzero.shared.audit.AuditEventRepository;
@@ -59,20 +60,27 @@ public class TeamService {
     private final BrazilLocationValidator locations;
     private final AuditEventRepository audit;
     private final AuthRateLimiter rateLimiter;
+    private final Notifier notifier;
     private final Clock clock;
 
     @Autowired
     public TeamService(TeamRepository repository, BrazilLocationValidator locations,
-                       AuditEventRepository audit, AuthRateLimiter rateLimiter) {
-        this(repository, locations, audit, rateLimiter, Clock.systemUTC());
+                       AuditEventRepository audit, AuthRateLimiter rateLimiter, Notifier notifier) {
+        this(repository, locations, audit, rateLimiter, notifier, Clock.systemUTC());
     }
 
     TeamService(TeamRepository repository, BrazilLocationValidator locations,
                 AuditEventRepository audit, AuthRateLimiter rateLimiter, Clock clock) {
+        this(repository, locations, audit, rateLimiter, Notifier.none(), clock);
+    }
+
+    TeamService(TeamRepository repository, BrazilLocationValidator locations,
+                AuditEventRepository audit, AuthRateLimiter rateLimiter, Notifier notifier, Clock clock) {
         this.repository = repository;
         this.locations = locations;
         this.audit = audit;
         this.rateLimiter = rateLimiter;
+        this.notifier = notifier;
         this.clock = clock;
     }
 
@@ -152,6 +160,8 @@ public class TeamService {
             UUID invitationId = repository.createInvitation(membership.teamId(), target.id(), user.internalId(),
                 proposedRole, nullable(request.message()), now, now.plus(Duration.ofDays(15)));
             audit.record(user.internalId(), "TEAM_INVITATION_CREATED", "TEAM_INVITATION", invitationId, null, now);
+            notifier.toUser(target.id(), "TEAM_INVITATION", "Convite para a equipe " + teamName(membership.teamId()),
+                user.callsign() + " convidou você para entrar na equipe.", "Minha equipe");
             return new MessageResponse("Convite enviado.");
         } catch (DataIntegrityViolationException exception) {
             throw BusinessException.conflict("INVITATION_ALREADY_PENDING", "Já existe um convite pendente para este operador.");
@@ -267,6 +277,8 @@ public class TeamService {
         try {
             UUID id = repository.createJoinRequest(team.id(), user.internalId(), request == null ? null : nullable(request.message()), now);
             audit.record(user.internalId(), "TEAM_JOIN_REQUESTED", "TEAM_JOIN_REQUEST", id, null, now);
+            notifier.toTeamManagers(team.id(), "TEAM_JOIN_REQUEST", "Novo pedido para entrar na equipe",
+                user.callsign() + " quer entrar em " + team.name() + ".", "Minha equipe");
         } catch (DataIntegrityViolationException exception) {
             throw BusinessException.conflict("JOIN_REQUEST_PENDING", "Você já tem um pedido pendente para esta equipe.");
         }
@@ -294,6 +306,8 @@ public class TeamService {
         if (!accept) {
             repository.respondJoinRequest(request.id(), "DECLINED", user.internalId(), now);
             audit.record(user.internalId(), "TEAM_JOIN_REQUEST_DECLINED", "TEAM_JOIN_REQUEST", requestId, null, now);
+            notifier.toUser(request.userId(), "TEAM_JOIN_DECLINED", "Pedido de entrada recusado",
+                "A equipe " + teamName(request.teamId()) + " recusou seu pedido.", "Minha equipe");
             return response(actor);
         }
         if (repository.activeMembership(request.userId()).isPresent()) {
@@ -309,6 +323,8 @@ public class TeamService {
         repository.cancelPendingForUser(request.userId(), now);
         repository.history(request.teamId(), request.userId(), "JOINED", null, "MEMBER", user.internalId(), "Pedido aceito", now);
         audit.record(user.internalId(), "TEAM_JOIN_REQUEST_ACCEPTED", "TEAM_JOIN_REQUEST", requestId, null, now);
+        notifier.toUser(request.userId(), "TEAM_JOIN_ACCEPTED", "Bem-vindo à equipe " + teamName(request.teamId()),
+            "Seu pedido de entrada foi aceito.", "Minha equipe");
         return response(actor);
     }
 
@@ -327,6 +343,8 @@ public class TeamService {
         repository.leave(actor.teamId(), target.userId(), now);
         repository.history(actor.teamId(), target.userId(), "REMOVED", target.role(), null, user.internalId(), null, now);
         audit.record(user.internalId(), "TEAM_MEMBER_REMOVED", "TEAM", teamId, null, now);
+        notifier.toUser(target.userId(), "TEAM_REMOVED", "Você não faz mais parte da equipe " + teamName(actor.teamId()),
+            "A gestão da equipe removeu seu vínculo.", "Minha equipe");
         return response(actor);
     }
 
@@ -352,6 +370,8 @@ public class TeamService {
         Instant now = clock.instant();
         repository.history(actor.teamId(), target.userId(), "ROLE_CHANGED", target.role(), role, user.internalId(), null, now);
         audit.record(user.internalId(), "TEAM_MEMBER_ROLE_CHANGED", "TEAM", teamId, role, now);
+        notifier.toUser(target.userId(), "TEAM_ROLE_CHANGED", "MANAGER".equals(role) ? "Você agora é gestor da equipe" : "Sua função na equipe mudou",
+            "Função atual: " + ("MANAGER".equals(role) ? "gestor" : "integrante") + ".", "Minha equipe");
         return response(actor);
     }
 
@@ -371,6 +391,10 @@ public class TeamService {
     @Transactional(readOnly = true)
     public TeamRepository.LogoRow logo(UUID teamId) {
         return repository.findLogo(teamId).orElseThrow(() -> BusinessException.notFound("Logo da equipe não encontrada."));
+    }
+
+    private String teamName(long teamId) {
+        return repository.findTeam(teamId).map(TeamRow::name).orElse("");
     }
 
     private InvitationRow invitation(UUID invitationId, long userId) {
