@@ -5,7 +5,13 @@ www.operadorzero.com.br {
 
 operadorzero.com.br {
 	encode zstd gzip
-	request_body {
+	# Pedacos de midia do feed (8 MB) tem limite proprio; o resto do site continua em 3 MB.
+	@media_upload path /api/media/uploads/*
+	request_body @media_upload {
+		max_size 9MB
+	}
+	@other_requests not path /api/media/uploads/*
+	request_body @other_requests {
 		max_size 3MB
 	}
 	reverse_proxy 127.0.0.1:8081 {

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { mediaUrl, type FeedMedia, type FeedPost } from '../api'
 import { RankInsignia } from './RankInsignia'
 import { timeAgo } from './format'
+import { useVideoSource } from './useVideoSource'
 
 /** Como cada post deve se comportar: tocando (visivel), pre-carregado (vizinho) ou so reservando espaco. */
 export type ItemMode = 'active' | 'preload' | 'idle'
@@ -11,15 +12,16 @@ const DOUBLE_TAP_MS = 280
 const compact = new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 })
 function MediaStage({ media, mode, muted, alt }: { media: FeedMedia; mode: ItemMode; muted: boolean; alt: string }) {
   const video = useRef<HTMLVideoElement>(null)
+  useVideoSource(video, mediaUrl(media.hlsUrl), mediaUrl(media.mp4Url), mode)
   useEffect(() => {
     const element = video.current
     if (!element) return
+    element.dataset.active = String(mode === 'active')
     if (mode === 'active') {
       // Navegadores so permitem autoplay mudo; se recusarem, o poster continua visivel.
       element.play().catch(() => undefined)
     } else {
       element.pause()
-      if (mode === 'idle') element.currentTime = 0
     }
   }, [mode])
   useEffect(() => { if (video.current) video.current.muted = muted }, [muted])
@@ -29,7 +31,7 @@ function MediaStage({ media, mode, muted, alt }: { media: FeedMedia; mode: ItemM
     {/* Fundo desfocado da propria midia para o que nao e 9:16 (sem cortar a imagem). */}
     {!portrait && backdrop && <img className="feed-media-backdrop" src={backdrop} alt="" aria-hidden="true"/>}
     {media.kind === 'VIDEO'
-      ? <video ref={video} className="feed-media-content" src={mode === 'idle' ? undefined : mediaUrl(media.mp4Url)} poster={mediaUrl(media.posterUrl)}
+      ? <video ref={video} className="feed-media-content" poster={mediaUrl(media.posterUrl)}
           muted={muted} loop playsInline preload={mode === 'idle' ? 'none' : 'auto'} aria-label={alt}/>
       : <img className="feed-media-content" alt={alt} loading={mode === 'idle' ? 'lazy' : 'eager'} decoding="async"
           src={mediaUrl(media.images.at(-1)?.url)} sizes="(max-width: 480px) 100vw, 480px"

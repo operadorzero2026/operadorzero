@@ -60,6 +60,8 @@ import { OperatorSearch } from './OperatorSearch'
 import { TeamPage } from './TeamPage'
 import { AchievementsPage, NotificationsPage } from './NotificationsPage'
 import { FeedPage } from './feed/FeedPage'
+import { CreateFlow } from './feed/CreateFlow'
+import { UploadStatus } from './feed/UploadStatus'
 import { BottomNav, CreateSheet, HubPage, type HubId } from './feed/AppNavigation'
 import { OperationsPage } from './OperationsPage'
 import { VenuesPage } from './VenuesPage'
@@ -336,6 +338,7 @@ function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommun
   const [activeView, setActiveView] = useState(path.startsWith('/operadores') ? 'Operadores' : path === '/feed' ? 'Feed' : 'Visão geral')
   const [createOpen, setCreateOpen] = useState(false)
   const [createNotice, setCreateNotice] = useState('')
+  const [composer, setComposer] = useState(false)
   // O feed tem rota propria; as demais telas do painel ficam em /painel ("/" logado leva ao feed).
   const select = (view: string) => {
     if (view === 'Comunidade') return onNavigateCommunity()
@@ -396,7 +399,9 @@ function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommun
       </>}
     </div>
     <BottomNav activeView={activeView} onSelect={select} onCreate={() => { setCreateNotice(''); setCreateOpen(true) }}/>
-    {createOpen && <CreateSheet notice={createNotice} onClose={() => setCreateOpen(false)} onPick={kind => setCreateNotice(kind === 'POST' ? 'O envio de posts chega na etapa 4.' : 'Os Recons chegam na etapa 5.')}/>}
+    {createOpen && <CreateSheet notice={createNotice} onClose={() => setCreateOpen(false)} onPick={kind => { if (kind === 'POST') { setCreateOpen(false); setComposer(true) } else setCreateNotice('Os Recons chegam na etapa 5.') }}/>}
+    {composer && <CreateFlow onClose={() => setComposer(false)}/>}
+    <UploadStatus/>
   </div>
 }
 

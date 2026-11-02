@@ -429,6 +429,20 @@ export type FeedMedia = { id:string; kind:'IMAGE'|'VIDEO'; width:number; height:
 export type FeedPost = { id:string; postType:string; author:{username:string;callsign:string;rankCode:string}; caption?:string|null; hashtags:string[]; media:FeedMedia[]; field?:{id:string;name:string}|null; team?:{id:string;name:string;acronym:string}|null; counts:{onTarget:number;eliminated:number;comments:number;shares:number;saves:number;decorations:number}; viewer:{onTarget:boolean;eliminated:boolean;saved:boolean;followsAuthor:boolean;ownPost:boolean}; publishedAt:string }
 export type FeedPage = { items:FeedPost[]; nextCursor?:string|null }
 export const getFeed = (tab:'for-you'|'following', cursor?:string|null) => apiRequest<FeedPage>(`/api/feed?tab=${tab}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`)
+export type MediaCrop = { x:number; y:number; zoom:number }
+export type MediaUpload = { uploadId:string; mediaId:string; chunkBytes:number; receivedBytes:number; totalBytes:number; status:string }
+export type MediaStatus = { id:string; kind:'IMAGE'|'VIDEO'; status:'UPLOADING'|'QUEUED'|'PROCESSING'|'READY'|'FAILED'|'DELETED'; errorCode?:string|null }
+export const startMediaUpload = (body:{ purpose:'POST'|'RECON'; kind:'IMAGE'|'VIDEO'; contentType:string; totalBytes:number; filterCode?:string|null; crop?:MediaCrop|null }) =>
+  apiRequest<MediaUpload>('/api/media/uploads', json('POST', body))
+export const getMediaUpload = (uploadId:string) => apiRequest<MediaUpload>(`/api/media/uploads/${encodeURIComponent(uploadId)}`)
+/** Pedaco cru; o servidor so aceita o offset que ja recebeu, entao repetir apos falha de rede e seguro. */
+export const putMediaChunk = (uploadId:string, offset:number, chunk:Blob) =>
+  apiRequest<MediaUpload>(`/api/media/uploads/${encodeURIComponent(uploadId)}?offset=${offset}`, { method:'PUT', body:chunk, headers:{ 'Content-Type':'application/octet-stream' } }, 120000)
+export const completeMediaUpload = (uploadId:string) => apiRequest<MediaStatus>(`/api/media/uploads/${encodeURIComponent(uploadId)}/complete`, json('POST', {}))
+export const getMediaStatus = (mediaId:string) => apiRequest<MediaStatus>(`/api/media/${encodeURIComponent(mediaId)}`)
+export const createFeedPost = (body:{ mediaId:string; caption?:string|null; fieldId?:string|null; teamId?:string|null; taggedUsernames?:string[]; idempotencyKey:string }) =>
+  apiRequest<{ id:string; status:string }>('/api/feed/posts', json('POST', body))
+export const deleteFeedPost = (postId:string) => apiRequest<void>(`/api/feed/posts/${encodeURIComponent(postId)}`, { method:'DELETE' })
 /** Midias vem com caminho relativo (/media/...); em desenvolvimento a API fica em outra origem. */
 export const mediaUrl = (url?:string|null) => !url ? undefined : /^(https?:|data:)/.test(url) ? url : `${getApiBaseUrl()}${url}`
 export type PublicOperation = { id:string; name:string; operationDate:string; startTime:string; city:string; stateCode:string; fieldName:string; modality:string; status:string; participantCount:number; participantLimit?:number|null; registrationPrice?:number|null }

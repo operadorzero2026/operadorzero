@@ -1,5 +1,37 @@
 # Histórico de alterações
 
+## 2026-11-02 - Feed (etapas 1 a 4): modelo de dados, tela, feed vertical e envio de mídia
+
+### Arquivos alterados
+- Migrations `V27` a `V30` (mídia, feed, seguir, Recons/Dossiês, condecorações, XP e patentes).
+- Servidor: pacotes `feed`, `media`, `gamification`; `identity/CsrfRotation`; `SecurityConfig`.
+- Site: `src/feed/*`, `src/App.tsx`, `src/api.ts`; dependência `hls.js`.
+- Deploy: `services/api/Dockerfile` (ffmpeg), `deploy/vps/compose.yml` (volume `media`), `nginx.conf`, `host-Caddyfile`, `host-nginx.conf`, `security-headers.conf`, `backup.sh`.
+- Desenvolvimento: `services/api/dev/seed-feed.sh` (somente banco local).
+
+### O que foi feito
+- `/feed` virou a tela inicial de quem está logado; barra inferior Feed | Explorar | + | Jogos | Perfil.
+- Feed vertical com cursor, autoplay mudo, pré-carga dos vizinhos, virtualização e fundo desfocado para mídia fora de 9:16.
+- Envio retomável em pedaços de 8 MB, tipo real pelos magic bytes, limites (vídeo 300 MB/90 s, foto 20 MB).
+- Fila de processamento com ffmpeg: HLS 360/720/1080 (sem ampliar), MP4 de reserva, miniatura e prévia desfocada; toda saída sai com `-map_metadata -1`. Só o horário de gravação é guardado (`captured_at`).
+- Fotos recortadas e reencodadas no aparelho (4:5, 1:1 ou 9:16) e de novo no servidor (WebP 540/1080).
+- Post com #hashtags normalizadas, @menções, operadores marcados, campo e a própria equipe; XP registrado desde já.
+- CSRF: o token deixou de ser apagado a cada requisição autenticada; agora gira no login (e-mail e Google) e no logout.
+
+### Motivo
+- Primeira fase do feed estilo Instagram/TikTok aprovada em 2026-11-02.
+
+### Impacto
+- Publicar exige: backup, mudança do Caddy do servidor (limite de 9 MB só em `/api/media/uploads/`), novo volume `media` e API com 2 GB.
+- CSP passou a aceitar `blob:` em `media-src`/`worker-src` (prévia de vídeo e hls.js).
+
+### Testes
+- 149 testes do servidor; cenários do site (inclui `feed-scenarios.mjs`), lint, build e validadores.
+- Ponta a ponta local (Postgres + Garnet + ffmpeg): envio em 2 pedaços com repetição, arquivo falso recusado, vídeo com GPS convertido sem GPS, foto sem EXIF, post publicado, XP e aviso de menção.
+
+### Pendências
+- Etapas 5 a 7 (Recons, reações/comentários/seguir/compartilhar, ranking "Para você").
+
 ## 2026-07-30 - Operadores na navegação inferior móvel
 
 ### Arquivos alterados

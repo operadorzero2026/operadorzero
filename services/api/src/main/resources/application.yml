@@ -60,6 +60,10 @@ app:
     root: ${MEDIA_ROOT:./data/media}
     public-base-url: ${MEDIA_PUBLIC_BASE_URL:/media}
     serve-locally: ${MEDIA_SERVE_LOCALLY:false}
+    work-dir: ${MEDIA_WORK_DIR:}
+    low-priority: ${MEDIA_LOW_PRIORITY:false}
+    ffmpeg: ${FFMPEG_PATH:ffmpeg}
+    ffprobe: ${FFPROBE_PATH:ffprobe}
   auth:
     enabled: ${AUTH_ENABLED:false}
     frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:4174}

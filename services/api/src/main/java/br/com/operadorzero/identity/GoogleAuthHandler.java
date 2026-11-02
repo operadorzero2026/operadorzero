@@ -27,13 +27,15 @@ public class GoogleAuthHandler implements AuthenticationSuccessHandler, Authenti
     private final GoogleFlowStore store;
     private final AuthCookieService cookies;
     private final AuthProperties properties;
+    private final CsrfRotation csrf;
 
     public GoogleAuthHandler(GoogleAuthService service, GoogleFlowStore store, AuthCookieService cookies,
-                             AuthProperties properties) {
+                             AuthProperties properties, CsrfRotation csrf) {
         this.service = service;
         this.store = store;
         this.cookies = cookies;
         this.properties = properties;
+        this.csrf = csrf;
     }
 
     @Override
@@ -56,6 +58,7 @@ public class GoogleAuthHandler implements AuthenticationSuccessHandler, Authenti
                 outcome = Outcome.error("GOOGLE_AUTH_FAILED");
             }
         }
+        csrf.rotate(request, response);
         response.sendRedirect(frontendRedirect(outcome));
     }
 

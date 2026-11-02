@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import br.com.operadorzero.identity.AuthController;
 import br.com.operadorzero.identity.AuthCookieService;
+import br.com.operadorzero.identity.CsrfRotation;
 import br.com.operadorzero.identity.AuthProperties;
 import br.com.operadorzero.identity.AuthService;
 import br.com.operadorzero.identity.GoogleAuthHandler;
@@ -63,7 +64,7 @@ import org.springframework.test.web.servlet.MockMvc;
     }
 )
 // A configuracao aninhada substitui a busca pela aplicacao; por isso os controllers sao importados explicitamente.
-@Import({SecurityConfig.class, GoogleOidcConfig.class, AuthCookieService.class, GoogleAuthorizationRequestRepository.class,
+@Import({SecurityConfig.class, CsrfRotation.class, GoogleOidcConfig.class, AuthCookieService.class, GoogleAuthorizationRequestRepository.class,
     AuthController.class, GoogleAuthorizationFallbackController.class, GoogleOAuthSecurityRouteTest.FilterConfiguration.class})
 @EnableConfigurationProperties({AuthProperties.class, GoogleAuthProperties.class})
 class GoogleOAuthSecurityRouteTest {

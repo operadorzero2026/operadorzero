@@ -8,11 +8,20 @@ RUN mvn -B clean verify
 
 FROM eclipse-temurin:21-jre-jammy@sha256:d63bd8d9b171999cbed8576f2c76e874dd4856791a358536e5c4d407e77edc13
 
+# ffmpeg/ffprobe processam as midias do feed (H.264/AAC, HLS, WebP) e removem metadados.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd --system operadorzero \
-    && useradd --system --gid operadorzero --home-dir /app --create-home operadorzero
+    && useradd --system --gid operadorzero --home-dir /app --create-home operadorzero \
+    && mkdir -p /data/media \
+    && chown operadorzero:operadorzero /data/media
 WORKDIR /app
 COPY --from=build --chown=operadorzero:operadorzero /workspace/target/*.jar /app/app.jar
 USER operadorzero
 
 EXPOSE 10000
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-jar", "/app/app.jar"]
+# JAVA_OPTS permite reservar parte da memoria do container para o ffmpeg.
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0"
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

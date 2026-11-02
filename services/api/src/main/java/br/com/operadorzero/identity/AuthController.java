@@ -35,11 +35,13 @@ public class AuthController {
     private final AuthService service;
     private final GoogleAuthService google;
     private final MfaService mfa;
+    private final CsrfRotation csrf;
 
-    public AuthController(AuthService service, GoogleAuthService google, MfaService mfa) {
+    public AuthController(AuthService service, GoogleAuthService google, MfaService mfa, CsrfRotation csrf) {
         this.service = service;
         this.google = google;
         this.mfa = mfa;
+        this.csrf = csrf;
     }
 
     @GetMapping("/csrf")
@@ -64,6 +66,7 @@ public class AuthController {
     @PostMapping("/login")
     SessionResponse login(@Valid @RequestBody LoginRequest body, HttpServletRequest request, HttpServletResponse response) {
         UserAccount account = service.login(body.email(), body.password(), request, response);
+        csrf.rotate(request, response);
         google.completePendingLink(account, request, response);
         // Sessao recem-criada ainda nao confirmou o segundo fator.
         return SessionResponse.from(account, MfaService.withoutPrivilegedRoles(account.roles()), google.isLinked(account.id()),
@@ -144,5 +147,6 @@ public class AuthController {
     void logout(HttpServletRequest request, HttpServletResponse response,
                 @AuthenticationPrincipal AuthenticatedUser principal) {
         service.logout(request, response, principal);
+        csrf.rotate(request, response);
     }
 }

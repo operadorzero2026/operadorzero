@@ -2,6 +2,7 @@ package br.com.operadorzero.shared.config;
 
 import br.com.operadorzero.identity.AuthCookieService;
 import br.com.operadorzero.identity.AuthProperties;
+import br.com.operadorzero.identity.CsrfRotation;
 import br.com.operadorzero.identity.GoogleAuthHandler;
 import br.com.operadorzero.identity.GoogleAuthorizationRequestRepository;
 import br.com.operadorzero.identity.GoogleFlowStore;
@@ -28,7 +29,7 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequest
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.context.NullSecurityContextRepository;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -45,6 +46,7 @@ public class SecurityConfig {
     private final ObjectProvider<GoogleAuthorizationRequestRepository> googleRequests;
     private final ObjectProvider<GoogleFlowStore> googleFlows;
     private final ObjectProvider<AuthCookieService> cookies;
+    private final CsrfRotation csrfRotation;
 
     public SecurityConfig(@Value("${app.security.cors.allowed-origins}") String allowedOrigins,
                           AuthProperties authProperties,
@@ -54,7 +56,8 @@ public class SecurityConfig {
                           ObjectProvider<GoogleAuthHandler> googleHandler,
                           ObjectProvider<GoogleAuthorizationRequestRepository> googleRequests,
                           ObjectProvider<GoogleFlowStore> googleFlows,
-                          ObjectProvider<AuthCookieService> cookies) {
+                          ObjectProvider<AuthCookieService> cookies,
+                          CsrfRotation csrfRotation) {
         this.allowedOrigins = Arrays.stream(allowedOrigins.split(","))
             .map(String::trim)
             .filter(origin -> !origin.isBlank())
@@ -70,6 +73,7 @@ public class SecurityConfig {
         this.googleRequests = googleRequests;
         this.googleFlows = googleFlows;
         this.cookies = cookies;
+        this.csrfRotation = csrfRotation;
     }
 
     @Bean
@@ -90,7 +94,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/community/**").hasAnyRole("ADMIN", "MODERATOR")
                 .requestMatchers("/api/community/**").authenticated()
                 .requestMatchers("/api/operators/**", "/api/teams/**", "/api/operations/**",
-                    "/api/fields/**", "/api/maps/**", "/api/rankings/**", "/api/performance/**", "/api/me/**", "/api/feed/**").authenticated()
+                    "/api/fields/**", "/api/maps/**", "/api/rankings/**", "/api/performance/**", "/api/me/**", "/api/feed/**", "/api/media/**").authenticated()
                 .anyRequest().denyAll())
             .httpBasic(httpBasic -> httpBasic.disable())
             .formLogin(form -> form.disable())
@@ -103,8 +107,10 @@ public class SecurityConfig {
                 .accessDeniedHandler((request, response, exception) ->
                     writeError(response, 403, "ACCESS_DENIED", "Acesso negado.")))
             .csrf(csrf -> csrf
-                .csrfTokenRepository(csrfRepository())
-                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+                .csrfTokenRepository(csrfRotation.repository())
+                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                // A troca do token acontece no login/logout (CsrfRotation), nao a cada requisicao autenticada.
+                .sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy()))
             .addFilterBefore(sessionAuthenticationFilter, AnonymousAuthenticationFilter.class);
 
         if (clientRegistrations != null) {
@@ -123,20 +129,6 @@ public class SecurityConfig {
                 .failureHandler(handler));
         }
         return http.build();
-    }
-
-    private CookieCsrfTokenRepository csrfRepository() {
-        CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
-        repository.setCookieName("OZ_CSRF");
-        repository.setHeaderName("X-CSRF-TOKEN");
-        repository.setCookiePath("/");
-        repository.setCookieCustomizer(cookie -> {
-            cookie.secure(authProperties.cookie().secure()).sameSite(authProperties.cookie().sameSite());
-            if (authProperties.cookie().domain() != null && !authProperties.cookie().domain().isBlank()) {
-                cookie.domain(authProperties.cookie().domain());
-            }
-        });
-        return repository;
     }
 
     private void writeError(HttpServletResponse response, int status, String code, String message) throws java.io.IOException {

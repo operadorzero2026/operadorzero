@@ -26,7 +26,11 @@ assert.match(list, /Math\.abs\(index - active\) <= MOUNT_RADIUS/)
 // Video: mudo por padrao, inline, em loop, sem baixar quando esta longe.
 assert.match(list, /useState\(true\)/, 'O feed comeca mudo para permitir autoplay.')
 assert.match(item, /muted=\{muted\} loop playsInline/)
-assert.match(item, /src=\{mode === 'idle' \? undefined/)
+const source = await readFile('src/feed/useVideoSource.ts', 'utf8')
+assert.match(source, /const loading = mode !== 'idle'/, 'Video longe da tela nao baixa nada.')
+assert.match(source, /canPlayType\('application\/vnd\.apple\.mpegurl'\)/, 'Safari usa HLS nativo.')
+assert.match(source, /import\('hls\.js'\)/, 'hls.js so e carregado quando ha video.')
+assert.match(source, /data\.fatal\) \{ hls\?\.destroy\(\); hls = null; fallbackToMp4\(\)/, 'Falha do HLS cai para o MP4.')
 
 // Midia fora de 9:16 nao e cortada: fundo desfocado + object-fit contain.
 assert.match(css, /\.feed-media-content\{[^}]*object-fit:contain/)

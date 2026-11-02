@@ -13,6 +13,8 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    # Midias prontas (somente leitura): o Nginx entrega /media/ sem passar pela API.
+    volumes: ["media:/srv/media:ro"]
     networks: [edge]
     mem_limit: 128m
 
@@ -23,6 +25,11 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       PORT: "8080"
+      # Heap menor que o padrao: o restante do limite fica para o ffmpeg do feed.
+      JAVA_OPTS: "-XX:MaxRAMPercentage=40.0"
+      MEDIA_ROOT: /data/media/public
+      MEDIA_WORK_DIR: /data/media/work
+      MEDIA_LOW_PRIORITY: "true"
       # Sem DATABASE_URL: ele forca sslmode=require (banco remoto do Render). Aqui o Postgres
       # fica na rede interna "data", sem acesso externo, e nao tem TLS.
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/operadorzero
@@ -56,8 +63,9 @@ services:
       timeout: 5s
       retries: 5
       start_period: 90s
+    volumes: ["media:/data/media"]
     networks: [edge, data]
-    mem_limit: 1g
+    mem_limit: 2g
 
   postgres:
     image: postgres:17-alpine@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
@@ -98,3 +106,4 @@ networks:
 volumes:
   postgres:
   redis:
+  media:
