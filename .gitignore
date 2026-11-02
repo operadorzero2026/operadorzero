@@ -21,3 +21,6 @@ build/
 *.jks
 *.keystore
 hs_err_pid*
+
+# Midias locais do feed (MEDIA_ROOT)
+data/

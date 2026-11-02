@@ -12,7 +12,8 @@
 .feed-icon-button{position:relative;display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:50%;background:#0006;color:#f2f1e9;cursor:pointer}
 .feed-icon-button svg{width:22px;height:22px}
 .feed-icon-button em{position:absolute;top:2px;right:0;min-width:18px;padding:1px 5px;border-radius:9px;background:var(--feed-gold);color:#120f04;font:800 10px/16px Inter,sans-serif;font-style:normal;text-align:center}
-.feed-stream{position:absolute;inset:0;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain}
+.feed-stream{position:absolute;inset:0;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;scrollbar-width:none}
+.feed-stream::-webkit-scrollbar{display:none}
 .feed-empty{min-height:100%;display:grid;place-content:center;justify-items:center;gap:12px;padding:96px 32px;text-align:center;color:#c9cbbb}
 .feed-empty svg{width:44px;height:44px;color:var(--feed-gold)}
 .feed-empty h2{margin:0;font-size:20px;color:#f2f1e9}
@@ -53,3 +54,40 @@
 .create-choice small{color:#9da08f}
 .create-notice{margin:0;font-size:13px;color:#c9cbbb}
 @media(prefers-reduced-motion:reduce){.feed-stream{scroll-behavior:auto}}
+
+/* Posts em tela cheia, um por vez. */
+.feed-slot{position:relative;height:100%;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden}
+.feed-item{position:absolute;inset:0;background:#000;color:#f2f1e9}
+.feed-media{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden}
+.feed-media-backdrop{position:absolute;inset:-8%;width:116%;height:116%;object-fit:cover;filter:blur(28px) brightness(.55) saturate(1.1)}
+.feed-media-content{position:relative;width:100%;height:100%;object-fit:contain}
+.feed-media--fill .feed-media-content{object-fit:cover}
+.feed-tap-layer{position:absolute;inset:0;z-index:2;border:0;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.feed-sound-badge{position:absolute;z-index:3;top:calc(64px + env(safe-area-inset-top));right:12px;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#0008;pointer-events:none}
+.feed-sound-badge svg{width:16px;height:16px}
+.feed-burst{position:absolute;z-index:4;left:50%;top:45%;color:var(--feed-gold);pointer-events:none;animation:feed-burst .7s ease-out forwards}
+.feed-burst svg{width:96px;height:96px;filter:drop-shadow(0 0 12px #0009)}
+@keyframes feed-burst{0%{transform:translate(-50%,-50%) scale(.4) rotate(-45deg);opacity:0}30%{transform:translate(-50%,-50%) scale(1.15) rotate(0);opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
+.feed-actions{position:absolute;z-index:5;right:8px;bottom:calc(96px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:14px}
+.feed-actions button{display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:none;color:#fff;font-size:12px;font-weight:700;text-shadow:0 1px 3px #000;cursor:pointer}
+.feed-actions button svg{width:30px;height:30px;filter:drop-shadow(0 1px 3px #000a)}
+.feed-actions button[aria-pressed="true"] svg{color:var(--feed-gold);fill:color-mix(in srgb,var(--feed-gold) 35%,transparent)}
+.feed-author-avatar{position:relative;display:grid;place-items:center;width:46px;height:46px;margin-bottom:4px;border:2px solid #fff;border-radius:50%;background:linear-gradient(135deg,var(--feed-olive),#22261a);font:800 20px/1 'Barlow Condensed',sans-serif}
+.feed-author-avatar .rank-insignia{position:absolute;right:-4px;bottom:-4px}
+.feed-caption{position:absolute;z-index:5;left:0;right:64px;bottom:0;margin:0;padding:48px 12px calc(14px + env(safe-area-inset-bottom));border:0;background:linear-gradient(transparent,#000c 45%);display:grid;gap:6px;font:400 14px/1.4 Inter,system-ui,sans-serif;letter-spacing:normal;text-transform:none;color:#f2f1e9;text-align:left}
+.feed-caption p{margin:0}
+.feed-byline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.feed-byline b{font-size:15px}
+.feed-byline span{padding:1px 6px;border:1px solid var(--feed-gold);border-radius:4px;color:var(--feed-gold-soft);font-size:11px;font-weight:800;letter-spacing:.06em}
+.feed-byline time,.feed-field{color:#c9cbbb;font-size:12px}
+.feed-text{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4}
+.feed-text.expanded{display:block;max-height:40svh;overflow-y:auto}
+.feed-more{justify-self:start;padding:0;border:0;background:none;color:#fff;font-size:13px;font-weight:700;cursor:pointer}
+.feed-tags{display:flex;flex-wrap:wrap;gap:8px}
+.feed-tags button{padding:0;border:0;background:none;color:var(--feed-gold-soft);font-weight:700;cursor:pointer}
+.feed-skeleton{display:grid;align-content:end;gap:10px;padding:0 80px 120px 14px;background:linear-gradient(110deg,#0b0d09 30%,#161a12 50%,#0b0d09 70%);background-size:220% 100%;animation:feed-shimmer 1.4s linear infinite}
+.feed-skeleton span{display:block;height:12px;border-radius:6px;background:#22261c}
+.feed-skeleton span:first-child{width:40%}.feed-skeleton span:nth-child(2){width:85%}.feed-skeleton span:nth-child(3){width:60%}
+@keyframes feed-shimmer{to{background-position:-220% 0}}
+.feed-end .feed-empty{height:100%}
+@media(prefers-reduced-motion:reduce){.feed-burst,.feed-skeleton{animation:none}}

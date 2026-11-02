@@ -56,6 +56,10 @@ logging:
     root: INFO
     br.com.operadorzero: INFO
 app:
+  media:
+    root: ${MEDIA_ROOT:./data/media}
+    public-base-url: ${MEDIA_PUBLIC_BASE_URL:/media}
+    serve-locally: ${MEDIA_SERVE_LOCALLY:false}
   auth:
     enabled: ${AUTH_ENABLED:false}
     frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:4174}

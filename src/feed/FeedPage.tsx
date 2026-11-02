@@ -1,5 +1,6 @@
-import { Bell, Crosshair, Users } from 'lucide-react'
+import { Bell } from 'lucide-react'
 import { useState } from 'react'
+import { FeedList } from './FeedList'
 
 export type FeedTab = 'for-you' | 'following'
 
@@ -21,13 +22,8 @@ export function FeedPage({ unread, onOpenNotifications, onFindOperators }: { unr
           <Bell/>{unread > 0 && <em>{unread > 99 ? '99+' : unread}</em>}
         </button>
       </header>
-      <div className="feed-stream" role="tabpanel" aria-label={tabs.find(item => item.id === tab)?.label}>
-        <div className="feed-empty">
-          <Crosshair aria-hidden="true"/>
-          <h2>{tab === 'following' ? 'Você ainda não segue ninguém' : 'Nenhum post por aqui ainda'}</h2>
-          <p>{tab === 'following' ? 'Siga operadores para ver os posts deles nesta aba, em ordem de publicação.' : 'Os posts da comunidade aparecerão aqui assim que forem publicados.'}</p>
-          <button type="button" className="button button--small" onClick={onFindOperators}><Users/> Encontrar operadores</button>
-        </div>
+      <div role="tabpanel" aria-label={tabs.find(item => item.id === tab)?.label}>
+        <FeedList key={tab} tab={tab} onFindOperators={onFindOperators}/>
       </div>
     </div>
   </section>

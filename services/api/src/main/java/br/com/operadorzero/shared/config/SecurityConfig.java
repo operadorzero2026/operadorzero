@@ -85,10 +85,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/oauth2/authorization/google", "/login/oauth2/code/google").permitAll()
                 .requestMatchers("/api/auth/logout", "/api/auth/google/link", "/api/auth/mfa/**").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/community/**", "/api/public/**").permitAll()
+                // Midias do feed: caminhos aleatorios e imutaveis; servidas pela API so em desenvolvimento.
+                .requestMatchers(HttpMethod.GET, "/media/**").permitAll()
                 .requestMatchers("/api/admin/community/**").hasAnyRole("ADMIN", "MODERATOR")
                 .requestMatchers("/api/community/**").authenticated()
                 .requestMatchers("/api/operators/**", "/api/teams/**", "/api/operations/**",
-                    "/api/fields/**", "/api/maps/**", "/api/rankings/**", "/api/performance/**", "/api/me/**").authenticated()
+                    "/api/fields/**", "/api/maps/**", "/api/rankings/**", "/api/performance/**", "/api/me/**", "/api/feed/**").authenticated()
                 .anyRequest().denyAll())
             .httpBasic(httpBasic -> httpBasic.disable())
             .formLogin(form -> form.disable())

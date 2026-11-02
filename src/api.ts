@@ -425,6 +425,12 @@ export const getUnreadNotifications = () => apiRequest<{unread:number}>('/api/me
 export const markNotificationRead = (id:string) => apiRequest<void>(`/api/me/notifications/${encodeURIComponent(id)}/read`, json('POST', {}))
 export const markAllNotificationsRead = () => apiRequest<void>('/api/me/notifications/read-all', json('POST', {}))
 export const getMyAchievements = () => apiRequest<AchievementPage>('/api/me/achievements')
+export type FeedMedia = { id:string; kind:'IMAGE'|'VIDEO'; width:number; height:number; durationMs?:number|null; posterUrl?:string|null; blurPlaceholder?:string|null; hlsUrl?:string|null; mp4Url?:string|null; images:{width:number;url:string}[] }
+export type FeedPost = { id:string; postType:string; author:{username:string;callsign:string;rankCode:string}; caption?:string|null; hashtags:string[]; media:FeedMedia[]; field?:{id:string;name:string}|null; team?:{id:string;name:string;acronym:string}|null; counts:{onTarget:number;eliminated:number;comments:number;shares:number;saves:number;decorations:number}; viewer:{onTarget:boolean;eliminated:boolean;saved:boolean;followsAuthor:boolean;ownPost:boolean}; publishedAt:string }
+export type FeedPage = { items:FeedPost[]; nextCursor?:string|null }
+export const getFeed = (tab:'for-you'|'following', cursor?:string|null) => apiRequest<FeedPage>(`/api/feed?tab=${tab}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`)
+/** Midias vem com caminho relativo (/media/...); em desenvolvimento a API fica em outra origem. */
+export const mediaUrl = (url?:string|null) => !url ? undefined : /^(https?:|data:)/.test(url) ? url : `${getApiBaseUrl()}${url}`
 export type PublicOperation = { id:string; name:string; operationDate:string; startTime:string; city:string; stateCode:string; fieldName:string; modality:string; status:string; participantCount:number; participantLimit?:number|null; registrationPrice?:number|null }
 export const getPublicAgenda = () => apiRequest<{items:PublicOperation[]}>('/api/public/operations')
 export const getOperations = (query = '') => apiRequest<{items:Operation[]}>(`/api/operations?q=${encodeURIComponent(query)}&limit=100`)
