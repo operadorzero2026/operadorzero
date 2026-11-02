@@ -3,6 +3,7 @@ import {
   ExternalLink,
   Map,
   MapPin,
+  Pencil,
   Plus,
   Search,
 } from "lucide-react";
@@ -10,6 +11,8 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import {
   createField,
   createVenueMap,
+  updateField,
+  updateVenueMap,
   getFields,
   getMaps,
   VenueField,
@@ -34,7 +37,28 @@ export function VenuesPage({ mode }: { mode: "fields" | "maps" }) {
     [query, setQuery] = useState(""),
     [showCreate, setShowCreate] = useState(false),
     [feedback, setFeedback] = useState(""),
-    [pending, setPending] = useState(false);
+    [pending, setPending] = useState(false),
+    [editing, setEditing] = useState<VenueField | VenueMap | null>(null);
+  const editingField = mode === "fields" ? (editing as VenueField | null) : null,
+    editingMap = mode === "maps" ? (editing as VenueMap | null) : null;
+  const fieldValue = (key: string) => {
+    const value = editingField ? (editingField as Record<string, unknown>)[key] : undefined;
+    return value === null || value === undefined ? "" : String(value);
+  };
+  const mapValue = (key: string) => {
+    const value = editingMap ? (editingMap as Record<string, unknown>)[key] : undefined;
+    return value === null || value === undefined ? "" : String(value);
+  };
+  const startEdit = (item: VenueField | VenueMap) => {
+    setEditing(item);
+    setShowCreate(true);
+    setFeedback("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const closeForm = () => {
+    setShowCreate(false);
+    setEditing(null);
+  };
   const load = useCallback(async (q = "") => {
     try {
       const fs = (await getFields(q)).items;
@@ -52,7 +76,7 @@ export function VenuesPage({ mode }: { mode: "fields" | "maps" }) {
     const d = new FormData(e.currentTarget);
     setPending(true);
     try {
-      await createField({
+      const field = {
         name: d.get("name"),
         description: d.get("description"),
         phone: d.get("phone"),
@@ -76,9 +100,11 @@ export function VenuesPage({ mode }: { mode: "fields" | "maps" }) {
           ? Number(d.get("averagePrice"))
           : null,
         paymentMethods: d.get("paymentMethods"),
-      });
-      setFeedback("Campo cadastrado.");
-      setShowCreate(false);
+      };
+      if (editingField) await updateField(editingField.id, editingField.version, field);
+      else await createField(field);
+      setFeedback(editingField ? "Campo atualizado." : "Campo cadastrado.");
+      closeForm();
       await load("");
     } catch (err) {
       setFeedback(
@@ -95,7 +121,7 @@ export function VenuesPage({ mode }: { mode: "fields" | "maps" }) {
     const d = new FormData(e.currentTarget);
     setPending(true);
     try {
-      await createVenueMap(String(d.get("fieldId")), {
+      const map = {
         name: d.get("name"),
         terrainType: d.get("terrainType"),
         description: d.get("description"),
@@ -110,9 +136,11 @@ export function VenuesPage({ mode }: { mode: "fields" | "maps" }) {
         routes: d.get("routes"),
         notes: d.get("notes"),
         specificRules: d.get("specificRules"),
-      });
-      setFeedback("Mapa cadastrado.");
-      setShowCreate(false);
+      };
+      if (editingMap) await updateVenueMap(editingMap.id, editingMap.version, map);
+      else await createVenueMap(String(d.get("fieldId")), map);
+      setFeedback(editingMap ? "Mapa atualizado." : "Mapa cadastrado.");
+      closeForm();
       await load("");
     } catch (err) {
       setFeedback(
@@ -150,7 +178,7 @@ export function VenuesPage({ mode }: { mode: "fields" | "maps" }) {
           </div>
           <button
             className="module-primary"
-            onClick={() => setShowCreate(!showCreate)}
+            onClick={() => (showCreate ? closeForm() : setShowCreate(true))}
           >
             <Plus /> Cadastrar {isFields ? "campo" : "mapa"}
           </button>
@@ -176,8 +204,8 @@ export function VenuesPage({ mode }: { mode: "fields" | "maps" }) {
         <section className="module-section">
           <div className="module-section-title">
             <div>
-              <small>NOVO CADASTRO</small>
-              <h2>{isFields ? "Dados do campo" : "Dados do mapa"}</h2>
+              <small>{editing ? "EDIÇÃO" : "NOVO CADASTRO"}</small>
+              <h2>{isFields ? "Dados do campo" : "Dados do mapa"}{editing ? ` · ${editing.name}` : ""}</h2>
               <p>
                 Fotos e plantas serão habilitadas após a implantação do
                 armazenamento seguro.
@@ -186,63 +214,63 @@ export function VenuesPage({ mode }: { mode: "fields" | "maps" }) {
             {isFields ? <Building2 /> : <Map />}
           </div>
           {isFields ? (
-            <form className="module-form" onSubmit={submitField}>
+            <form className="module-form" onSubmit={submitField} key={editing?.id ?? "new-field"}>
               <div className="form-grid">
                 <label>
                   <span>Nome</span>
-                  <input name="name" maxLength={100} required />
+                  <input name="name" defaultValue={fieldValue("name")} maxLength={100} required />
                 </label>
-                <BrazilLocationFields namePrefix="field" />
+                <BrazilLocationFields namePrefix="field" defaultState={editingField?.stateCode ?? ""} defaultCity={editingField?.city ?? ""} />
                 <label>
                   <span>Endereço (opcional)</span>
-                  <input name="addressLine" maxLength={160} />
+                  <input name="addressLine" defaultValue={fieldValue("addressLine")} maxLength={160} />
                 </label>
                 <label>
                   <span>Número</span>
-                  <input name="addressNumber" maxLength={20} />
+                  <input name="addressNumber" defaultValue={fieldValue("addressNumber")} maxLength={20} />
                 </label>
                 <label>
                   <span>Bairro</span>
-                  <input name="district" maxLength={80} />
+                  <input name="district" defaultValue={fieldValue("district")} maxLength={80} />
                 </label>
                 <label>
                   <span>Complemento</span>
-                  <input name="complement" maxLength={80} />
+                  <input name="complement" defaultValue={fieldValue("complement")} maxLength={80} />
                 </label>
                 <label>
                   <span>CEP</span>
-                  <input name="postalCode" maxLength={9} />
+                  <input name="postalCode" defaultValue={fieldValue("postalCode")} maxLength={9} />
                 </label>
                 <label>
                   <span>Região</span>
-                  <input name="region" maxLength={40} />
+                  <input name="region" defaultValue={fieldValue("region")} maxLength={40} />
                 </label>
                 <label className="form-wide">
                   <span>Link da localização GPS (opcional)</span>
                   <input
                     type="url"
-                    name="locationUrl"
+                    name="locationUrl" defaultValue={fieldValue("locationUrl")}
                     maxLength={500}
                     placeholder="https://maps.app.goo.gl/..."
                   />
                 </label>
                 <label>
                   <span>Telefone</span>
-                  <input name="phone" maxLength={24} />
+                  <input name="phone" defaultValue={fieldValue("phone")} maxLength={24} />
                 </label>
                 <label>
                   <span>E-mail</span>
-                  <input type="email" name="contactEmail" maxLength={254} />
+                  <input type="email" name="contactEmail" defaultValue={fieldValue("contactEmail")} maxLength={254} />
                 </label>
                 <label>
                   <span>Capacidade</span>
-                  <input type="number" name="maximumCapacity" min={1} />
+                  <input type="number" name="maximumCapacity" defaultValue={fieldValue("maximumCapacity")} min={1} />
                 </label>
                 <label>
                   <span>Valor médio (R$)</span>
                   <input
                     type="number"
-                    name="averagePrice"
+                    name="averagePrice" defaultValue={fieldValue("averagePrice")}
                     min={0}
                     step="0.01"
                   />
@@ -250,34 +278,34 @@ export function VenuesPage({ mode }: { mode: "fields" | "maps" }) {
               </div>
               <label>
                 <span>Descrição</span>
-                <textarea name="description" maxLength={1000} />
+                <textarea name="description" defaultValue={fieldValue("description")} maxLength={1000} />
               </label>
               <label>
                 <span>Horários</span>
-                <textarea name="openingHours" maxLength={1000} />
+                <textarea name="openingHours" defaultValue={fieldValue("openingHours")} maxLength={1000} />
               </label>
               <label>
                 <span>Estrutura disponível</span>
-                <textarea name="amenities" maxLength={1000} />
+                <textarea name="amenities" defaultValue={fieldValue("amenities")} maxLength={1000} />
               </label>
               <label>
                 <span>Regras</span>
-                <textarea name="rules" maxLength={4000} />
+                <textarea name="rules" defaultValue={fieldValue("rules")} maxLength={4000} />
               </label>
               <label>
                 <span>Formas de pagamento (informativo)</span>
-                <input name="paymentMethods" maxLength={500} />
+                <input name="paymentMethods" defaultValue={fieldValue("paymentMethods")} maxLength={500} />
               </label>
               <button className="module-primary" disabled={pending}>
-                Cadastrar campo
+                {editingField ? "Salvar alterações" : "Cadastrar campo"}
               </button>
             </form>
           ) : (
-            <form className="module-form" onSubmit={submitMap}>
+            <form className="module-form" onSubmit={submitMap} key={editing?.id ?? "new-map"}>
               <div className="form-grid">
                 <label>
                   <span>Campo</span>
-                  <select name="fieldId" required>
+                  <select name="fieldId" required disabled={Boolean(editingMap)} defaultValue={editingMap?.fieldId ?? ""}>
                     <option value="">Selecione</option>
                     {fields
                       .filter((f) => f.managedByCurrentUser)
@@ -290,11 +318,11 @@ export function VenuesPage({ mode }: { mode: "fields" | "maps" }) {
                 </label>
                 <label>
                   <span>Nome</span>
-                  <input name="name" maxLength={100} required />
+                  <input name="name" defaultValue={mapValue("name")} maxLength={100} required />
                 </label>
                 <label>
                   <span>Terreno</span>
-                  <select name="terrainType">
+                  <select name="terrainType" defaultValue={mapValue("terrainType") || "CQB"}>
                     {Object.entries(terrains).map(([v, l]) => (
                       <option value={v} key={v}>
                         {l}
@@ -304,16 +332,16 @@ export function VenuesPage({ mode }: { mode: "fields" | "maps" }) {
                 </label>
                 <label>
                   <span>Tamanho aproximado</span>
-                  <input name="approximateSize" maxLength={80} />
+                  <input name="approximateSize" defaultValue={mapValue("approximateSize")} maxLength={80} />
                 </label>
                 <label>
                   <span>Capacidade</span>
-                  <input type="number" name="capacity" min={1} />
+                  <input type="number" name="capacity" defaultValue={mapValue("capacity")} min={1} />
                 </label>
               </div>
               <label>
                 <span>Descrição</span>
-                <textarea name="description" maxLength={1000} />
+                <textarea name="description" defaultValue={mapValue("description")} maxLength={1000} />
               </label>
               {[
                 ["respawnAreas", "Áreas de respawn"],
@@ -330,12 +358,13 @@ export function VenuesPage({ mode }: { mode: "fields" | "maps" }) {
                   <span>{label}</span>
                   <textarea
                     name={name}
+                    defaultValue={mapValue(name)}
                     maxLength={name === "specificRules" ? 2000 : 1000}
                   />
                 </label>
               ))}
               <button className="module-primary" disabled={pending}>
-                Cadastrar mapa
+                {editingMap ? "Salvar alterações" : "Cadastrar mapa"}
               </button>
             </form>
           )}
@@ -383,6 +412,11 @@ export function VenuesPage({ mode }: { mode: "fields" | "maps" }) {
                     {f.maximumCapacity && (
                       <strong>Capacidade: {f.maximumCapacity}</strong>
                     )}
+                    {f.managedByCurrentUser && (
+                      <button type="button" className="module-secondary" onClick={() => startEdit(f)}>
+                        <Pencil /> Editar
+                      </button>
+                    )}
                   </article>
                 ))
               : maps.map((m) => (
@@ -394,6 +428,11 @@ export function VenuesPage({ mode }: { mode: "fields" | "maps" }) {
                     </p>
                     <p>{m.description || "Sem descrição cadastrada."}</p>
                     {m.capacity && <strong>Capacidade: {m.capacity}</strong>}
+                    {m.managedByCurrentUser && (
+                      <button type="button" className="module-secondary" onClick={() => startEdit(m)}>
+                        <Pencil /> Editar
+                      </button>
+                    )}
                   </article>
                 ))}
           </div>

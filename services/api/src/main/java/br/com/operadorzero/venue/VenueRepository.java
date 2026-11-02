@@ -41,6 +41,31 @@ public class VenueRepository {
           :number,:complement,:district,:city,:state,:postal,:region,:locationUrl,:rules,:hours,:amenities,:capacity,:price,:payments,:now,:now)
           RETURNING public_id""", fieldParams(userId,r,city,state,now), UUID.class);
     }
+    /** Atualiza somente se o usuario for o responsavel e a versao conferir; devolve as linhas alteradas. */
+    public int updateField(UUID id, long userId, long version, SaveFieldRequest r, String city, String state, Instant now) {
+        return jdbc.update("""
+          UPDATE airsoft_field SET name=:name,description=:description,phone=:phone,contact_email=:email,address_line=:address,
+          address_number=:number,complement=:complement,district=:district,city=:city,state_code=:state,postal_code=:postal,
+          region=:region,location_url=:locationUrl,rules=:rules,opening_hours=:hours,amenities=:amenities,maximum_capacity=:capacity,
+          average_price=:price,payment_methods=:payments,updated_at=:now,version=version+1
+          WHERE public_id=:id AND responsible_user_id=:userId AND status='ACTIVE' AND version=:version""",
+          fieldParams(userId,r,city,state,now).addValue("id",id).addValue("version",version));
+    }
+    public Optional<MapResponse> map(UUID id, long userId) {
+        return jdbc.query("""
+          SELECT m.*,f.public_id field_public_id,f.name field_name,f.city,f.state_code,f.responsible_user_id
+          FROM field_map m JOIN airsoft_field f ON f.id=m.field_id WHERE m.public_id=:id AND m.status='ACTIVE' AND f.status='ACTIVE'""",
+          Map.of("id",id),(r,i)->map(r,userId)).stream().findFirst();
+    }
+    public int updateMap(UUID id, long userId, long version, SaveMapRequest r, String terrain, Instant now) {
+        return jdbc.update("""
+          UPDATE field_map m SET name=:name,terrain_type=:terrain,description=:description,approximate_size=:size,capacity=:capacity,
+          respawn_areas=:respawn,bases=:bases,objectives=:objectives,strategic_points=:strategic,neutral_areas=:neutral,
+          prohibited_areas=:prohibited,routes=:routes,notes=:notes,specific_rules=:rules,updated_at=:now,version=m.version+1
+          FROM airsoft_field f WHERE f.id=m.field_id AND m.public_id=:id AND m.status='ACTIVE' AND m.version=:version
+          AND f.responsible_user_id=:userId AND f.status='ACTIVE'""",
+          mapParams(r,terrain,now).addValue("id",id).addValue("userId",userId).addValue("version",version));
+    }
     public List<MapResponse> maps(long userId, UUID fieldId, String terrain, String q, int limit) {
         return jdbc.query("""
           SELECT m.*,f.public_id field_public_id,f.name field_name,f.city,f.state_code,f.responsible_user_id
@@ -57,13 +82,16 @@ public class VenueRepository {
           SELECT id,:name,:terrain,:description,:size,:capacity,:respawn,:bases,:objectives,:strategic,:neutral,
           :prohibited,:routes,:notes,:rules,:now,:now FROM airsoft_field
           WHERE public_id=:fieldId AND responsible_user_id=:userId AND status='ACTIVE' RETURNING public_id""",
-          new MapSqlParameterSource().addValue("fieldId",fieldId).addValue("userId",userId).addValue("name",norm(r.name()))
+          mapParams(r,terrain,now).addValue("fieldId",fieldId).addValue("userId",userId),UUID.class);
+    }
+    private MapSqlParameterSource mapParams(SaveMapRequest r, String terrain, Instant now) {
+        return new MapSqlParameterSource().addValue("name",norm(r.name()))
           .addValue("terrain",terrain).addValue("description",nullable(r.description())).addValue("size",nullable(r.approximateSize()))
           .addValue("capacity",r.capacity()).addValue("respawn",nullable(r.respawnAreas())).addValue("bases",nullable(r.bases()))
           .addValue("objectives",nullable(r.objectives())).addValue("strategic",nullable(r.strategicPoints()))
           .addValue("neutral",nullable(r.neutralAreas())).addValue("prohibited",nullable(r.prohibitedAreas()))
           .addValue("routes",nullable(r.routes())).addValue("notes",nullable(r.notes())).addValue("rules",nullable(r.specificRules()))
-          .addValue("now",Timestamp.from(now)),UUID.class);
+          .addValue("now",Timestamp.from(now));
     }
     private MapSqlParameterSource fieldParams(long userId, SaveFieldRequest r, String city, String state, Instant now) {
         return new MapSqlParameterSource().addValue("userId",userId).addValue("name",norm(r.name())).addValue("description",nullable(r.description()))

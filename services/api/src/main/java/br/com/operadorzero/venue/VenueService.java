@@ -31,6 +31,22 @@ public class VenueService {
     public FieldListResponse fields(AuthenticatedUser user,String q,String city,String state,int limit){return new FieldListResponse(repository.fields(user.internalId(),norm(q),norm(city),norm(state),limit));}
     public FieldResponse field(AuthenticatedUser user,UUID id){return repository.field(id,user.internalId()).orElseThrow(()->BusinessException.notFound("Campo não encontrado."));}
     @Transactional public FieldResponse createField(AuthenticatedUser user,SaveFieldRequest request){Location location=locations.validate(request.stateCode(),request.city());Instant now=clock.instant();UUID id=repository.createField(user.internalId(),request,location.city(),location.stateCode(),now);audit.record(user.internalId(),"FIELD_CREATED","FIELD",id,null,now);return field(user,id);}
+    @Transactional public FieldResponse updateField(AuthenticatedUser user,UUID id,long version,SaveFieldRequest request){
+        FieldResponse current=field(user,id);
+        if(!current.managedByCurrentUser())throw BusinessException.forbidden("Somente o responsável pode editar este campo.");
+        Location location=locations.validate(request.stateCode(),request.city());Instant now=clock.instant();
+        if(repository.updateField(id,user.internalId(),version,request,location.city(),location.stateCode(),now)!=1)throw staleVersion();
+        audit.record(user.internalId(),"FIELD_UPDATED","FIELD",id,null,now);return field(user,id);}
+    @Transactional public VenueDtos.MapResponse updateMap(AuthenticatedUser user,UUID id,long version,SaveMapRequest request){
+        VenueDtos.MapResponse current=repository.map(id,user.internalId()).orElseThrow(()->BusinessException.notFound("Mapa não encontrado."));
+        if(!current.managedByCurrentUser())throw BusinessException.forbidden("Somente o responsável pelo campo pode editar este mapa.");
+        String terrain=norm(request.terrainType()).toUpperCase(Locale.ROOT);if(!TERRAINS.contains(terrain))throw BusinessException.badRequest("INVALID_TERRAIN","Selecione um terreno válido.");
+        Instant now=clock.instant();
+        try{if(repository.updateMap(id,user.internalId(),version,request,terrain,now)!=1)throw staleVersion();}
+        catch(DataIntegrityViolationException exception){throw BusinessException.conflict("MAP_CONFLICT","Já existe um mapa ativo com este nome no campo.");}
+        audit.record(user.internalId(),"FIELD_MAP_UPDATED","FIELD_MAP",id,null,now);
+        return repository.map(id,user.internalId()).orElseThrow(()->BusinessException.notFound("Mapa não encontrado."));}
+    private BusinessException staleVersion(){return BusinessException.conflict("STALE_VERSION","Este cadastro foi alterado em outra sessão. Recarregue e tente novamente.");}
     public MapListResponse maps(AuthenticatedUser user,UUID fieldId,String terrain,String q,int limit){String normalized=norm(terrain).toUpperCase(Locale.ROOT);if(!normalized.isEmpty()&&!TERRAINS.contains(normalized))throw BusinessException.badRequest("INVALID_TERRAIN","Selecione um terreno válido.");return new MapListResponse(repository.maps(user.internalId(),fieldId,normalized,norm(q),limit));}
     @Transactional public VenueDtos.MapResponse createMap(AuthenticatedUser user,UUID fieldId,SaveMapRequest request){String terrain=norm(request.terrainType()).toUpperCase(Locale.ROOT);if(!TERRAINS.contains(terrain))throw BusinessException.badRequest("INVALID_TERRAIN","Selecione um terreno válido.");Instant now=clock.instant();try{UUID id=repository.createMap(fieldId,user.internalId(),request,terrain,now);audit.record(user.internalId(),"FIELD_MAP_CREATED","FIELD_MAP",id,null,now);return repository.maps(user.internalId(),fieldId,"",norm(request.name()),10).stream().filter(m->m.id().equals(id)).findFirst().orElseThrow(()->BusinessException.notFound("Mapa não encontrado."));}catch(DataIntegrityViolationException exception){throw BusinessException.conflict("MAP_CONFLICT","Já existe um mapa ativo com este nome no campo.");}catch(EmptyResultDataAccessException exception){throw BusinessException.notFound("Campo não encontrado ou não administrado por você.");}}
     private String norm(String value){return value==null?"":value.trim().replaceAll("\\s+"," ");}
