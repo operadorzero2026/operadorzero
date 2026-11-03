@@ -1,5 +1,14 @@
 # Histórico de alterações
 
+## 2026-11-02 - Correção: envio de Recon e posts falhava com "Load failed"
+
+### Arquivos alterados
+- Deploy: `deploy/vps/nginx.conf`, `deploy/vps/host-nginx.conf`.
+
+### O que foi feito
+- O início do envio (`POST /api/media/uploads`, sem barra final) caía no bloco `location /api/media/uploads/` e o nginx respondia 301 para `http://operadorzero.com.br:8080/api/media/uploads/` (porta interna). O navegador não segue esse endereço e mostrava "Load failed" ao publicar Recon ou post com mídia.
+- Novo bloco exato `location = /api/media/uploads` repassa direto para a API. Os pedaços (`/uploads/{id}/...`) continuam no bloco com limite de 9 MB.
+
 ## 2026-11-02 - Busca de operadores: adicionar amigo e convidar para equipe e jogos
 
 ### Arquivos alterados
