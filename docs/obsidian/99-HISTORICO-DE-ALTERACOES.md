@@ -1,5 +1,25 @@
 # Histórico de alterações
 
+## 2026-11-03 - Operações, Etapa F: pagamento da inscrição (Pix pelo Mercado Pago)
+
+### Arquivos alterados
+- Banco: `V36__operation_payments.sql` (aditiva: tabelas `operation_payment` e `operation_payment_event`; um Pix pendente por inscrição; nada é apagado).
+- Servidor: pacote `payment` (novo): `PaymentService`, `PaymentRepository`, `PaymentController`, `MercadoPagoClient`, `MercadoPagoProperties`, `WebhookSignature`, `PaymentServiceTest`. `SecurityConfig` libera só o webhook (sem CSRF; só tem efeito com assinatura válida). `application.yml`, `deploy/vps/compose.yml`, `.env.example` e `README` recebem `MERCADOPAGO_ACCESS_TOKEN` e `MERCADOPAGO_WEBHOOK_SECRET`.
+- Site: `src/operation/OperationPayment.tsx` e `operation-payment.css` (novos); cartão de pagamento e painel "Pagamentos" em `OperationRegistrationPanel.tsx`; `api.ts`.
+
+### O que foi feito
+- Status financeiro separado da inscrição: estar inscrito ou aprovado não é estar pago. Situações: não pago, Pix aguardando, pago, recusado, cancelado, vencido e estornado.
+- Jogador aprovado paga por Pix no app: QR Code, copia e cola, validade de 30 min e confirmação automática na tela. Pedido em análise ou na lista de espera ainda não paga. O segundo clique reaproveita o mesmo Pix, então não há cobrança dupla.
+- O status vem sempre da consulta ao Mercado Pago, nunca do corpo do webhook. O webhook precisa de assinatura válida (HMAC da assinatura secreta) e o valor e a referência são conferidos. Se o webhook falhar, a tela consulta o Mercado Pago ao abrir (no máximo a cada 15 s).
+- Documentos de operação paga só são liberados com pagamento confirmado (`payment_confirmed_at`, que antes nunca era gravado).
+- Organizador: painel "Pagamentos" com resumo e situação de cada inscrito, confirmação manual de pagamento recebido por fora (com observação) e registro de estorno. Estornos não são automáticos: o organizador devolve o dinheiro e registra.
+- Cancelar a inscrição não apaga registros financeiros. Cada mudança fica no histórico (`operation_payment_event`) e na auditoria.
+- Sem credenciais, o Pix fica desligado e o organizador confirma os pagamentos manualmente.
+- O dinheiro do Pix cai na conta Mercado Pago dona das credenciais (uma conta para a plataforma). Repasse por organizador exigiria o modelo de marketplace do Mercado Pago, que não foi implementado.
+
+### Testes
+- 247 testes do servidor passando (23 novos de pagamento). Teste local com um Mercado Pago simulado: 25 verificações (bloqueio antes da aprovação, Pix sem duplicar, webhook com assinatura errada recusado, aprovação, estorno, consulta sem webhook, confirmação manual, permissões, histórico). No navegador, em tela de celular: Pix gerado e confirmação automática na tela do jogador. O painel do organizador foi testado só pela API.
+
 ## 2026-11-03 - Operações, Etapa E: cadastro e login mais claros
 
 ### Arquivos alterados

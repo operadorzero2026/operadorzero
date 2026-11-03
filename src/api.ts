@@ -580,6 +580,17 @@ export const setTeamChangeRequests = (id:string, enabled:boolean) => apiRequest<
 export const requestTeamChange = (id:string, toTeamId:string) => apiRequest<{message:string}>(`${op(id)}/team-changes`, json('POST', { toTeamId }))
 export const cancelTeamChange = (id:string) => apiRequest<{message:string}>(`${op(id)}/team-changes/mine`, { method: 'DELETE' })
 export const decideTeamChange = (id:string, requestId:string, action:'APPROVE'|'REJECT') => apiRequest<{message:string}>(`${op(id)}/team-changes/${encodeURIComponent(requestId)}/decision`, json('POST', { action }))
+// ---- Pagamento da inscricao (Pix pelo Mercado Pago ou confirmacao do organizador) ----
+export type PaymentStatus = 'FREE'|'NOT_REGISTERED'|'UNPAID'|'PENDING'|'CONFIRMED'|'REJECTED'|'CANCELLED'|'EXPIRED'|'REFUNDED'
+export type PixCharge = { id:string; amount:number; code:string; qrBase64?:string|null; ticketUrl?:string|null; expiresAt?:string|null }
+export type MyPayment = { status:PaymentStatus; amount:number; onlineEnabled:boolean; canPay:boolean; reason?:string|null; confirmedAt?:string|null; pix?:PixCharge|null }
+export type ManagedPaymentRow = { operatorId:string; callsign:string; participantStatus:string; paymentStatus:'UNPAID'|'PENDING'|'CONFIRMED'|'CANCELLED'|'REFUNDED'; method?:'PIX'|'MANUAL'|null; amount?:number|null; updatedAt?:string|null; note?:string|null }
+export type ManagedPayments = { price:number; onlineEnabled:boolean; summary:{ unpaid:number; pending:number; confirmed:number; cancelled:number; refunded:number; confirmedTotal:number }; rows:ManagedPaymentRow[] }
+export const getMyPayment = (id:string) => apiRequest<MyPayment>(`${op(id)}/payment`)
+export const createPixPayment = (id:string) => apiRequest<MyPayment>(`${op(id)}/payment/pix`, json('POST', {}))
+export const getManagedPayments = (id:string) => apiRequest<ManagedPayments>(`${op(id)}/payments`)
+export const confirmPaymentManually = (id:string, operatorId:string, note:string) => apiRequest<{message:string}>(`${op(id)}/participants/${encodeURIComponent(operatorId)}/payment/confirm`, json('POST', { note }))
+export const registerPaymentRefund = (id:string, operatorId:string, note:string) => apiRequest<{message:string}>(`${op(id)}/participants/${encodeURIComponent(operatorId)}/payment/refund`, json('POST', { note }))
 export const cancelOperationParticipation = (id:string) => apiRequest<{message:string}>(`/api/operations/${encodeURIComponent(id)}/participation/cancel`,json('POST',{}))
 export const removeOperationCover=(id:string)=>apiRequest<{message:string}>(`/api/operations/${encodeURIComponent(id)}/cover`,json('DELETE'))
 export const getOperationStructure=(id:string)=>apiRequest<OperationStructure>(`/api/operations/${encodeURIComponent(id)}/structure`)

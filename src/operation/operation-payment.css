@@ -1,0 +1,32 @@
+/* Pagamento da inscricao (jogador) e painel financeiro (organizador). */
+.op-payment{display:grid;gap:10px;padding:12px;border:1px solid #ffffff1f;border-radius:10px;background:#0f120c}
+.op-payment-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;font-size:14px}
+.op-payment-head>span{display:inline-flex;align-items:center;gap:6px}
+.op-payment-head svg,.op-payment svg,.op-payments-admin svg{width:16px;height:16px;flex:none}
+.op-payment-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;font-size:12px;font-style:normal;white-space:nowrap}
+.op-payment-tag--ok{background:#1d2615;color:#c9cb73}
+.op-payment-tag--warn{background:#2b2512;color:#e3c35a}
+.op-payment-tag--bad{background:#2a1612;color:#ff9d84}
+.op-payment-muted{margin:0;color:#8f9488;font-size:13px;line-height:1.45}
+.op-payment-error{margin:0;color:#ff8a7e;font-size:13px}
+.op-payment-pay{justify-self:start;display:inline-flex;align-items:center;gap:7px}
+.op-payment-pix{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}
+.op-payment-pix img{width:184px;height:184px;padding:8px;border-radius:10px;background:#fff;image-rendering:pixelated}
+.op-payment-code{display:grid;gap:8px;flex:1 1 220px;min-width:0}
+.op-payment-code label span{display:block;margin-bottom:5px;color:#8f9488;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.op-payment-code textarea{width:100%;box-sizing:border-box;resize:none;padding:8px;border:1px solid #ffffff2a;border-radius:8px;background:#0b0d09;color:#dfe0d4;font:12px/1.4 ui-monospace,monospace;word-break:break-all}
+.op-payment-code small{color:#8f9488;font-size:12px;line-height:1.4}
+.op-payment-code button{display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.op-payments-admin{display:grid;gap:10px;margin-top:6px;padding:10px 12px;border:1px solid #ffffff1f;border-radius:10px}
+.op-payments-admin summary{display:flex;flex-wrap:wrap;align-items:center;gap:6px;cursor:pointer;font-weight:700}
+.op-payments-admin summary small{color:#8f9488;font-weight:400;font-size:12px}
+.op-payments-admin[open] summary{margin-bottom:8px}
+.op-payments-summary{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none;font-size:12px;color:#b6b9ae}
+.op-payments-summary li{padding:5px 9px;border-radius:8px;background:#14170f}
+.op-payments-summary b{color:#f2f1e9}
+.op-payments-list{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.op-payments-list li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:center;padding:8px 10px;border-radius:8px;background:#11140d}
+.op-payments-list li>span{display:grid;min-width:0}
+.op-payments-list li>span small{color:#8f9488;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.op-payments-list li>button{grid-column:1/-1;justify-self:start;display:inline-flex;align-items:center;gap:6px}
+@media(min-width:640px){.op-payments-list li{grid-template-columns:minmax(0,1fr) auto auto}.op-payments-list li>button{grid-column:auto}}

@@ -5,6 +5,7 @@ import {
   decideTeamChange, getOperationStructure, getRegistration, removeParticipant, reopenRegistration, requestOperationParticipation, requestTeamChange, setTeamChangeRequests,
   updateMyRole, type OperationStructure, type ParticipantAction, type PlayerRole, type PrimaryRole, type RegistrationOverview, type RegistrationParticipant,
 } from '../api'
+import { MyOperationPayment, OperationPaymentsAdmin } from './OperationPayment'
 import { RoleChooser } from './RoleChooser'
 import { DEFAULT_ROLE, PRIMARY_ROLES, primaryLabel } from './roles'
 import './registration.css'
@@ -126,6 +127,7 @@ export function OperationRegistrationPanel({ operationId, structure, onChanged }
 
     {active && data.mine && <div className="registration-mine">
       <p><Check/> <b>{STATUS_LABELS[data.mine.status]}</b>{data.mine.teamName && <> · {data.mine.teamName}</>} · {roleLine(data.mine)}</p>
+      <MyOperationPayment key={data.mine.status} operationId={operationId} onPaid={onChanged}/>
       {editingRole ? <div className="registration-edit">
         <RoleChooser value={role} onChange={setRole} title="Alterar minha função"/>
         <div className="registration-row">
@@ -164,6 +166,7 @@ export function OperationRegistrationPanel({ operationId, structure, onChanged }
           : data.closedReason === 'MANUAL' && <button type="button" className="module-secondary" disabled={pending === 'reopen'} onClick={() => void run('reopen', () => reopenRegistration(operationId))}><LockOpen/> Reabrir inscrições</button>}
         {teams && <label className="registration-switch"><input type="checkbox" checked={data.teamChangeRequestsEnabled} onChange={event => void run('switch', () => setTeamChangeRequests(operationId, event.target.checked))}/> Aceitar pedidos de troca de equipe</label>}
       </div>
+      <OperationPaymentsAdmin operationId={operationId} refreshKey={data.participants.length} onChanged={onChanged}/>
       {teams && data.changeRequests.length > 0 && <div className="registration-requests">
         <h4>Solicitações de troca</h4>
         <ul>{data.changeRequests.map(item => <li key={item.id}>

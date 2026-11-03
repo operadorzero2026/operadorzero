@@ -29,6 +29,7 @@ Preencha `deploy/vps/.env`:
 
 - `DATABASE_PASSWORD`, `REDIS_PASSWORD` e `AUTH_HASH_KEY`: gere cada um com `openssl rand -base64 48`. Não troque `AUTH_HASH_KEY` depois, pois isso derruba todas as sessões.
 - `MAIL_FROM` e `RESEND_API_KEY`: os mesmos valores configurados hoje no Render (painel do serviço → Environment).
+- `MERCADOPAGO_ACCESS_TOKEN` e `MERCADOPAGO_WEBHOOK_SECRET` (opcionais): ligam o Pix das inscrições. No painel do Mercado Pago (Suas integrações → aplicação → Credenciais de produção) copie o Access Token; em Webhooks, cadastre `https://operadorzero.com.br/api/payments/mercadopago/webhook` com o evento **Pagamentos** e copie a assinatura secreta. Sem eles, o organizador confirma pagamentos manualmente. Depois de preencher, rode o passo 2 de novo.
 
 ## 2. Subir
 
