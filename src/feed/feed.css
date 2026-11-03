@@ -303,3 +303,6 @@
   .feed-actions .feed-author-avatar{width:clamp(36px,5.6svh,46px);height:clamp(36px,5.6svh,46px);margin-bottom:clamp(6px,1.4svh,12px);font-size:clamp(16px,2.6svh,20px)}
   .feed-follow{width:18px;height:18px;bottom:-8px}
 }
+/* Com a criacao de post aberta, o aviso de envio desce para nao cobrir o cabecalho (Voltar/Publicar). */
+body:has(.create-flow) .upload-status{top:auto;bottom:calc(12px + env(safe-area-inset-bottom))}
+body:has(.upload-status) .create-flow{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
