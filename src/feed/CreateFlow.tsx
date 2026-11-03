@@ -17,7 +17,7 @@ export type CreateMode = 'POST' | 'RECON'
 
 type Picked = { file: File; kind: 'IMAGE' | 'VIDEO'; url: string; size: Box; durationS?: number }
 
-async function inspect(file: File, mode: CreateMode): Promise<Picked> {
+export async function inspect(file: File, mode: CreateMode): Promise<Picked> {
   const kind = file.type.startsWith('video/') ? 'VIDEO' : file.type.startsWith('image/') || /\.(heic|heif)$/i.test(file.name) ? 'IMAGE' : null
   if (!kind) throw new Error('Escolha uma foto ou um vídeo.')
   if (file.size > LIMITS[kind]) throw new Error(kind === 'VIDEO' ? 'O vídeo pode ter no máximo 300 MB.' : 'A foto pode ter no máximo 20 MB.')

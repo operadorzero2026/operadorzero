@@ -6,10 +6,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -24,6 +26,16 @@ public class ReconRepository {
           WHERE (ob.blocker_user_id = :viewer AND ob.blocked_user_id = r.author_user_id)
              OR (ob.blocker_user_id = r.author_user_id AND ob.blocked_user_id = :viewer))
         """;
+    /** Um Recon especifico (link da notificacao): tambem quem foi marcado nele, sem bloqueio com o autor. */
+    private static final String VISIBLE_SINGLE = """
+        (r.author_user_id = :viewer
+          OR EXISTS (SELECT 1 FROM operator_follow f WHERE f.follower_user_id = :viewer AND f.followed_user_id = r.author_user_id)
+          OR EXISTS (SELECT 1 FROM recon_mention m WHERE m.recon_id = r.id AND m.mentioned_user_id = :viewer))
+        AND NOT EXISTS (SELECT 1 FROM operator_block ob
+          WHERE (ob.blocker_user_id = :viewer AND ob.blocked_user_id = r.author_user_id)
+             OR (ob.blocker_user_id = r.author_user_id AND ob.blocked_user_id = :viewer))
+        """;
+    private static final String RECON_COLUMNS = "r.id, r.public_id, r.overlay_text, r.published_at, r.expires_at, r.elements::text elements, r.audio_muted, ";
     private static final String MEDIA_COLUMNS = """
         a.public_id media_public_id, a.kind, a.width, a.height, a.duration_ms, a.storage_prefix,
         a.renditions::text renditions, a.poster_key, a.blur_placeholder
@@ -35,20 +47,29 @@ public class ReconRepository {
         this.jdbc = jdbc;
     }
 
-    public record MediaForRecon(long id, String purpose, String status, boolean used) {}
-    public record ReconRow(long id, UUID publicId, String overlayText, Instant publishedAt, Instant expiresAt, boolean seen, MediaRow media) {}
+    /** existingRecon: Recon ja criado com esta midia pelo mesmo autor (repeticao da mesma publicacao). */
+    public record MediaForRecon(long id, String purpose, String status, boolean used, UUID existingRecon, String existingStatus) {
+        public MediaForRecon(long id, String purpose, String status, boolean used) {
+            this(id, purpose, status, used, null, null);
+        }
+    }
+    public record ReconRow(long id, UUID publicId, String overlayText, Instant publishedAt, Instant expiresAt, boolean seen,
+                           String elementsJson, boolean audioMuted, MediaRow media) {}
+    public record MentionTarget(long userId, UUID operatorId, String username) {}
+    public record SingleRecon(long authorId, ReconRow row) {}
     public record Author(long id, String username, String callsign, String rankCode) {}
     public record ReconState(long id, UUID publicId, long authorUserId, String status, Instant expiresAt) {}
     public record ExpiredMedia(long assetId, String storagePrefix) {}
 
     public Optional<MediaForRecon> lockMedia(UUID mediaId, long ownerUserId) {
         return jdbc.query("""
-            SELECT a.id, a.purpose, a.status,
-                   EXISTS (SELECT 1 FROM recon r WHERE r.media_asset_id = a.id) used
-            FROM media_asset a WHERE a.public_id = :mediaId AND a.owner_user_id = :userId
-            FOR UPDATE
+            SELECT a.id, a.purpose, a.status, r.public_id recon_id, r.status recon_status
+            FROM media_asset a LEFT JOIN recon r ON r.media_asset_id = a.id
+            WHERE a.public_id = :mediaId AND a.owner_user_id = :userId
+            FOR UPDATE OF a
             """, Map.of("mediaId", mediaId, "userId", ownerUserId),
-            (r, i) -> new MediaForRecon(r.getLong("id"), r.getString("purpose"), r.getString("status"), r.getBoolean("used")))
+            (r, i) -> new MediaForRecon(r.getLong("id"), r.getString("purpose"), r.getString("status"), r.getObject("recon_id") != null,
+                r.getObject("recon_id", UUID.class), r.getString("recon_status")))
             .stream().findFirst();
     }
 
@@ -70,6 +91,82 @@ public class ReconRepository {
             WHERE media_asset_id = :media AND status = 'PROCESSING'
             RETURNING id, public_id, author_user_id, status, expires_at
             """, Map.of("media", mediaId, "now", Timestamp.from(now)), (r, i) -> state(r));
+    }
+
+    public void saveComposition(long reconId, String elementsJson, boolean audioMuted, Long autoDossierId) {
+        jdbc.update("UPDATE recon SET elements = CAST(:elements AS jsonb), audio_muted = :muted, auto_dossier_id = :dossier WHERE id = :id",
+            new MapSqlParameterSource().addValue("id", reconId).addValue("elements", elementsJson).addValue("muted", audioMuted)
+                .addValue("dossier", autoDossierId));
+    }
+
+    /** Operadores que podem ser marcados pelo autor: ativos, que nao sao ele mesmo e sem bloqueio nos dois sentidos. */
+    public List<MentionTarget> mentionTargets(List<String> usernames, long authorUserId) {
+        if (usernames.isEmpty()) return List.of();
+        return jdbc.query("""
+            SELECT u.id, p.public_id, u.username FROM app_user u JOIN operator_profile p ON p.user_id = u.id
+            WHERE lower(u.username) IN (:usernames) AND u.status = 'ACTIVE' AND u.id <> :author
+              AND NOT EXISTS (SELECT 1 FROM operator_block ob
+                  WHERE (ob.blocker_user_id = :author AND ob.blocked_user_id = u.id)
+                     OR (ob.blocker_user_id = u.id AND ob.blocked_user_id = :author))
+            """, Map.of("usernames", usernames, "author", authorUserId),
+            (r, i) -> new MentionTarget(r.getLong(1), r.getObject(2, UUID.class), r.getString(3)));
+    }
+
+    public void insertMentions(long reconId, List<Long> userIds, Instant now) {
+        for (long userId : userIds) {
+            jdbc.update("""
+                INSERT INTO recon_mention(recon_id, mentioned_user_id, created_at) VALUES (:recon, :user, :now) ON CONFLICT DO NOTHING
+                """, Map.of("recon", reconId, "user", userId, "now", Timestamp.from(now)));
+        }
+    }
+
+    /** Marca como avisados e devolve so quem ainda nao tinha sido avisado: repetir a chamada nao duplica a notificacao. */
+    public List<Long> claimMentionNotifications(long reconId, Instant now) {
+        return jdbc.query("""
+            UPDATE recon_mention m SET notified_at = :now
+            WHERE m.recon_id = :recon AND m.notified_at IS NULL
+              AND EXISTS (SELECT 1 FROM app_user u WHERE u.id = m.mentioned_user_id AND u.status = 'ACTIVE')
+            RETURNING m.mentioned_user_id
+            """, Map.of("recon", reconId, "now", Timestamp.from(now)), (r, i) -> r.getLong(1));
+    }
+
+    /** Dossie escolhido nas configuracoes do Recon. */
+    public Optional<Long> autoDossier(long reconId) {
+        return jdbc.query("SELECT auto_dossier_id FROM recon WHERE id = :id AND auto_dossier_id IS NOT NULL",
+            Map.of("id", reconId), (r, i) -> r.getLong(1)).stream().findFirst();
+    }
+
+    /** Mencionados que quem esta vendo ainda pode abrir: conta ativa e sem bloqueio entre os dois. operatorId -> username atual. */
+    public Map<UUID, String> availableMentions(long reconId, long viewer) {
+        Map<UUID, String> result = new HashMap<>();
+        jdbc.query("""
+            SELECT p.public_id, u.username FROM recon_mention m
+            JOIN app_user u ON u.id = m.mentioned_user_id AND u.status = 'ACTIVE'
+            JOIN operator_profile p ON p.user_id = u.id
+            WHERE m.recon_id = :recon
+              AND NOT EXISTS (SELECT 1 FROM operator_block ob
+                  WHERE (ob.blocker_user_id = :viewer AND ob.blocked_user_id = u.id)
+                     OR (ob.blocker_user_id = u.id AND ob.blocked_user_id = :viewer))
+            """, Map.of("recon", reconId, "viewer", viewer), (RowCallbackHandler) rs -> result.put(rs.getObject(1, UUID.class), rs.getString(2)));
+        return result;
+    }
+
+    public Optional<SingleRecon> single(UUID reconId, long viewer, Instant now) {
+        return jdbc.query("SELECT r.author_user_id, " + RECON_COLUMNS
+            + "EXISTS (SELECT 1 FROM recon_view v WHERE v.recon_id = r.id AND v.viewer_user_id = :viewer) seen, " + MEDIA_COLUMNS + """
+            FROM recon r JOIN media_asset a ON a.id = r.media_asset_id AND a.status = 'READY'
+            WHERE r.public_id = :recon AND r.status = 'ACTIVE' AND r.expires_at > :now AND""" + " " + VISIBLE_SINGLE,
+            new MapSqlParameterSource().addValue("recon", reconId).addValue("viewer", viewer).addValue("now", Timestamp.from(now)),
+            (r, i) -> new SingleRecon(r.getLong("author_user_id"), reconRow(r))).stream().findFirst();
+    }
+
+    public Optional<Author> authorById(long userId) {
+        return jdbc.query("""
+            SELECT u.id, u.username, p.callsign, COALESCE(x.rank_code, 'RECRUTA') rank_code
+            FROM app_user u JOIN operator_profile p ON p.user_id = u.id LEFT JOIN operator_xp x ON x.user_id = u.id
+            WHERE u.id = :id
+            """, Map.of("id", userId), (r, i) -> new Author(r.getLong("id"), r.getString("username"),
+                r.getString("callsign"), r.getString("rank_code"))).stream().findFirst();
     }
 
     public List<ReconState> failFor(long mediaId) {
@@ -113,7 +210,7 @@ public class ReconRepository {
     }
 
     public List<ReconRow> activeOf(long authorId, long viewer, Instant now) {
-        return jdbc.query("SELECT r.id, r.public_id, r.overlay_text, r.published_at, r.expires_at, "
+        return jdbc.query("SELECT " + RECON_COLUMNS
             + "EXISTS (SELECT 1 FROM recon_view v WHERE v.recon_id = r.id AND v.viewer_user_id = :viewer) seen, " + MEDIA_COLUMNS + """
             FROM recon r JOIN media_asset a ON a.id = r.media_asset_id AND a.status = 'READY'
             WHERE r.author_user_id = :author AND r.status = 'ACTIVE' AND r.expires_at > :now AND""" + " " + VISIBLE_TO_VIEWER + """
@@ -126,7 +223,7 @@ public class ReconRepository {
         return jdbc.update("""
             INSERT INTO recon_view(recon_id, viewer_user_id, viewed_at)
             SELECT r.id, :viewer, :now FROM recon r
-            WHERE r.public_id = :recon AND r.status = 'ACTIVE' AND r.expires_at > :now AND""" + " " + VISIBLE_TO_VIEWER + """
+            WHERE r.public_id = :recon AND r.status = 'ACTIVE' AND r.expires_at > :now AND""" + " " + VISIBLE_SINGLE + """
             ON CONFLICT (recon_id, viewer_user_id) DO UPDATE SET viewed_at = recon_view.viewed_at
             """, new MapSqlParameterSource().addValue("recon", reconId).addValue("viewer", viewer).addValue("now", Timestamp.from(now))) > 0;
     }
@@ -253,7 +350,7 @@ public class ReconRepository {
     }
 
     public List<ReconRow> dossierRecons(long dossierId) {
-        return jdbc.query("SELECT r.id, r.public_id, r.overlay_text, r.published_at, r.expires_at, TRUE seen, " + MEDIA_COLUMNS + """
+        return jdbc.query("SELECT " + RECON_COLUMNS + "TRUE seen, " + MEDIA_COLUMNS + """
             FROM dossier_recon dr JOIN recon r ON r.id = dr.recon_id AND r.status IN ('ACTIVE','EXPIRED')
             JOIN media_asset a ON a.id = r.media_asset_id AND a.status = 'READY'
             WHERE dr.dossier_id = :dossier
@@ -265,6 +362,7 @@ public class ReconRepository {
         Timestamp published = r.getTimestamp("published_at");
         return new ReconRow(r.getLong("id"), r.getObject("public_id", UUID.class), r.getString("overlay_text"),
             published == null ? null : published.toInstant(), r.getTimestamp("expires_at").toInstant(), r.getBoolean("seen"),
+            r.getString("elements"), r.getBoolean("audio_muted"),
             new MediaRow(r.getObject("media_public_id", UUID.class), r.getString("kind"), r.getInt("width"), r.getInt("height"),
                 (Integer) r.getObject("duration_ms"), r.getString("storage_prefix"), r.getString("renditions"),
                 r.getString("poster_key"), r.getString("blur_placeholder")));

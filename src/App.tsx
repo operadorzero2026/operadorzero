@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, lazy, Suspense, useEffect, useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -61,6 +61,8 @@ import { TeamPage } from './TeamPage'
 import { AchievementsPage, NotificationsPage } from './NotificationsPage'
 import { FeedPage } from './feed/FeedPage'
 import { CreateFlow } from './feed/CreateFlow'
+// O editor do Recon (camera, gestos, desenho) so e baixado quando a pessoa abre a criacao.
+const ReconStudio = lazy(() => import('./feed/recon/ReconStudio').then(module => ({ default: module.ReconStudio })))
 import { UploadStatus } from './feed/UploadStatus'
 import { DossierStrip } from './feed/DossierStrip'
 import { FeedModerationPanel } from './feed/FeedModerationPanel'
@@ -342,7 +344,8 @@ function PublicAgenda({ onJoin }: { onJoin: () => void }) {
 
 function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommunity, user, googleNotice = '', onDismissGoogleNotice }: { path:string; onNavigate:(path:string)=>void; onLogout: () => Promise<boolean>; onUserUpdated: (user: SessionUser) => void; onNavigateCommunity: () => void; user: SessionUser; googleNotice?: string; onDismissGoogleNotice?: () => void }) {
   const [profileOpen, setProfileOpen] = useState(false)
-  const [activeView, setActiveView] = useState(path.startsWith('/operadores') ? 'Operadores' : path === '/feed' ? 'Feed' : 'Visão geral')
+  const [activeView, setActiveView] = useState(path.startsWith('/operadores') ? 'Operadores' : path === '/feed' || path.startsWith('/recon/') ? 'Feed' : 'Visão geral')
+  const openReconId = path.match(/^\/recon\/([0-9a-f-]{36})$/)?.[1] ?? null
   const [createOpen, setCreateOpen] = useState(false)
   const [createNotice, setCreateNotice] = useState('')
   const [composer, setComposer] = useState<'POST' | 'RECON' | null>(null)
@@ -363,7 +366,7 @@ function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommun
   const [overviewError, setOverviewError] = useState('')
   const callsign = user.callsign || user.displayName
   const initial = callsign.charAt(0).toUpperCase()
-  useEffect(() => { if (path.startsWith('/operadores')) setActiveView('Operadores'); else if (path === '/feed') setActiveView('Feed') }, [path])
+  useEffect(() => { if (path.startsWith('/operadores')) setActiveView('Operadores'); else if (path === '/feed' || path.startsWith('/recon/')) setActiveView('Feed') }, [path])
   useEffect(() => {
     let active = true
     Promise.all([getOperatorProfile(), getOperations(), getTeamSummary(), getOperatorRanking()])
@@ -387,7 +390,7 @@ function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommun
   return <div className="app-shell">
     <aside className="app-sidebar"><Brand compact/><nav aria-label="Navegação do operador">{dashboardNav.map(({ label, icon: Icon }) => <button onClick={() => select(label)} className={activeView === label ? 'active' : ''} key={label}><Icon/><span>{label}</span>{label === 'Notificações' && unread > 0 && <em className="nav-badge" aria-label={`${unread} não lidas`}>{unread > 99 ? '99+' : unread}</em>}{activeView === label && <i/>}</button>)}</nav><div className="sidebar-footer"><p>Jogue. Registre.<br/><b>Evolua.</b></p></div></aside>
     <div className="app-main">
-      {activeView === 'Feed' ? <FeedPage unread={unread} onOpenNotifications={() => select('Notificações')} onFindOperators={() => select('Operadores')} onCreateRecon={() => setComposer('RECON')} onOpenHonorBoard={() => select('Quadro de Honra')}/> : <>
+      {activeView === 'Feed' ? <FeedPage unread={unread} onOpenNotifications={() => select('Notificações')} onFindOperators={() => select('Operadores')} onCreateRecon={() => setComposer('RECON')} onOpenHonorBoard={() => select('Quadro de Honra')} openReconId={openReconId} onCloseRecon={() => onNavigate('/feed')}/> : <>
       <header className="app-topbar"><OperatorSearch onOpenProfile={username => onNavigate(`/operadores/${encodeURIComponent(username)}`)}/><div className="profile-control"><button onClick={() => setProfileOpen(!profileOpen)} aria-expanded={profileOpen}><span className="profile-avatar">{initial}</span><span><b>{callsign}</b><small>@{user.username}</small></span><ChevronDown/></button>{profileOpen && <div className="profile-menu"><p>{user.email}</p><button disabled={logoutPending} onClick={async () => { setLogoutPending(true); setLogoutError(''); const completed = await onLogout(); setLogoutPending(false); if (!completed) setLogoutError('Não foi possível encerrar a sessão. Verifique sua conexão e tente novamente.') }}><LogOut/> {logoutPending ? 'Encerrando...' : 'Sair da conta'}</button>{logoutError && <small className="logout-error" role="alert">{logoutError}</small>}</div>}</div></header>
       {user.mfaRequired && activeView !== 'Meu Operador' && <p className="auth-notice google-notice" role="status">{user.mfaEnabled ? 'Confirme o código da verificação em duas etapas para usar as ferramentas de moderação.' : 'Ative a verificação em duas etapas para usar as ferramentas de moderação.'} <button type="button" onClick={() => setActiveView('Meu Operador')}>Abrir Meu Operador</button></p>}
       {googleNotice && <p className="auth-notice google-notice" role="status">{googleNotice} <button type="button" onClick={onDismissGoogleNotice}>Fechar</button></p>}
@@ -407,7 +410,10 @@ function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommun
     </div>
     <BottomNav activeView={activeView} onSelect={select} onCreate={() => { setCreateNotice(''); setCreateOpen(true) }}/>
     {createOpen && <CreateSheet notice={createNotice} onClose={() => setCreateOpen(false)} onPick={kind => { setCreateOpen(false); setComposer(kind) }}/>}
-    {composer && <CreateFlow key={composer} mode={composer} onClose={() => setComposer(null)}/>}
+    {composer === 'POST' && <CreateFlow key={composer} mode={composer} onClose={() => setComposer(null)}/>}
+    {composer === 'RECON' && <Suspense fallback={<div className="recon-studio recon-studio--loading" role="status">Abrindo a câmera…</div>}>
+      <ReconStudio username={user.username} callsign={callsign} onClose={() => setComposer(null)}/>
+    </Suspense>}
     <UploadStatus/>
   </div>
 }

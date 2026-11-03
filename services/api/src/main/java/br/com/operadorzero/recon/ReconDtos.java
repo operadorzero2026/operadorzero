@@ -1,6 +1,7 @@
 package br.com.operadorzero.recon;
 
 import br.com.operadorzero.feed.FeedDtos.MediaResponse;
+import br.com.operadorzero.recon.ReconComposition.Element;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -11,7 +12,13 @@ import java.util.UUID;
 public final class ReconDtos {
     private ReconDtos() {}
 
-    public record CreateReconRequest(@NotNull UUID mediaId, @Size(max = 140) String overlayText) {}
+    /** elements: composicao do editor (validada em ReconComposition); dossierId: guardar automaticamente nesse Dossie. */
+    public record CreateReconRequest(@NotNull UUID mediaId, @Size(max = 140) String overlayText, @Size(max = 40) List<Element> elements,
+                                     Boolean audioMuted, UUID dossierId) {
+        public CreateReconRequest(UUID mediaId, String overlayText) {
+            this(mediaId, overlayText, null, null, null);
+        }
+    }
 
     public record ReconCreated(UUID id, String status) {}
 
@@ -20,7 +27,8 @@ public final class ReconDtos {
 
     public record ReconBar(List<BarEntry> items, boolean ownProcessing) {}
 
-    public record ReconItem(UUID id, String overlayText, MediaResponse media, Instant publishedAt, Instant expiresAt, boolean seen) {}
+    public record ReconItem(UUID id, String overlayText, MediaResponse media, Instant publishedAt, Instant expiresAt, boolean seen,
+                            List<Element> elements, boolean audioMuted) {}
 
     public record AuthorRecons(String username, String callsign, String rankCode, boolean own, List<ReconItem> items) {}
 

@@ -123,9 +123,10 @@ public class MediaProcessor {
         int width = crop == null ? probe.width() : crop.width();
         int height = crop == null ? probe.height() : crop.height();
         List<Rendition> ladder = MediaPlans.ladder(width, height);
-        ffmpeg.run(MediaPlans.hlsArgs(source.toAbsolutePath(), crop, ladder, probe.hasAudio(), filter), VIDEO_TIMEOUT, out);
+        boolean audio = probe.hasAudio() && !asset.stripAudio();
+        ffmpeg.run(MediaPlans.hlsArgs(source.toAbsolutePath(), crop, ladder, audio, filter), VIDEO_TIMEOUT, out);
         Rendition smallest = ladder.getFirst();
-        ffmpeg.run(MediaPlans.fallbackMp4Args(source, out.resolve("fallback.mp4"), crop, smallest, probe.hasAudio(), filter), VIDEO_TIMEOUT);
+        ffmpeg.run(MediaPlans.fallbackMp4Args(source, out.resolve("fallback.mp4"), crop, smallest, audio, filter), VIDEO_TIMEOUT);
         Size poster = MediaPlans.fit(width, height, Math.min(720, Math.min(width, height)));
         ffmpeg.run(MediaPlans.posterArgs(source, out.resolve("poster.webp"), crop, filter, poster,
             probe.durationMs() > 1000 ? 0.5 : 0), IMAGE_TIMEOUT);

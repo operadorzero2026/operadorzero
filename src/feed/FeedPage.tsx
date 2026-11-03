@@ -2,7 +2,7 @@ import { Bell, Hash, X } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { FeedList } from './FeedList'
 import { ReconBar } from './ReconBar'
-import { ReconViewer } from './ReconViewer'
+import { ReconViewer, SingleReconViewer } from './ReconViewer'
 
 export type FeedTab = 'for-you' | 'following'
 
@@ -11,7 +11,7 @@ const tabs: { id: FeedTab; label: string }[] = [
   { id: 'following', label: 'Seguindo' },
 ]
 
-export function FeedPage({ unread, onOpenNotifications, onFindOperators, onCreateRecon, onOpenHonorBoard }: { unread: number; onOpenNotifications: () => void; onFindOperators: () => void; onCreateRecon: () => void; onOpenHonorBoard: () => void }) {
+export function FeedPage({ unread, onOpenNotifications, onFindOperators, onCreateRecon, onOpenHonorBoard, openReconId, onCloseRecon }: { unread: number; onOpenNotifications: () => void; onFindOperators: () => void; onCreateRecon: () => void; onOpenHonorBoard: () => void; openReconId?: string | null; onCloseRecon?: () => void }) {
   const [tab, setTab] = useState<FeedTab>('for-you')
   const [scrolled, setScrolled] = useState(false)
   const [viewer, setViewer] = useState<{ usernames: string[]; start: number } | null>(null)
@@ -36,6 +36,7 @@ export function FeedPage({ unread, onOpenNotifications, onFindOperators, onCreat
         <FeedList key={`${tab}:${hashtag ?? ''}`} tab={tab} hashtag={hashtag} onHashtag={setHashtag} onFindOperators={onFindOperators} onScrolledChange={setScrolled} onOpenHonorBoard={onOpenHonorBoard}/>
       </div>
     </div>
+    {openReconId && <SingleReconViewer key={openReconId} reconId={openReconId} onClose={() => { refreshBar(); onCloseRecon?.() }}/>}
     {viewer && <ReconViewer usernames={viewer.usernames} start={viewer.start} onClose={() => setViewer(null)} onChanged={refreshBar}/>}
   </section>
 }

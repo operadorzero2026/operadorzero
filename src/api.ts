@@ -2,6 +2,7 @@
 // origin makes authentication cookies first-party; local development can
 // still point directly at the API with VITE_API_URL.
 const configuredApiUrl = import.meta.env.VITE_API_URL?.trim() || window.location.origin
+import type { ReconElement } from './feed/recon/composition'
 
 export type SessionUser = {
   id: string
@@ -472,20 +473,21 @@ export const getMediaUpload = (uploadId:string) => apiRequest<MediaUpload>(`/api
 /** Pedaco cru; o servidor so aceita o offset que ja recebeu, entao repetir apos falha de rede e seguro. */
 export const putMediaChunk = (uploadId:string, offset:number, chunk:Blob) =>
   apiRequest<MediaUpload>(`/api/media/uploads/${encodeURIComponent(uploadId)}?offset=${offset}`, { method:'PUT', body:chunk, headers:{ 'Content-Type':'application/octet-stream' } }, 120000)
-export const completeMediaUpload = (uploadId:string) => apiRequest<MediaStatus>(`/api/media/uploads/${encodeURIComponent(uploadId)}/complete`, json('POST', {}))
+export const completeMediaUpload = (uploadId:string, options?:{ stripAudio?:boolean; crop?:MediaCrop|null }) => apiRequest<MediaStatus>(`/api/media/uploads/${encodeURIComponent(uploadId)}/complete`, json('POST', options ?? {}))
 export const getMediaStatus = (mediaId:string) => apiRequest<MediaStatus>(`/api/media/${encodeURIComponent(mediaId)}`)
 export const createFeedPost = (body:{ mediaId:string; caption?:string|null; fieldId?:string|null; teamId?:string|null; taggedUsernames?:string[]; idempotencyKey:string }) =>
   apiRequest<{ id:string; status:string }>('/api/feed/posts', json('POST', body))
 export const deleteFeedPost = (postId:string) => apiRequest<void>(`/api/feed/posts/${encodeURIComponent(postId)}`, { method:'DELETE' })
 export type ReconBarEntry = { username:string; callsign:string; rankCode:string; count:number; hasUnseen:boolean; latestAt:string; own:boolean }
-export type ReconItem = { id:string; overlayText?:string|null; media:FeedMedia; publishedAt?:string|null; expiresAt:string; seen:boolean }
+export type ReconItem = { id:string; overlayText?:string|null; media:FeedMedia; publishedAt?:string|null; expiresAt:string; seen:boolean; elements?:ReconElement[]; audioMuted?:boolean }
 export type AuthorRecons = { username:string; callsign:string; rankCode:string; own:boolean; items:ReconItem[] }
 export type DossierSummary = { id:string; title:string; coverUrl?:string|null; count:number }
 export type DossierDetail = { id:string; title:string; ownerUsername:string; own:boolean; items:ReconItem[] }
 export const getReconBar = () => apiRequest<{ items:ReconBarEntry[]; ownProcessing:boolean }>('/api/recons/bar')
 export const getAuthorRecons = (username:string) => apiRequest<AuthorRecons>(`/api/recons/by/${encodeURIComponent(username)}`)
 export const markReconViewed = (id:string) => apiRequest<void>(`/api/recons/${encodeURIComponent(id)}/view`, json('POST', {}))
-export const createRecon = (body:{ mediaId:string; overlayText?:string|null }) => apiRequest<{ id:string; status:string }>('/api/recons', json('POST', body))
+export const createRecon = (body:{ mediaId:string; overlayText?:string|null; elements?:unknown[]; audioMuted?:boolean; dossierId?:string|null }) => apiRequest<{ id:string; status:string }>('/api/recons', json('POST', body))
+export const getRecon = (id:string) => apiRequest<AuthorRecons>(`/api/recons/${encodeURIComponent(id)}`)
 export const deleteRecon = (id:string) => apiRequest<void>(`/api/recons/${encodeURIComponent(id)}`, { method:'DELETE' })
 export const getDossiers = (username:string) => apiRequest<DossierSummary[]>(`/api/dossiers/by/${encodeURIComponent(username)}`)
 export const getDossier = (id:string) => apiRequest<DossierDetail>(`/api/dossiers/${encodeURIComponent(id)}`)

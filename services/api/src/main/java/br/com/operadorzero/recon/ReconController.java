@@ -46,6 +46,11 @@ public class ReconController {
         return service.ofAuthor(user, username);
     }
 
+    @GetMapping("/api/recons/{id}")
+    AuthorRecons one(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) {
+        return service.one(user, id);
+    }
+
     @PostMapping("/api/recons/{id}/view")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void view(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) {

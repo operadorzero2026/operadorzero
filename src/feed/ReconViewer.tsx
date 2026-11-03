@@ -1,10 +1,18 @@
 import { Archive, ChevronDown, Flag, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { addReconToDossier, createDossier, deleteRecon, getAuthorRecons, getDossier, getDossiers, markReconViewed, mediaUrl, removeReconFromDossier, reportRecon,
+import { addReconToDossier, createDossier, deleteRecon, getAuthorRecons, getDossier, getDossiers, getRecon, markReconViewed, mediaUrl, removeReconFromDossier, reportRecon,
   type DossierSummary, type ReconItem } from '../api'
 import { timeAgo } from './format'
 import { useVideoSource } from './useVideoSource'
 import { ReportSheet } from './FeedSheets'
+import { ensureReconFonts, type MentionElement } from './recon/composition'
+import { ElementLayer } from './recon/ElementLayer'
+
+/** Navega dentro do app (o App acompanha o popstate) sem precisar passar callbacks por todas as telas. */
+export function navigateInApp(path: string) {
+  window.history.pushState({}, '', path)
+  window.dispatchEvent(new PopStateEvent('popstate'))
+}
 
 const IMAGE_MS = 5000
 const HOLD_MS = 220
@@ -22,6 +30,7 @@ function ReconPlayer({ header, items, startIndex, onView, onEnd, onPrevGroup, on
   const [paused, setPaused] = useState(false)
   const [ended, setEnded] = useState<Set<string>>(new Set())
   const [drag, setDrag] = useState(0)
+  const [notice, setNotice] = useState('')
   const video = useRef<HTMLVideoElement>(null)
   const pointer = useRef<{ x: number; y: number; at: number; held: boolean } | null>(null)
   const holdTimer = useRef<number | undefined>(undefined)
@@ -30,6 +39,15 @@ function ReconPlayer({ header, items, startIndex, onView, onEnd, onPrevGroup, on
   useVideoSource(video, mediaUrl(item?.media.hlsUrl), mediaUrl(item?.media.mp4Url), item && isVideo ? 'active' : 'idle')
 
   const next = useCallback(() => { setProgress(0); if (index + 1 < items.length) setIndex(index + 1); else onEnd() }, [index, items.length, onEnd])
+  useEffect(() => { if (item?.elements?.length) ensureReconFonts() }, [item])
+  useEffect(() => { if (!notice) return; const timer = window.setTimeout(() => { setNotice(''); setPaused(false) }, 2200); return () => window.clearTimeout(timer) }, [notice])
+  // Toque na mencao: pausa e abre o perfil (tem prioridade sobre avancar/voltar).
+  const openMention = (mention: MentionElement) => {
+    setPaused(true)
+    if (mention.available === false) { setNotice('Este perfil não está disponível.'); return }
+    onClose()
+    navigateInApp(`/operadores/${encodeURIComponent(mention.username)}`)
+  }
   const prev = () => { setProgress(0); if (index > 0) setIndex(index - 1); else onPrevGroup() }
 
   useEffect(() => {
@@ -105,11 +123,13 @@ function ReconPlayer({ header, items, startIndex, onView, onEnd, onPrevGroup, on
     style={{ transform: drag ? `translateY(${drag}px)` : undefined, opacity: drag ? Math.max(0.4, 1 - drag / 400) : undefined }}>
     <div className="recon-stage">
       {ended.has(item.id) ? <div className="recon-ended" role="status"><b>Recon encerrado</b><span>Este Recon já saiu do ar.</span></div>
-        : isVideo ? <video ref={video} className="recon-media" poster={mediaUrl(media.posterUrl)} playsInline muted={false} aria-label={`Vídeo de @${header.username}`}/>
+        : isVideo ? <video ref={video} className="recon-media" poster={mediaUrl(media.posterUrl)} playsInline muted={Boolean(item.audioMuted)} aria-label={`Vídeo de @${header.username}`}/>
         : <img className="recon-media" src={mediaUrl(media.images.at(-1)?.url)} alt={`Foto do Recon de @${header.username}${item.overlayText ? `: ${item.overlayText}` : ''}`}/>}
       {item.overlayText && !ended.has(item.id) && <p className="recon-overlay">{item.overlayText}</p>}
       <div className="recon-touch" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => { pointer.current = null; setPaused(false); setDrag(0) }}
         aria-label="Toque à direita para avançar, à esquerda para voltar; segure para pausar"/>
+      {!ended.has(item.id) && item.elements && item.elements.length > 0 && <ElementLayer elements={item.elements} onMention={openMention}/>}
+      {notice && <p className="recon-toast" role="status">{notice}</p>}
     </div>
     <header className="recon-header">
       <div className="recon-progress" aria-hidden="true">{items.map((entry, position) => <span key={entry.id}>
@@ -201,4 +221,21 @@ export function DossierViewer({ dossierId, onClose, onChanged }: { dossierId: st
   return <ReconPlayer header={{ title: `Dossiê ${data.title}`, username: data.ownerUsername, own: data.own }} items={data.items} startIndex={0}
     onEnd={onClose} onPrevGroup={() => undefined} onClose={onClose}
     actions={data.own ? item => <button type="button" onClick={() => void removeReconFromDossier(data.id, item.id).then(() => { onChanged(); onClose() })}><Trash2/> Remover do Dossiê</button> : undefined}/>
+}
+
+/** Recon aberto pelo link de uma notificacao (/recon/{id}): mostra so ele ou avisa que saiu do ar. */
+export function SingleReconViewer({ reconId, onClose }: { reconId: string; onClose: () => void }) {
+  const [data, setData] = useState<Awaited<ReturnType<typeof getRecon>> | null>(null)
+  const [failed, setFailed] = useState(false)
+  useEffect(() => {
+    let active = true
+    getRecon(reconId).then(result => { if (active) setData(result) }).catch(() => { if (active) setFailed(true) })
+    return () => { active = false }
+  }, [reconId])
+  const onView = useCallback((item: ReconItem) => markReconViewed(item.id).then(() => true).catch(() => false), [])
+  if (failed) return <div className="recon-viewer" role="dialog" aria-modal="true"><div className="recon-ended" role="status"><b>Recon indisponível</b>
+    <span>Este Recon expirou ou foi apagado.</span><button type="button" className="button button--small" onClick={onClose}>Voltar ao feed</button></div></div>
+  if (!data) return <div className="recon-viewer" role="dialog" aria-modal="true" aria-busy="true"><div className="recon-ended"><span>Carregando…</span></div></div>
+  return <ReconPlayer header={{ title: `Recon de @${data.username}`, username: data.username, own: data.own }} items={data.items} startIndex={0}
+    onView={onView} onEnd={onClose} onPrevGroup={() => undefined} onClose={onClose}/>
 }

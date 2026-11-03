@@ -1,6 +1,7 @@
 package br.com.operadorzero.media;
 
 import br.com.operadorzero.identity.AuthenticatedUser;
+import br.com.operadorzero.media.MediaDtos.CompleteUploadRequest;
 import br.com.operadorzero.media.MediaDtos.MediaStatusResponse;
 import br.com.operadorzero.media.MediaDtos.StartUploadRequest;
 import br.com.operadorzero.media.MediaDtos.UploadResponse;
@@ -49,8 +50,9 @@ public class MediaController {
     }
 
     @PostMapping("/uploads/{uploadId}/complete")
-    MediaStatusResponse complete(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID uploadId) {
-        return uploads.complete(user, uploadId);
+    MediaStatusResponse complete(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID uploadId,
+                                 @Valid @RequestBody(required = false) CompleteUploadRequest options) {
+        return uploads.complete(user, uploadId, options);
     }
 
     @GetMapping("/{mediaId}")

@@ -100,6 +100,11 @@ public class MediaUploadService {
 
     @Transactional(noRollbackFor = BusinessException.class)
     public MediaStatusResponse complete(AuthenticatedUser user, UUID uploadId) {
+        return complete(user, uploadId, null);
+    }
+
+    @Transactional(noRollbackFor = BusinessException.class)
+    public MediaStatusResponse complete(AuthenticatedUser user, UUID uploadId, MediaDtos.CompleteUploadRequest options) {
         Instant now = clock.instant();
         UploadRow row = open(user, uploadId, now);
         if (row.receivedBytes() != row.totalBytes()) {
@@ -115,6 +120,9 @@ public class MediaUploadService {
             throw new UncheckedIOException(exception);
         }
         repository.completeUpload(row.uploadId(), row.assetId(), detected.type(), now);
+        if (options != null && "VIDEO".equals(row.kind())) {
+            repository.applyCompleteOptions(row.assetId(), Boolean.TRUE.equals(options.stripAudio()), options.crop());
+        }
         return new MediaStatusResponse(row.assetPublicId(), row.kind(), "QUEUED", null);
     }
 

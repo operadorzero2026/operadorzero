@@ -1,5 +1,25 @@
 # Histórico de alterações
 
+## 2026-11-03 - Recon modernizado: câmera, editor estilo Stories e marcação de operadores com @
+
+### Arquivos alterados
+- Banco: `V32__recon_composition_and_mentions.sql` (aditiva: `recon.elements` JSONB, `recon.audio_muted`, `recon.auto_dossier_id`, `media_asset.strip_audio`, tabela `recon_mention`).
+- Servidor: `recon/ReconComposition` (novo, validação dos elementos), `ReconService`, `ReconRepository`, `ReconDtos`, `ReconController` (`GET /api/recons/{id}`); mídia: `CompleteUploadRequest` (silenciar e enquadramento na conclusão), `MediaProcessor` (remove o áudio), `Ffmpeg` (duração de WebM gravado no navegador).
+- Site: `src/feed/recon/` (novo: `ReconStudio`, `CameraScreen`, `ReconEditor`, `EditorTools`, `ElementLayer`, `composition.ts`, `recon.css`), `ReconViewer.tsx`, `FeedPage.tsx`, `App.tsx` (rota `/recon/{id}`, editor carregado sob demanda), `uploadQueue.ts`, `api.ts`.
+- Deploy: `security-headers.conf` e `vercel.json` liberam câmera e microfone só para o próprio site (`camera=(self), microphone=(self)`).
+
+### O que foi feito
+- Criação em tela cheia: câmera ao vivo (traseira primeiro, alternar frontal), toque fotografa, segurar grava até 30 s (limite já existente), modo FOTO/VÍDEO, galeria; sem permissão de câmera, mensagem amigável e galeria.
+- Editor: texto (5 fontes, cores com seletor avançado, alinhamento, fundo sólido/translúcido, tamanho), desenho (cor, espessura, desfazer, refazer, apagar), adesivos, silenciar áudio (o áudio sai do arquivo final), preencher ou mostrar inteiro, enquadrar com arrastar e pinça.
+- Gestos: arrastar, pinça (tamanho), girar com dois dedos, guias de centro, lixeira ao arrastar, dois toques edita o texto, toque na menção troca o estilo; no computador, controles de tamanho e giro e roda do mouse.
+- Menção @: busca de operadores reais com espera entre teclas, estados de carregando/vazio/erro; estilos Operador Zero, Destaque e Minimalista. O servidor confere cada menção (conta ativa, sem bloqueio, nunca o próprio autor), guarda o operador real e avisa uma única vez quando o Recon entra no ar ("Você foi mencionado em um Recon!", abre `/recon/{id}`). Quem foi marcado pode abrir aquele Recon mesmo sem seguir o autor.
+- Visualizador: elementos na mesma posição relativa, menção tocável com prioridade sobre avançar/voltar (pausa e abre o perfil); menção a perfil indisponível aparece riscada; Recon expirado pelo link mostra "Recon indisponível".
+- Publicação: "Seu Recon" publica direto; "Avançar" abre a confirmação (prévia, destino, marcados, Dossiê). Só fecha quando o servidor aceita; erro mantém a edição e permite tentar de novo sem reenviar o arquivo; repetir a publicação não duplica nem reavisa. Configurações: quem pode ver e salvar automaticamente num Dossiê.
+- Recons antigos continuam funcionando (texto antigo `overlay_text` preservado).
+
+### Não incluído (sem suporte de ponta a ponta ainda)
+- Localização, enquete, pergunta e link nos adesivos; respostas e curtidas no Recon (não existiam).
+
 ## 2026-11-02 - Correção: envio de Recon e posts falhava com "Load failed"
 
 ### Arquivos alterados

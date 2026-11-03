@@ -58,11 +58,23 @@ public class Ffmpeg {
         if (Math.abs(rotation(video)) % 180 == 90) { int swap = width; width = height; height = swap; }
         double seconds = root.path("format").path("duration").asDouble(video.path("duration").asDouble(0));
         String format = root.path("format").path("format_name").asText();
+        // Gravacoes do navegador (MediaRecorder, WebM) nao trazem a duracao no cabecalho: mede pelos pacotes.
+        if (seconds <= 0 && format.contains("webm")) seconds = packetDuration(file);
         boolean still = format.contains("image2") || format.contains("png_pipe") || format.contains("jpeg_pipe") || format.contains("webp_pipe")
             || (seconds <= 0 && root.path("streams").size() == 1);
         String kind = still ? "IMAGE" : "VIDEO";
         Integer durationMs = still ? null : (int) Math.round(seconds * 1000);
         return new Probe(kind, width, height, durationMs, audio, capturedAt(root.path("format").path("tags")));
+    }
+
+    private double packetDuration(Path file) throws IOException, MediaRejected {
+        String output = run(List.of(settings.ffprobe(), "-v", "error", "-select_streams", "v:0", "-show_entries", "packet=pts_time",
+            "-of", "csv=p=0", file.toString()), PROBE_TIMEOUT, "PROBE_FAILED", null);
+        double last = 0;
+        for (String line : output.split("\\R")) {
+            try { last = Math.max(last, Double.parseDouble(line.strip().replace(",", ""))); } catch (NumberFormatException ignored) { /* linha vazia */ }
+        }
+        return last;
     }
 
     public void run(List<String> args, Duration timeout) throws IOException, MediaRejected {

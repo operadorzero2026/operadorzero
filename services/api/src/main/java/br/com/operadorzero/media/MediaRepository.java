@@ -23,7 +23,8 @@ public class MediaRepository {
                             String kind, long totalBytes, long receivedBytes, int chunkBytes, String status, Instant expiresAt) {}
 
     public record AssetRow(long id, UUID publicId, long ownerUserId, String purpose, String kind, String status,
-                           String detectedType, String filterCode, Crop crop, String storagePrefix, String errorCode, int attempts) {}
+                           String detectedType, String filterCode, Crop crop, String storagePrefix, String errorCode, int attempts,
+                           boolean stripAudio) {}
 
     public UploadRow createUpload(long userId, String purpose, String kind, String declaredType, long totalBytes,
                                   String filterCode, Crop crop, int chunkBytes, Instant now, Instant expiresAt) {
@@ -80,6 +81,19 @@ public class MediaRepository {
         jdbc.update("UPDATE media_asset SET status = 'QUEUED', detected_type = :type, updated_at = :now WHERE id = :assetId", params);
     }
 
+    /** Enquadramento so substitui o do inicio do envio quando vem preenchido. */
+    public void applyCompleteOptions(long assetId, boolean stripAudio, Crop crop) {
+        jdbc.update("""
+            UPDATE media_asset SET strip_audio = :strip,
+                   crop_x = CASE WHEN :hasCrop THEN :cropX ELSE crop_x END,
+                   crop_y = CASE WHEN :hasCrop THEN :cropY ELSE crop_y END,
+                   crop_zoom = CASE WHEN :hasCrop THEN :cropZoom ELSE crop_zoom END
+            WHERE id = :id
+            """, new MapSqlParameterSource().addValue("id", assetId).addValue("strip", stripAudio).addValue("hasCrop", crop != null)
+                .addValue("cropX", crop == null ? null : crop.x()).addValue("cropY", crop == null ? null : crop.y())
+                .addValue("cropZoom", crop == null ? null : crop.zoom()));
+    }
+
     public void failUpload(long uploadId, long assetId, String errorCode, Instant now) {
         var params = Map.<String, Object>of("uploadId", uploadId, "assetId", assetId, "error", errorCode, "now", Timestamp.from(now));
         jdbc.update("UPDATE media_upload SET status = 'ABORTED', updated_at = :now WHERE id = :uploadId", params);
@@ -92,12 +106,12 @@ public class MediaRepository {
             UPDATE media_asset SET status = 'PROCESSING', attempts = attempts + 1, updated_at = :now
             WHERE id = (SELECT id FROM media_asset WHERE status = 'QUEUED' ORDER BY created_at, id LIMIT 1 FOR UPDATE SKIP LOCKED)
             RETURNING id, public_id, owner_user_id, purpose, kind, status, detected_type, filter_code, crop_x, crop_y, crop_zoom,
-                      storage_prefix, error_code, attempts
+                      storage_prefix, error_code, attempts, strip_audio
             """, Map.of("now", Timestamp.from(now)), (r, i) -> new AssetRow(r.getLong("id"), r.getObject("public_id", UUID.class),
                 r.getLong("owner_user_id"), r.getString("purpose"), r.getString("kind"), r.getString("status"),
                 r.getString("detected_type"), r.getString("filter_code"),
                 r.getBigDecimal("crop_zoom") == null ? null : new Crop(r.getBigDecimal("crop_x"), r.getBigDecimal("crop_y"), r.getBigDecimal("crop_zoom")),
-                r.getString("storage_prefix"), r.getString("error_code"), r.getInt("attempts"))).stream().findFirst();
+                r.getString("storage_prefix"), r.getString("error_code"), r.getInt("attempts"), r.getBoolean("strip_audio"))).stream().findFirst();
     }
 
     /** Processamentos interrompidos (reinicio da API) voltam para a fila ate 3 tentativas. */
@@ -167,7 +181,7 @@ public class MediaRepository {
             """, Map.of("olderThan", Timestamp.from(olderThan)), (r, i) -> new AssetRow(r.getLong("id"), r.getObject("public_id", UUID.class),
                 r.getLong("owner_user_id"), r.getString("purpose"), r.getString("kind"), r.getString("status"),
                 r.getString("detected_type"), r.getString("filter_code"), null, r.getString("storage_prefix"),
-                r.getString("error_code"), r.getInt("attempts")));
+                r.getString("error_code"), r.getInt("attempts"), false));
     }
 
     public void markDeleted(long id, Instant now) {
