@@ -1,0 +1,23 @@
+/* Erros, spinner e pop-ups de resultado do cadastro/login. */
+.auth-error{display:grid;grid-template-columns:20px 1fr;gap:10px;align-items:start;padding:12px 14px;border:1px solid rgba(255,107,94,.45);background:rgba(255,80,64,.08);color:#ff8a7e;scroll-margin:24px 0 40vh}
+.auth-error>svg{width:20px;height:20px;color:#ff6b5e}
+.auth-error b{display:block;font-size:12px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:3px}
+.auth-error p{margin:0;font-size:12.5px;line-height:1.5;color:#ffb1a8}
+.auth-error-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.auth-error-actions button{border:1px solid rgba(255,138,126,.5);background:transparent;color:#ffd2cc;padding:7px 11px;font-size:11px;cursor:pointer}
+.auth-error-actions button:disabled{opacity:.5;cursor:default}
+.auth-submit{display:flex;align-items:center;justify-content:center;gap:9px}
+.auth-submit:disabled{opacity:.75;cursor:progress}
+.auth-spinner{width:17px;height:17px;animation:authSpin .8s linear infinite}
+@keyframes authSpin{to{transform:rotate(360deg)}}
+.auth-result-backdrop{position:fixed;inset:0;z-index:140;display:grid;place-items:center;padding:20px;background:rgba(3,5,3,.82);backdrop-filter:blur(10px);animation:authFade .2s ease-out}
+.auth-result{width:min(420px,100%);background:#11130f;border:1px solid rgba(255,255,255,.14);box-shadow:0 30px 90px rgba(0,0,0,.55);padding:30px 26px 24px;text-align:center;animation:authRise .3s ease-out}
+.auth-result-icon{width:46px;height:46px;color:var(--lime);margin:0 auto 12px}
+.auth-result h2{font-size:30px;line-height:1;margin:0 0 14px}
+.auth-result-body p{margin:0 0 10px;color:#cdd0bd;font-size:14px;line-height:1.55;overflow-wrap:anywhere}
+.auth-result-note{font-size:12px!important;color:var(--lime)!important}
+.auth-result-error{font-size:12px!important;color:#ff8a7e!important}
+.auth-result-actions{display:flex;flex-direction:column;gap:12px;margin-top:18px}
+.auth-result-actions .button{width:100%;border:0;cursor:pointer;justify-content:center}
+.auth-result-link{border:0;background:transparent;color:var(--lime);font-size:12px;cursor:pointer;padding:4px}
+.auth-result-link:disabled{opacity:.5}

@@ -1,5 +1,24 @@
 # Histórico de alterações
 
+## 2026-11-03 - Operações, Etapa E: cadastro e login mais claros
+
+### Arquivos alterados
+- Servidor: `identity/AuthException` (novo erro `EMAIL_ALREADY_REGISTERED`, 409), `AuthService` (cadastro com e-mail já ativo avisa; link de confirmação já abre a sessão), `AuthController` (`/verify-email` devolve o usuário e renova o CSRF), `AuthServiceTest`.
+- Site: `src/AuthFeedback.tsx`, `src/authRules.ts` e `src/auth-feedback.css` (novos); `App.tsx` (formulário de acesso e confirmação); `api.ts` (`verifyEmail` devolve a sessão; erro da API guarda o status HTTP e o campo).
+- Banco: sem migração.
+
+### O que foi feito
+- E-mail já cadastrado: "Este e-mail já possui uma conta. Faça login ou recupere sua senha.", com atalhos para Entrar e Recuperar senha. Conta ainda não confirmada que se cadastra de novo recebe outro link. O limite de tentativas de cadastro continua valendo.
+- Erros logo abaixo do botão, com ícone de alerta e texto vermelho: e-mail inválido, senha fraca, falha de conexão, erro no servidor e excesso de tentativas. O erro rola para ficar visível com o teclado aberto.
+- Botão com indicador de carregamento e bloqueado durante o envio (sem cadastro duplicado).
+- Pop-up "Conta criada com sucesso!", que não diz que a conta está ativa, com opção de reenviar a confirmação.
+- Link do e-mail: confirma, já entra na conta e mostra "E-mail confirmado com sucesso!". O Continuar volta para a página de onde a pessoa saiu (ex.: a operação).
+- Login com conta pendente: "Seu e-mail ainda não foi confirmado.", com botão de reenvio.
+- Primeiro acesso pelo Google: pop-up "Bem-vindo ao Operador Zero!" e volta para a página de origem.
+
+### Testes
+- 224 testes do servidor passando. Teste local pela API: 12 verificações (cadastro, pendente, login pendente, link com login automático, link de uso único, e-mail repetido, e-mail inválido, senha fraca, auditoria). No navegador, em tela de celular: erro de e-mail repetido, pop-up de conta criada com reenvio, confirmação com login automático e volta para a operação.
+
 ## 2026-11-03 - Operações, Etapa D: marcar operação nos posts e galeria "Fotos e vídeos"
 
 ### Arquivos alterados

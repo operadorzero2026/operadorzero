@@ -77,6 +77,8 @@ import { RankingsPage } from './RankingsPage'
 import { PerformancePage } from './PerformancePage'
 import CommunityPage from './CommunityPage'
 import { OperatorsSocialPage } from './OperatorsSocialPage'
+import { AuthErrorBox, AuthResultDialog, Spinner } from './AuthFeedback'
+import { authError, rememberReturn, takeReturn, type AuthErrorInfo } from './authRules'
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return <a className={`brand ${compact ? 'brand--compact' : ''}`} href="#inicio" aria-label="Operador Zero, início"><span>Operador</span><strong>Zero</strong></a>
@@ -117,12 +119,14 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
   const [authPreparing, setAuthPreparing] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [verificationEmail, setVerificationEmail] = useState('')
+  const [formError, setFormError] = useState<AuthErrorInfo | null>(null)
+  const [signupSent, setSignupSent] = useState('')
   const isRecovery = mode === 'recovery'
   const isReset = mode === 'reset'
   const title = mode === 'login' ? 'Entre no Operador Zero' : mode === 'signup' ? 'Crie sua conta' : isReset ? 'Defina uma nova senha' : 'Recupere seu acesso'
   const description = mode === 'login' ? 'Acesse sua conta com segurança.' : mode === 'signup' ? 'Crie sua identidade de operador em poucos passos.' : isReset ? 'O link será invalidado após a troca da senha.' : 'Informe seu e-mail para receber as instruções.'
 
-  useEffect(() => { setNotice(initialNotice); setShowPassword(false); setTermsAccepted(false); setVerificationEmail('') }, [mode, initialNotice])
+  useEffect(() => { setNotice(initialNotice); setShowPassword(false); setTermsAccepted(false); setVerificationEmail(''); setFormError(null) }, [mode, initialNotice])
   useEffect(() => {
     if (!AUTH_ENABLED) return
     // Wake the API and obtain CSRF while the user is reading/filling the form.
@@ -157,12 +161,14 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
     const email = String(data.get('email') ?? '').trim().toLowerCase()
     const password = String(data.get('password') ?? '')
     const passwordConfirmation = String(data.get('passwordConfirmation') ?? '')
+    if (pendingAction) return
     if ((mode === 'signup' || isReset) && password !== passwordConfirmation) {
-      setNotice('As senhas devem ser iguais.')
+      setFormError({ title: 'Senhas diferentes', text: 'As senhas devem ser iguais.' })
       return
     }
     setPendingAction('form')
     setNotice('')
+    setFormError(null)
     try {
       if (isRecovery) {
         await requestPasswordRecovery(email)
@@ -172,15 +178,18 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
         await resetPassword(resetToken, password, passwordConfirmation)
         setNotice('Senha alterada. Volte para entrar com a nova senha.')
       } else if (mode === 'signup') {
+        rememberReturn()
         await register(String(data.get('displayName') ?? '').trim(), email, password, passwordConfirmation, termsAccepted)
         setVerificationEmail(email)
-        setNotice('Se este e-mail puder ser usado, enviamos um link de confirmação. Confira também o Lixo Eletrônico.')
+        setSignupSent(email)
       } else {
         onAuthenticated(await login(email, password))
       }
     } catch (error) {
       if (error instanceof ApiClientError && error.code === 'EMAIL_NOT_VERIFIED') setVerificationEmail(email)
-      setNotice(isRecovery ? 'Se o e-mail estiver cadastrado, você receberá as instruções de recuperação.' : error instanceof Error ? error.message : 'Não foi possível concluir a solicitação.')
+      if (isRecovery) setNotice('Se o e-mail estiver cadastrado, você receberá as instruções de recuperação.')
+      else if (isReset) setNotice(error instanceof Error ? error.message : 'Não foi possível concluir a solicitação.')
+      else setFormError(authError(error, mode === 'signup' ? 'signup' : 'login'))
     } finally {
       setPendingAction(null)
     }
@@ -191,6 +200,8 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
     if (mode === 'signup' && !termsAccepted) { setNotice('Aceite os Termos de Uso e a Política de Privacidade para criar a conta.'); return }
     setPendingAction('google')
     setNotice('')
+    setFormError(null)
+    rememberReturn()
     try {
       window.location.assign(await startGoogle(mode === 'signup' ? 'register' : 'login', mode === 'signup' && termsAccepted))
     } catch (error) {
@@ -204,9 +215,10 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
     setPendingAction('form')
     try {
       await resendVerification(verificationEmail)
-      setNotice('Se o endereço puder receber a confirmação, uma nova mensagem foi enviada. Confira também o Lixo Eletrônico.')
+      setFormError(null)
+      setNotice('Enviamos um novo link de confirmação. Confira também o Lixo Eletrônico.')
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Não foi possível solicitar um novo envio.')
+      setFormError(authError(error, 'signup'))
     } finally {
       setPendingAction(null)
     }
@@ -221,21 +233,34 @@ function AuthModal({ mode, onClose, onModeChange, onAuthenticated, resetToken, i
         <div className="auth-heading"><p className="eyebrow"><span/>{isRecovery || isReset ? 'Recuperação por e-mail' : 'Acesso à plataforma'}</p><h2 id="auth-title">{title}</h2><p>{description}</p></div>
         {!AUTH_ENABLED && <p className="auth-unavailable"><ShieldAlert size={17}/> Autenticação remota temporariamente indisponível.</p>}
         {!isRecovery && !isReset && <><button className="google-button" type="button" disabled={pendingAction !== null || !AUTH_ENABLED} aria-busy={pendingAction === 'google'} onClick={continueWithGoogle}><GoogleMark/> {pendingAction === 'google' ? 'Conectando ao Google...' : 'Continuar com Google'}</button><div className="auth-divider"><span/> ou use seu e-mail <span/></div></>}
-        <form className="auth-form" onSubmit={submit} onInput={() => notice && setNotice('')}>
+        <form className="auth-form" onSubmit={submit} onInput={() => { if (notice) setNotice(''); if (formError && formError.code !== 'EMAIL_NOT_VERIFIED') setFormError(null) }}>
           {mode === 'signup' && <label><span>Nome de exibição</span><div><Users/><input name="displayName" autoComplete="name" maxLength={80} required placeholder="Como devemos chamar você?"/></div></label>}
           {!isReset && <label><span>E-mail</span><div><Mail/><input name="email" type="email" autoComplete="email" maxLength={254} required placeholder="voce@exemplo.com.br"/></div></label>}
           {!isRecovery && <label><span>{isReset ? 'Nova senha' : 'Senha'}</span><div><LockKeyhole/><input name="password" type={showPassword ? 'text' : 'password'} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength={12} maxLength={128} required placeholder={mode === 'signup' || isReset ? '12+ caracteres, maiúscula, minúscula e número' : 'Sua senha'}/><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? <EyeOff/> : <Eye/>}</button></div></label>}
           {(mode === 'signup' || isReset) && <label><span>Confirmar senha</span><div><LockKeyhole/><input name="passwordConfirmation" type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={12} maxLength={128} required placeholder="Digite a senha novamente"/></div></label>}
           {mode === 'login' && <button className="forgot-link" type="button" onClick={() => onModeChange('recovery')}>Esqueci minha senha</button>}
           {mode === 'signup' && <label className="terms-check"><input type="checkbox" required checked={termsAccepted} onChange={event => setTermsAccepted(event.target.checked)}/><span>Li e aceito os Termos de Uso e a Política de Privacidade.</span></label>}
-          <button className="button auth-submit" type="submit" disabled={pendingAction !== null || !AUTH_ENABLED}>{pendingAction === 'form' ? 'Conectando com segurança...' : isRecovery ? 'Enviar instruções' : isReset ? 'Salvar nova senha' : mode === 'login' ? 'Entrar com e-mail' : 'Criar conta com e-mail'} {pendingAction === null && <ArrowRight size={17}/>}</button>
+          <button className="button auth-submit" type="submit" disabled={pendingAction !== null || !AUTH_ENABLED} aria-busy={pendingAction === 'form'}>{pendingAction === 'form' && <Spinner/>}{pendingAction === 'form' ? (mode === 'signup' ? 'Criando sua conta...' : 'Conectando com segurança...') : isRecovery ? 'Enviar instruções' : isReset ? 'Salvar nova senha' : mode === 'login' ? 'Entrar com e-mail' : 'Criar conta com e-mail'} {pendingAction === null && <ArrowRight size={17}/>}</button>
+          {formError && <AuthErrorBox error={formError}>
+            {formError.code === 'EMAIL_ALREADY_REGISTERED' && <div className="auth-error-actions"><button type="button" onClick={() => onModeChange('login')}>Entrar</button><button type="button" onClick={() => onModeChange('recovery')}>Recuperar senha</button></div>}
+            {formError.code === 'EMAIL_NOT_VERIFIED' && verificationEmail && <div className="auth-error-actions"><button type="button" disabled={pendingAction !== null} onClick={resendConfirmation}>Reenviar e-mail de confirmação</button></div>}
+          </AuthErrorBox>}
         </form>
         {authPreparing && pendingAction === null && <p className="auth-notice" role="status">Preparando conexão segura...</p>}
         {notice && <p className="auth-notice" role="status">{notice}</p>}
-        {(mode === 'signup' || mode === 'login') && verificationEmail && <button className="forgot-link" type="button" disabled={pendingAction !== null} onClick={resendConfirmation}>Reenviar e-mail de confirmação</button>}
+        {mode === 'login' && verificationEmail && formError?.code !== 'EMAIL_NOT_VERIFIED' && <button className="forgot-link" type="button" disabled={pendingAction !== null} onClick={resendConfirmation}>Reenviar e-mail de confirmação</button>}
         {!isRecovery && !isReset && <p className="auth-switch">{mode === 'login' ? 'Ainda não tem conta?' : 'Já possui uma conta?'} <button onClick={() => onModeChange(mode === 'login' ? 'signup' : 'login')}>{mode === 'login' ? 'Criar conta' : 'Entrar'}</button></p>}
       </div>
     </section>
+    {signupSent && <AuthResultDialog title="Conta criada com sucesso!" actions={<>
+      <button className="button" type="button" onClick={() => { setSignupSent(''); onClose() }}>Entendi</button>
+      <button className="auth-result-link" type="button" disabled={pendingAction !== null} onClick={resendConfirmation}>{pendingAction === 'form' ? 'Enviando...' : 'Reenviar e-mail de confirmação'}</button>
+    </>}>
+      <p>Enviamos um link de confirmação para <b>{signupSent}</b>.</p>
+      <p>Abra o e-mail e toque no link para ativar sua conta. Confira também o Lixo Eletrônico.</p>
+      {notice && <p className="auth-result-note" role="status">{notice}</p>}
+      {formError && <p className="auth-result-error" role="alert">{formError.text}</p>}
+    </AuthResultDialog>}
   </div>
 }
 
@@ -428,6 +453,7 @@ export default function App() {
   const [resetTokenValue, setResetTokenValue] = useState('')
   const [googleSignup, setGoogleSignup] = useState(false)
   const [currentPath, setCurrentPath] = useState(window.location.pathname)
+  const [welcome, setWelcome] = useState<'verified' | 'google' | null>(null)
 
   useEffect(() => {
     const close = () => setMenuOpen(false)
@@ -451,15 +477,19 @@ export default function App() {
       if (action || google) window.history.replaceState({}, document.title, window.location.pathname + window.location.hash)
       try {
         if (action === 'verify-email' && token) {
-          await verifyEmail(token)
-          if (active) { setAuthNotice('E-mail confirmado. Entre com sua senha para continuar.'); setAuthMode('login') }
+          // O link ja entra na conta; o pop-up leva de volta a operacao de onde a pessoa veio.
+          const verified = await verifyEmail(token)
+          if (active) { setCurrentUser(verified); setWelcome('verified') }
         } else if (action === 'reset-password' && token && active) {
           setResetTokenValue(token); setAuthMode('reset')
         }
         const session = await getCurrentSession()
         if (active) {
           setCurrentUser(session)
-          if (google === 'google-success' && !session) {
+          if (google === 'google-success' && session) {
+            const back = takeReturn()
+            if (back && back !== window.location.pathname) { window.history.replaceState({}, '', back); setCurrentPath(back) }
+          } else if (google === 'google-success' && !session) {
             setAuthNotice('O Google confirmou o acesso, mas a sessão não foi aberta. Verifique se o navegador aceita cookies e tente novamente.')
             setAuthMode('login')
           } else if (google === 'google-linked' && session) {
@@ -501,10 +531,21 @@ export default function App() {
     if (user.googleLinked && authNotice === GOOGLE_NOTICES['google-link-required']) setGoogleNotice('Conta Google vinculada. Agora você também pode entrar com o Google.')
     setAuthMode(null); setAuthNotice(''); setCurrentUser(user)
   }
+  const finishWelcome = () => {
+    setWelcome(null)
+    navigate(takeReturn() ?? (currentPath === '/' ? '/feed' : currentPath))
+  }
+  const welcomeDialog = welcome && <AuthResultDialog
+    title={welcome === 'verified' ? 'E-mail confirmado com sucesso!' : 'Bem-vindo ao Operador Zero!'}
+    actions={<button className="button" type="button" autoFocus onClick={finishWelcome}>Continuar</button>}>
+    {welcome === 'verified'
+      ? <p>Sua conta está ativa e você já está conectado.</p>
+      : <p>Sua conta foi criada com sucesso.</p>}
+  </AuthResultDialog>
   const googleSignupPrompt = googleSignup && <GoogleSignupPrompt onClose={() => setGoogleSignup(false)}
-    onDone={user => { setGoogleSignup(false); authenticated(user); navigate('/feed') }}
+    onDone={user => { setGoogleSignup(false); authenticated(user); setWelcome('google') }}
     onExpired={() => { setGoogleSignup(false); setAuthNotice(GOOGLE_NOTICES['google-signup-required']); setAuthMode('signup') }}/>
-  const authModal = authMode ? <AuthModal mode={authMode} onClose={() => { setAuthMode(null); setAuthNotice('') }} onModeChange={setAuthMode} onAuthenticated={authenticated} resetToken={resetTokenValue} initialNotice={authNotice}/> : googleSignupPrompt
+  const authModal = <>{authMode ? <AuthModal mode={authMode} onClose={() => { setAuthMode(null); setAuthNotice('') }} onModeChange={setAuthMode} onAuthenticated={authenticated} resetToken={resetTokenValue} initialNotice={authNotice}/> : googleSignupPrompt}{welcomeDialog}</>
 
   // Link compartilhado (/p/{id} redireciona para ca): funciona logado ou nao.
   const sharedPost = currentPath.match(/^\/post\/([0-9a-f-]{36})$/)?.[1]
@@ -529,7 +570,7 @@ export default function App() {
     </>
   }
 
-  if (currentUser) return <Dashboard path={currentPath} onNavigate={navigate} user={currentUser} onUserUpdated={setCurrentUser} googleNotice={googleNotice} onDismissGoogleNotice={() => setGoogleNotice('')} onNavigateCommunity={() => navigate('/comunidade')} onLogout={async () => {
+  if (currentUser) return <>{welcomeDialog}<Dashboard path={currentPath} onNavigate={navigate} user={currentUser} onUserUpdated={setCurrentUser} googleNotice={googleNotice} onDismissGoogleNotice={() => setGoogleNotice('')} onNavigateCommunity={() => navigate('/comunidade')} onLogout={async () => {
     try {
       await logout()
       setCurrentUser(null)
@@ -537,7 +578,7 @@ export default function App() {
     } catch {
       return false
     }
-  }}/>
+  }}/></>
 
   const nav = ['Operações', 'Como funciona', 'Comunidade']
   return <div className={`site-shell ${IS_STAGING ? 'site-shell--staging' : ''}`}>

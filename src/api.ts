@@ -176,12 +176,16 @@ const FIELD_LABELS: Record<string, string> = { acronym: 'Sigla' }
 export class ApiClientError extends Error {
   code?: string
   correlationId?: string
+  status?: number
+  field?: string
 
-  constructor(message: string, code?: string, correlationId?: string) {
+  constructor(message: string, code?: string, correlationId?: string, status?: number, field?: string) {
     super(message)
     this.name = 'ApiClientError'
     this.code = code
     this.correlationId = correlationId
+    this.status = status
+    this.field = field
   }
 }
 
@@ -244,9 +248,9 @@ async function readError(response: Response) {
     const message = fieldError
       ? `${FIELD_LABELS[fieldError.field] || 'Campo'}: ${fieldError.message}`
       : error.message || fallback
-    return new ApiClientError(message, error.code, error.correlationId)
+    return new ApiClientError(message, error.code, error.correlationId, response.status, fieldError?.field)
   } catch {
-    return new ApiClientError(fallback)
+    return new ApiClientError(fallback, undefined, undefined, response.status)
   }
 }
 
@@ -324,7 +328,13 @@ export const register = (displayName: string, email: string, password: string, p
   apiRequest<{ message: string }>('/api/auth/register', json('POST', { displayName, email, password, passwordConfirmation, termsAccepted }), AUTH_MUTATION_TIMEOUT_MS)
 export const requestPasswordRecovery = (email: string) => apiRequest<{ message: string }>('/api/auth/password-recovery', json('POST', { email }), AUTH_MUTATION_TIMEOUT_MS)
 export const resendVerification = (email: string) => apiRequest<{ message: string }>('/api/auth/resend-verification', json('POST', { email }), AUTH_MUTATION_TIMEOUT_MS)
-export const verifyEmail = (token: string) => apiRequest<{ message: string }>('/api/auth/verify-email', json('POST', { token }), AUTH_MUTATION_TIMEOUT_MS)
+/** Confirma o e-mail e ja entra na conta (o servidor abre a sessao e renova o CSRF). */
+export async function verifyEmail(token: string) {
+  const user = await apiRequest<SessionUser>('/api/auth/verify-email', json('POST', { token }), AUTH_MUTATION_TIMEOUT_MS)
+  csrfToken = null
+  csrfPreparedAt = 0
+  return user
+}
 export const resetPassword = (token: string, password: string, passwordConfirmation: string) =>
   apiRequest<{ message: string }>('/api/auth/password-reset', json('POST', { token, password, passwordConfirmation }), AUTH_MUTATION_TIMEOUT_MS)
 

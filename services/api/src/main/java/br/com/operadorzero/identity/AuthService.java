@@ -61,10 +61,9 @@ public class AuthService {
 
         Optional<UserAccount> existing = repository.findByEmail(normalizedEmail);
         if (existing.isPresent()) {
-            // Resposta identica a um cadastro novo: nao revela que o e-mail existe. Quem ainda nao confirmou
-            // recebe um novo link; contas ativas nao recebem nada.
-            existing.filter(account -> "PENDING_EMAIL".equals(account.status()))
-                .ifPresent(account -> issueToken(account, "VERIFY_EMAIL"));
+            // Ainda nao confirmou: recebe um novo link (mesma tela de "conta criada"). Ja tem conta: aviso claro.
+            if (!"PENDING_EMAIL".equals(existing.get().status())) throw AuthException.emailAlreadyRegistered();
+            issueToken(existing.get(), "VERIFY_EMAIL");
             return;
         }
 
@@ -80,15 +79,20 @@ public class AuthService {
         audit(account, "AUTH_REGISTER", null, ipHash(request), now);
     }
 
+    /**
+     * Confirma o e-mail e ja entra na conta: o link e de uso unico, expira e so chega a caixa de entrada do dono,
+     * entao vale como prova de acesso (a pessoa nao precisa digitar e-mail e senha de novo).
+     */
     @Transactional
-    public void verifyEmail(String rawToken, HttpServletRequest request) {
+    public UserAccount verifyEmail(String rawToken, HttpServletRequest request, HttpServletResponse response) {
         ensureEnabled();
         Instant now = Instant.now();
         long userId = repository.consumeAuthToken(tokens.hash(rawToken), "VERIFY_EMAIL", now)
             .orElseThrow(AuthException::invalidToken);
         repository.activateUser(userId, now);
-        UserAccount account = repository.findById(userId).orElseThrow(AuthException::invalidToken);
+        UserAccount account = repository.findById(userId).filter(UserAccount::active).orElseThrow(AuthException::invalidToken);
         audit(account, "AUTH_EMAIL_VERIFIED", null, ipHash(request), now);
+        return createSession(account, request, response, "AUTH_LOGIN_EMAIL_VERIFIED");
     }
 
     @Transactional

@@ -54,13 +54,16 @@ public class AuthController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     MessageResponse register(@Valid @RequestBody RegisterRequest body, HttpServletRequest request) {
         service.register(body.displayName(), body.email(), body.password(), body.termsAccepted(), request);
-        return new MessageResponse("Se este e-mail puder ser usado, enviamos um link de confirmacao. Confira tambem o Lixo Eletronico.");
+        return new MessageResponse("Enviamos um link de confirmação para seu e-mail. Confira também o Lixo Eletrônico.");
     }
 
+    /** Confirma e ja abre a sessao (cookie novo e CSRF renovado), devolvendo o usuario como o login faz. */
     @PostMapping("/verify-email")
-    MessageResponse verifyEmail(@Valid @RequestBody TokenRequest body, HttpServletRequest request) {
-        service.verifyEmail(body.token(), request);
-        return new MessageResponse("E-mail confirmado. Sua conta esta ativa.");
+    SessionResponse verifyEmail(@Valid @RequestBody TokenRequest body, HttpServletRequest request, HttpServletResponse response) {
+        UserAccount account = service.verifyEmail(body.token(), request, response);
+        csrf.rotate(request, response);
+        return SessionResponse.from(account, MfaService.withoutPrivilegedRoles(account.roles()), google.isLinked(account.id()),
+            mfa.isEnabled(account.id()));
     }
 
     @PostMapping("/login")

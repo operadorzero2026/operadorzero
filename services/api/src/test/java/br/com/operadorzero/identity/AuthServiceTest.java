@@ -92,13 +92,11 @@ class AuthServiceTest {
     }
 
     @Test
-    void registrationForExistingActiveAccountLooksLikeSuccessAndSendsNothing() {
+    void registrationForExistingActiveAccountSaysTheEmailIsTakenAndSendsNothing() {
         when(repository.findByEmail("new@example.com")).thenReturn(Optional.of(account("ACTIVE", encoder.encode("OutraSenha2026!"))));
 
-        long startedAt = System.nanoTime();
-        service.register("New Operator", "new@example.com", "CampoSeguro2026!", true, request());
-
-        assertThat(Duration.ofNanos(System.nanoTime() - startedAt)).isGreaterThan(Duration.ofMillis(5));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.register("New Operator", "new@example.com", "CampoSeguro2026!", true, request()))
+            .isInstanceOfSatisfying(AuthException.class, e -> assertThat(e.code()).isEqualTo("EMAIL_ALREADY_REGISTERED"));
         verify(repository, never()).createUser(anyString(), anyString(), anyString(), anyString(), anyString(),
             anyString(), anyString(), anyString(), any(Instant.class));
         verify(repository, never()).saveAuthToken(anyLong(), anyString(), anyString(), any(), any());
@@ -168,9 +166,12 @@ class AuthServiceTest {
             .thenReturn(Optional.of(account.id()));
         when(repository.findById(account.id())).thenReturn(Optional.of(account));
 
-        service.verifyEmail(rawToken, request());
+        var response = new org.springframework.mock.web.MockHttpServletResponse();
+        service.verifyEmail(rawToken, request(), response);
 
         verify(repository).activateUser(eq(account.id()), any(Instant.class));
+        // Ja entra na conta: sessao gravada e cookie escrito.
+        verify(repository).saveSession(eq(account.id()), anyString(), any(), any(), any(Instant.class), any(Instant.class));
         verify(repository).recordAudit(eq(account.id()), eq("AUTH_EMAIL_VERIFIED"), eq("APP_USER"),
             eq(account.publicId()), anyString(), eq(null), anyString(), any(Instant.class));
     }

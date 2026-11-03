@@ -28,6 +28,11 @@ public final class AuthException extends RuntimeException {
 
 
 
+    /** Decisao do produto: avisar que o e-mail ja tem conta (o limite de tentativas do cadastro continua valendo). */
+    public static AuthException emailAlreadyRegistered() {
+        return new AuthException(HttpStatus.CONFLICT, "EMAIL_ALREADY_REGISTERED", "Este e-mail já possui uma conta. Faça login ou recupere sua senha.");
+    }
+
     public static AuthException invalidToken() {
         return new AuthException(HttpStatus.BAD_REQUEST, "INVALID_OR_EXPIRED_TOKEN", "O link e invalido ou expirou.");
     }
