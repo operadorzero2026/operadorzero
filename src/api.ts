@@ -658,3 +658,16 @@ export const setCommunityCommentsLocked = (postId:string,locked:boolean,reason:s
   apiRequest<{message:string}>(`/api/admin/community/posts/${encodeURIComponent(postId)}/comments-lock`,json('PATCH',{locked,reason}))
 export const resolveCommunityReport = (reportId:string,status:'REVIEWED'|'DISMISSED'|'ACTIONED',resolution:string) =>
   apiRequest<{message:string}>(`/api/admin/community/reports/${encodeURIComponent(reportId)}`,json('PATCH',{status,resolution}))
+
+// ---- Chat geral da operacao (so texto, tempo real por SSE) ----
+export type ChatAuthorInfo = { operatorId:string; callsign:string; displayName:string; photoUrl?:string|null }
+export type OperationChatItem = { id:string; author?:ChatAuthorInfo|null; body:string; deleted:boolean; createdAt:string; pinned:boolean; own:boolean }
+export type OperationChatState = { items:OperationChatItem[]; hasMore:boolean; pinned:OperationChatItem[]; me:{ canSend:boolean; blockedReason?:string|null; muted:boolean; mutedUntil?:string|null }; manager:boolean; closesAt:string; closed:boolean; notice?:string|null; muted:{ operatorId:string; callsign:string; until?:string|null }[] }
+const chatPath = (id:string) => `/api/operations/${encodeURIComponent(id)}/chat`
+export const getChat = (id:string, params:{ before?:string; limit?:number } = {}) => apiRequest<OperationChatState>(`${chatPath(id)}?limit=${params.limit ?? 50}${params.before ? `&before=${encodeURIComponent(params.before)}` : ''}`)
+export const sendChat = (id:string, body:string, idempotencyKey:string) => apiRequest<OperationChatItem>(`${chatPath(id)}/messages`, json('POST', { body, idempotencyKey }))
+export const deleteChatMessage = (id:string, messageId:string) => apiRequest<void>(`${chatPath(id)}/messages/${encodeURIComponent(messageId)}`, { method:'DELETE' })
+export const pinChatMessage = (id:string, messageId:string, pinned:boolean) => apiRequest<void>(`${chatPath(id)}/messages/${encodeURIComponent(messageId)}/pin`, pinned ? json('POST', {}) : { method:'DELETE' })
+export const muteChatMember = (id:string, operatorId:string, duration:'1H'|'6H'|'24H'|'INDEFINITE') => apiRequest<void>(`${chatPath(id)}/mutes/${encodeURIComponent(operatorId)}`, json('POST', { duration }))
+export const unmuteChatMember = (id:string, operatorId:string) => apiRequest<void>(`${chatPath(id)}/mutes/${encodeURIComponent(operatorId)}`, { method:'DELETE' })
+export const chatStreamUrl = (id:string) => `${getApiBaseUrl()}${chatPath(id)}/stream`

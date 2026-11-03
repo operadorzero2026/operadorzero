@@ -1,5 +1,20 @@
 # Histórico de alterações
 
+## 2026-11-03 - Operações, Etapa C: chat geral em tempo real, moderação, prazo de 7 dias e iPhone
+
+### Arquivos alterados
+- Banco: `V35__operation_chat_moderation.sql` (aditiva: comunicados fixados em `operation_chat_message`; tabela `operation_chat_mute`).
+- Servidor: `operation/OperationChat{Service,Repository,Controller,Hub}` (novos). Rotas antigas do chat geral removidas de `OperationStructureController` (deixavam qualquer pessoa logada ler e escrever); os chats de esquadrão continuam.
+- Site: `src/operation/OperationChat.tsx` e `operation-chat.css` (novos); botão "Chat da operação" em `OperationsPage.tsx` e `OperationPublicPage.tsx`; `OperationCommandCenter.tsx` mostra só os chats de esquadrão; `api.ts`.
+
+### O que foi feito
+- Acesso só para o organizador (e administradores da operação) e inscritos aprovados; quem cancela ou é removido perde o acesso na hora. Validado no servidor.
+- Só texto (até 1.000 caracteres), com nome, foto (quando houver), texto e horário; envio repetido não duplica.
+- Tempo real por Server-Sent Events (aviso em milissegundos, sem mudar o proxy); sem conexão, o app confere a cada 10 s.
+- Moderação: apagar mensagem, fixar comunicados, silenciar por 1 h, 6 h, 24 h ou tempo indeterminado e retirar o silenciamento; silenciado lê mas não envia. Ações registradas em `operation_moderation_action`.
+- Prazo: aberto até 7 dias depois do término, com aviso "Este chat será encerrado em …"; depois, só leitura do histórico. O organizador não encerra antes.
+- iPhone: o chat ocupa a área visível (VisualViewport), então o campo e o Enviar (à direita) ficam sempre acima do teclado; área segura inferior, rolagem independente, fonte de 16 px (sem zoom automático).
+
 ## 2026-11-03 - Operações, Etapa B: página da operação, capa compacta, briefing, PDFs, compartilhar, pesquisa e histórico
 
 ### Arquivos alterados

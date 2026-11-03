@@ -1,7 +1,8 @@
-import { ArrowRight, CalendarDays, Clock3, MapPin, Navigation, Target, Users } from 'lucide-react'
+import { ArrowRight, CalendarDays, Clock3, MapPin, MessageCircle, Navigation, Target, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getOperationPage, publicMediaUrl, type OperationPage } from '../api'
 import { ExpandableText, ShareButton } from './OperationBits'
+import { OperationChat } from './OperationChat'
 import { OperationDocuments } from './OperationDocuments'
 import { OperationRegistrationPanel } from './OperationRegistrationPanel'
 import './operation-page.css'
@@ -25,6 +26,7 @@ export function OperationPublicPage({ operationId, loggedIn, onLogin, onSignup, 
   const [page, setPage] = useState<OperationPage | null>(null)
   const [error, setError] = useState('')
   const [version, setVersion] = useState(0)
+  const [chatOpen, setChatOpen] = useState(false)
   useEffect(() => {
     let active = true
     getOperationPage(operationId).then(result => { if (active) { setPage(result); setError('') } })
@@ -59,6 +61,8 @@ export function OperationPublicPage({ operationId, loggedIn, onLogin, onSignup, 
         {(page.briefing || page.description) && <section className="op-page-briefing"><h2>Briefing</h2><ExpandableText text={page.briefing || page.description}/></section>}
         {loggedIn ? <>
           <OperationDocuments operationId={page.id}/>
+          <button type="button" className="op-chat-open" onClick={() => setChatOpen(true)}><MessageCircle/> Chat da operação</button>
+          {chatOpen && <OperationChat operationId={page.id} title={page.name} onClose={() => setChatOpen(false)}/>}
           <OperationRegistrationPanel operationId={page.id} onChanged={() => setVersion(value => value + 1)}/>
         </> : page.registrationOpen ? <section className="op-page-join">
           <p>Entre na sua conta para se inscrever. Você volta para esta operação depois do login.</p>

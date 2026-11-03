@@ -1,4 +1,4 @@
-import { CalendarClock, CalendarDays, MapPin, Pencil, Plus, Search, Target, Trash2, Users, X } from 'lucide-react'
+import { CalendarClock, CalendarDays, MapPin, MessageCircle, Pencil, Plus, Search, Target, Trash2, Users, X } from 'lucide-react'
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   updateOperationStatus,
@@ -23,6 +23,7 @@ import {
 } from './api'
 import { OperationRegistrationPanel } from './operation/OperationRegistrationPanel'
 import { OperationDocuments } from './operation/OperationDocuments'
+import { OperationChat } from './operation/OperationChat'
 import { CoverPicker, ExpandableText, ShareButton } from './operation/OperationBits'
 import { OperationCommandCenter } from './OperationCommandCenter'
 
@@ -80,6 +81,7 @@ export function OperationsPage() {
     [coverFile, setCoverFile] = useState<File | null>(null),
     [period, setPeriod] = useState<'upcoming' | 'past' | 'all'>('upcoming'),
     [searchDate, setSearchDate] = useState(''),
+    [chatOpen, setChatOpen] = useState(false),
     [deleteReason, setDeleteReason] = useState(''),
     [operationEditMode, setOperationEditMode] = useState(false),
     [operatorLocation, setOperatorLocation] = useState({ city: '', stateCode: '' })
@@ -518,6 +520,8 @@ export function OperationsPage() {
             {selected.briefing && <section className="operation-briefing"><small>BRIEFING DO JOGO</small><ExpandableText text={selected.briefing}/></section>}
             {selected.status !== 'DRAFT' && <a className="operation-open-page" href={`/convocacao/${selected.id}`}>Abrir página da operação</a>}
             <OperationDocuments key={`docs-${selected.id}`} operationId={selected.id}/>
+            {selected.status !== 'DRAFT' && <button type="button" className="op-chat-open" onClick={() => setChatOpen(true)}><MessageCircle/> Chat da operação</button>}
+            {chatOpen && <OperationChat operationId={selected.id} title={selected.name} onClose={() => setChatOpen(false)}/>}
             <div className="operation-roster-summary"><span><MapPin /> {selected.fieldName} · {selected.city}/{selected.stateCode}</span><span><Users /> {selected.participantCount}/{selected.participantLimit ?? 'sem limite'} participantes</span></div>
             {selected.managedByCurrentUser && (statusActions[selected.status] || CANCELLABLE_STATUSES.includes(selected.status)) && <div className="operation-status-actions" aria-label="Status da operação">
               {(statusActions[selected.status] || []).map(item => <button key={item.status} type="button" className="module-secondary" disabled={pending.startsWith('status-')} onClick={() => changeStatus(item.status, item.label)}>{item.label}</button>)}
