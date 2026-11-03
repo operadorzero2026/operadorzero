@@ -18,12 +18,7 @@ O Pix direto da Etapa F continua existindo. Ele cai na conta da plataforma, sem 
 - Ao criar a preferência, o meio de pagamento ainda não foi escolhido: o jogador escolhe no checkout. Por isso a tarifa real ainda é desconhecida. A tarifa também depende do meio, do parcelamento, do prazo de recebimento e das condições da conta do organizador.
 - Por isso **não dá para garantir "10% do líquido"** com o split nativo. O sistema calcula a comissão sobre o **valor bruto** (percentual configurado × preço, arredondado para baixo) e guarda em cada pagamento o percentual e o valor aplicados.
 - Depois da aprovação, o sistema guarda a tarifa efetiva (`fee_details`), a comissão cobrada e o líquido do organizador. Isso é **conciliação**: registra o que aconteceu, não muda a divisão.
-- Alternativas que exigem a sua decisão:
-  1. Manter a comissão sobre o bruto (atual).
-  2. Usar um percentual sobre o bruto equivalente ao "líquido" esperado, por exemplo 9,6% em vez de 10% quando a tarifa média é 4%.
-  3. Limitar o checkout a um único meio de pagamento, como Pix, cuja tarifa é previsível na conta do organizador. Ainda assim é uma estimativa.
-
-  Transferências posteriores entre contas **não** foram implementadas.
+- **Decisão do responsável (2026-11-03): comissão de 10% sobre o valor bruto da inscrição.** Exemplo: inscrição de R$ 100,00 → R$ 10,00 para o Operador Zero; a tarifa do Mercado Pago sai da parte do organizador. Transferências posteriores entre contas não são feitas.
 
 ## Configuração no Mercado Pago Developers
 
