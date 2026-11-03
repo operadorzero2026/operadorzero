@@ -68,6 +68,7 @@ app:
     mercadopago:
       access-token: ${MERCADOPAGO_ACCESS_TOKEN:}
       webhook-secret: ${MERCADOPAGO_WEBHOOK_SECRET:}
+      webhook-secret-test: ${MERCADOPAGO_WEBHOOK_SECRET_TEST:}
       notification-url: ${MERCADOPAGO_NOTIFICATION_URL:}
       api-base-url: ${MERCADOPAGO_API_BASE_URL:https://api.mercadopago.com}
       pix-expiration: ${MERCADOPAGO_PIX_EXPIRATION:30m}

@@ -21,12 +21,13 @@ import org.springframework.boot.context.properties.bind.ConstructorBinding;
  * @param redirectUri             callback do OAuth; vazio = FRONTEND_BASE_URL + /api/payments/mercadopago/callback
  * @param authBaseUrl             https://auth.mercadopago.com (trocado so em teste local)
  * @param defaultCommissionPercent comissao padrao quando o administrador ainda nao gravou uma (PLATFORM_DEFAULT_COMMISSION_PERCENT)
+ * @param webhookSecretTest       assinatura secreta do Modo de teste dos Webhooks (MERCADOPAGO_WEBHOOK_SECRET_TEST)
  */
 @ConfigurationProperties("app.payments.mercadopago")
 public record MercadoPagoProperties(String accessToken, String webhookSecret, URI notificationUrl, URI apiBaseUrl,
                                     Duration pixExpiration, String clientId, String clientSecret, URI redirectUri,
                                     URI authBaseUrl, String environment, BigDecimal defaultCommissionPercent,
-                                    Duration checkoutExpiration) {
+                                    Duration checkoutExpiration, String webhookSecretTest) {
     @ConstructorBinding
     public MercadoPagoProperties {
         if (apiBaseUrl == null) apiBaseUrl = URI.create("https://api.mercadopago.com");
@@ -37,9 +38,17 @@ public record MercadoPagoProperties(String accessToken, String webhookSecret, UR
         if (environment == null || environment.isBlank()) environment = "test";
     }
 
+    /** Sem a assinatura do modo de teste (forma anterior). */
+    public MercadoPagoProperties(String accessToken, String webhookSecret, URI notificationUrl, URI apiBaseUrl, Duration pixExpiration,
+                                 String clientId, String clientSecret, URI redirectUri, URI authBaseUrl, String environment,
+                                 BigDecimal defaultCommissionPercent, Duration checkoutExpiration) {
+        this(accessToken, webhookSecret, notificationUrl, apiBaseUrl, pixExpiration, clientId, clientSecret, redirectUri, authBaseUrl,
+            environment, defaultCommissionPercent, checkoutExpiration, null);
+    }
+
     /** Construtor da Etapa F (so Pix direto). */
     public MercadoPagoProperties(String accessToken, String webhookSecret, URI notificationUrl, URI apiBaseUrl, Duration pixExpiration) {
-        this(accessToken, webhookSecret, notificationUrl, apiBaseUrl, pixExpiration, null, null, null, null, null, null, null);
+        this(accessToken, webhookSecret, notificationUrl, apiBaseUrl, pixExpiration, null, null, null, null, null, null, null, null);
     }
 
     /** Pix direto (Etapa F): conta da plataforma, sem divisao. */
@@ -63,6 +72,14 @@ public record MercadoPagoProperties(String accessToken, String webhookSecret, UR
 
     public boolean webhookSigned() {
         return webhookSecret != null && !webhookSecret.isBlank();
+    }
+
+    /**
+     * O Mercado Pago assina as notificacoes com uma assinatura secreta diferente em cada modo (teste e producao) da mesma
+     * aplicacao: as duas sao aceitas (MERCADOPAGO_WEBHOOK_SECRET e MERCADOPAGO_WEBHOOK_SECRET_TEST).
+     */
+    public java.util.List<String> webhookSecrets() {
+        return java.util.stream.Stream.of(webhookSecret, webhookSecretTest).filter(s -> s != null && !s.isBlank()).toList();
     }
 
     private static boolean usable(String value) {

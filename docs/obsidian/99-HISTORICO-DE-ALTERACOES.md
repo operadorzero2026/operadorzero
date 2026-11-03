@@ -1,5 +1,12 @@
 # Histórico de alterações
 
+## 2026-11-03 - Webhook do Mercado Pago aceita as assinaturas dos dois modos
+
+### O que foi feito
+- Na simulação do painel, a notificação pela URL de teste voltou 401 e pela URL de produção voltou 200: o Mercado Pago assina cada modo com uma assinatura secreta diferente.
+- Nova variável opcional `MERCADOPAGO_WEBHOOK_SECRET_TEST`: o webhook aceita a assinatura de produção ou a de teste. Sem assinatura válida, continua recusando (401).
+- Arquivos: `MercadoPagoProperties`, `WebhookSignature`, `PaymentController`, `application.yml`, `compose.yml`, `.env.example` e o teste em `PaymentServiceTest`. 293 testes passando.
+
 ## 2026-11-03 - Pagamentos: Mercado Pago Marketplace (Split 1:1) com comissão da plataforma
 
 ### Arquivos alterados

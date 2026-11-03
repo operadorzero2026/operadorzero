@@ -14,6 +14,11 @@ import javax.crypto.spec.SecretKeySpec;
 final class WebhookSignature {
     private WebhookSignature() {}
 
+    /** Valida contra qualquer uma das assinaturas configuradas (modo de producao e de teste). */
+    static boolean validAny(java.util.List<String> secrets, String signatureHeader, String requestId, String dataId) {
+        return secrets.stream().anyMatch(secret -> valid(secret, signatureHeader, requestId, dataId));
+    }
+
     static boolean valid(String secret, String signatureHeader, String requestId, String dataId) {
         if (secret == null || secret.isBlank() || signatureHeader == null) return false;
         String ts = null, v1 = null;

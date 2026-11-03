@@ -92,7 +92,7 @@ public class PaymentController {
                                  @RequestBody(required = false) JsonNode body) {
         String id = dataId != null ? dataId : legacyId;
         if (id == null && body != null && body.path("data").hasNonNull("id")) id = body.path("data").get("id").asText();
-        if (!properties.anyEnabled() || !WebhookSignature.valid(properties.webhookSecret(), signature, requestId, id)) {
+        if (!properties.anyEnabled() || !WebhookSignature.validAny(properties.webhookSecrets(), signature, requestId, id)) {
             return ResponseEntity.status(401).build();
         }
         String kind = type != null ? type : topic != null ? topic : body != null && body.hasNonNull("type") ? body.get("type").asText() : null;

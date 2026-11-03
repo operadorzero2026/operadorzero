@@ -36,7 +36,8 @@ Aplicação existente: **Operador Zero**, Checkout Pro, API de Preferences, Mark
 |---|---|---|
 | `MERCADOPAGO_CLIENT_ID` | plataforma (aplicação) | OAuth dos organizadores |
 | `MERCADOPAGO_CLIENT_SECRET` | plataforma (aplicação) | OAuth dos organizadores (só no servidor) |
-| `MERCADOPAGO_WEBHOOK_SECRET` | plataforma (aplicação) | assinatura das notificações |
+| `MERCADOPAGO_WEBHOOK_SECRET` | plataforma (aplicação) | assinatura das notificações do **Modo de produção** dos Webhooks |
+| `MERCADOPAGO_WEBHOOK_SECRET_TEST` | plataforma (aplicação) | assinatura do **Modo de teste** (o Mercado Pago usa uma por modo; as duas são aceitas) |
 | `MERCADOPAGO_ENVIRONMENT` | — | `test` (contas e credenciais de teste) ou `production` |
 | `PLATFORM_DEFAULT_COMMISSION_PERCENT` | — | comissão padrão até o administrador gravar outra (7) |
 | `MERCADOPAGO_ACCESS_TOKEN` | plataforma (opcional) | Pix direto sem divisão (Etapa F) |

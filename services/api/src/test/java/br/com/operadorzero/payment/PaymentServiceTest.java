@@ -240,5 +240,11 @@ class PaymentServiceTest {
         assertThat(WebhookSignature.valid("outro", "ts=" + ts + ",v1=" + v1, "req-1", "abc123")).isFalse();
         assertThat(WebhookSignature.valid("segredo", null, "req-1", "abc123")).isFalse();
         assertThat(WebhookSignature.valid("", "ts=" + ts + ",v1=" + v1, "req-1", "abc123")).isFalse();
+        // Modo de teste e de producao tem assinaturas diferentes: qualquer uma das configuradas vale.
+        String test = WebhookSignature.hmac("segredo-teste", "id:abc123;request-id:req-1;ts:" + ts + ";");
+        var props = new MercadoPagoProperties(null, "segredo", null, null, null, "app", "x", null, null, "test", null, null, "segredo-teste");
+        assertThat(WebhookSignature.validAny(props.webhookSecrets(), "ts=" + ts + ",v1=" + test, "req-1", "abc123")).isTrue();
+        assertThat(WebhookSignature.validAny(props.webhookSecrets(), "ts=" + ts + ",v1=" + v1, "req-1", "abc123")).isTrue();
+        assertThat(WebhookSignature.validAny(props.webhookSecrets(), "ts=" + ts + ",v1=" + WebhookSignature.hmac("outro", "x"), "req-1", "abc123")).isFalse();
     }
 }
