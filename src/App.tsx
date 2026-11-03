@@ -2,6 +2,7 @@ import { FormEvent, lazy, Suspense, useEffect, useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
+  Wallet,
   Bell,
   Building2,
   CalendarDays,
@@ -77,6 +78,7 @@ import { RankingsPage } from './RankingsPage'
 import { PerformancePage } from './PerformancePage'
 import CommunityPage from './CommunityPage'
 import { OperatorsSocialPage } from './OperatorsSocialPage'
+import { FinancePage } from './FinancePage'
 import { AuthErrorBox, AuthResultDialog, Spinner } from './AuthFeedback'
 import { authError, rememberReturn, takeReturn, type AuthErrorInfo } from './authRules'
 
@@ -273,6 +275,7 @@ const dashboardNav = [
   { label: 'Minha equipe', icon: Users },
   { label: 'Operadores', icon: UserRound },
   { label: 'Desempenho', icon: ClipboardCheck },
+  { label: 'Financeiro', icon: Wallet },
   { label: 'Rankings', icon: Trophy },
   { label: 'Quadro de Honra', icon: Medal },
   { label: 'Comunidade', icon: Users },
@@ -369,7 +372,7 @@ function PublicAgenda({ onJoin }: { onJoin: () => void }) {
 
 function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommunity, user, googleNotice = '', onDismissGoogleNotice }: { path:string; onNavigate:(path:string)=>void; onLogout: () => Promise<boolean>; onUserUpdated: (user: SessionUser) => void; onNavigateCommunity: () => void; user: SessionUser; googleNotice?: string; onDismissGoogleNotice?: () => void }) {
   const [profileOpen, setProfileOpen] = useState(false)
-  const [activeView, setActiveView] = useState(path.startsWith('/operadores') ? 'Operadores' : path === '/feed' || path.startsWith('/recon/') ? 'Feed' : 'Visão geral')
+  const [activeView, setActiveView] = useState(path.startsWith('/operadores') ? 'Operadores' : path === '/financeiro' ? 'Financeiro' : path === '/feed' || path.startsWith('/recon/') ? 'Feed' : 'Visão geral')
   const openReconId = path.match(/^\/recon\/([0-9a-f-]{36})$/)?.[1] ?? null
   const [createOpen, setCreateOpen] = useState(false)
   const [createNotice, setCreateNotice] = useState('')
@@ -378,7 +381,7 @@ function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommun
   const select = (view: string) => {
     if (view === 'Comunidade') return onNavigateCommunity()
     if (view === 'Operadores') return onNavigate('/operadores')
-    onNavigate(view === 'Feed' ? '/feed' : '/painel')
+    onNavigate(view === 'Feed' ? '/feed' : view === 'Financeiro' ? '/financeiro' : '/painel')
     setActiveView(view)
   }
   const [unread, setUnread] = useState(0)
@@ -391,7 +394,7 @@ function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommun
   const [overviewError, setOverviewError] = useState('')
   const callsign = user.callsign || user.displayName
   const initial = callsign.charAt(0).toUpperCase()
-  useEffect(() => { if (path.startsWith('/operadores')) setActiveView('Operadores'); else if (path === '/feed' || path.startsWith('/recon/')) setActiveView('Feed') }, [path])
+  useEffect(() => { if (path.startsWith('/operadores')) setActiveView('Operadores'); else if (path === '/financeiro') setActiveView('Financeiro'); else if (path === '/feed' || path.startsWith('/recon/')) setActiveView('Feed') }, [path])
   useEffect(() => {
     let active = true
     Promise.all([getOperatorProfile(), getOperations(), getTeamSummary(), getOperatorRanking()])
@@ -419,7 +422,7 @@ function Dashboard({ path, onNavigate, onLogout, onUserUpdated, onNavigateCommun
       <header className="app-topbar"><OperatorSearch onOpenProfile={username => onNavigate(`/operadores/${encodeURIComponent(username)}`)}/><div className="profile-control"><button onClick={() => setProfileOpen(!profileOpen)} aria-expanded={profileOpen}><span className="profile-avatar">{initial}</span><span><b>{callsign}</b><small>@{user.username}</small></span><ChevronDown/></button>{profileOpen && <div className="profile-menu"><p>{user.email}</p><button disabled={logoutPending} onClick={async () => { setLogoutPending(true); setLogoutError(''); const completed = await onLogout(); setLogoutPending(false); if (!completed) setLogoutError('Não foi possível encerrar a sessão. Verifique sua conexão e tente novamente.') }}><LogOut/> {logoutPending ? 'Encerrando...' : 'Sair da conta'}</button>{logoutError && <small className="logout-error" role="alert">{logoutError}</small>}</div>}</div></header>
       {user.mfaRequired && activeView !== 'Meu Operador' && <p className="auth-notice google-notice" role="status">{user.mfaEnabled ? 'Confirme o código da verificação em duas etapas para usar as ferramentas de moderação.' : 'Ative a verificação em duas etapas para usar as ferramentas de moderação.'} <button type="button" onClick={() => setActiveView('Meu Operador')}>Abrir Meu Operador</button></p>}
       {googleNotice && <p className="auth-notice google-notice" role="status">{googleNotice} <button type="button" onClick={onDismissGoogleNotice}>Fechar</button></p>}
-      {activeView === 'Operadores' ? <OperatorsSocialPage path={path.startsWith('/operadores')?path:'/operadores'} currentUsername={user.username} onNavigate={onNavigate} onEditProfile={()=>setActiveView('Meu Operador')}/> : activeView === 'Meu Operador' ? <><OperatorPage onUserUpdated={updated => onUserUpdated({ ...user, ...updated })}/><GoogleAccountPanel user={user} onUserUpdated={onUserUpdated}/><MfaPanel user={user} onUserUpdated={onUserUpdated}/></> : activeView === 'Minha equipe' ? <TeamPage/> : activeView === 'Operações' ? <OperationsPage/> : activeView === 'Campos' ? <VenuesPage mode="fields"/> : activeView === 'Mapas' ? <VenuesPage mode="maps"/> : activeView === 'Desempenho' ? <PerformancePage/> : activeView === 'Rankings' ? <RankingsPage/> : activeView === 'Quadro de Honra' ? <HonorBoardPage onOpenPost={id => onNavigate(`/post/${id}`)}/> : activeView === 'Explorar' || activeView === 'Jogos' || activeView === 'Perfil' ? <HubPage hub={activeView as HubId} onSelect={select} extra={activeView === 'Perfil' ? <><DossierStrip username={user.username} own/>{user.roles.some(role => role === 'ADMIN' || role === 'MODERATOR') && <FeedModerationPanel/>}</> : undefined}/> : activeView === 'Notificações' ? <NotificationsPage onOpen={view => setActiveView(view)} onOpenPath={onNavigate} onChanged={refreshUnread}/> : activeView === 'Conquistas' ? <AchievementsPage/> : activeView !== 'Visão geral' ? <EmptyWorkspace area={activeView} onHome={() => setActiveView('Visão geral')}/> : <main className="dashboard real-dashboard">
+      {activeView === 'Operadores' ? <OperatorsSocialPage path={path.startsWith('/operadores')?path:'/operadores'} currentUsername={user.username} onNavigate={onNavigate} onEditProfile={()=>setActiveView('Meu Operador')}/> : activeView === 'Meu Operador' ? <><OperatorPage onUserUpdated={updated => onUserUpdated({ ...user, ...updated })}/><GoogleAccountPanel user={user} onUserUpdated={onUserUpdated}/><MfaPanel user={user} onUserUpdated={onUserUpdated}/></> : activeView === 'Minha equipe' ? <TeamPage/> : activeView === 'Operações' ? <OperationsPage/> : activeView === 'Campos' ? <VenuesPage mode="fields"/> : activeView === 'Mapas' ? <VenuesPage mode="maps"/> : activeView === 'Desempenho' ? <PerformancePage/> : activeView === 'Financeiro' ? <FinancePage isAdmin={user.roles.includes('ADMIN')}/> : activeView === 'Rankings' ? <RankingsPage/> : activeView === 'Quadro de Honra' ? <HonorBoardPage onOpenPost={id => onNavigate(`/post/${id}`)}/> : activeView === 'Explorar' || activeView === 'Jogos' || activeView === 'Perfil' ? <HubPage hub={activeView as HubId} onSelect={select} extra={activeView === 'Perfil' ? <><DossierStrip username={user.username} own/>{user.roles.some(role => role === 'ADMIN' || role === 'MODERATOR') && <FeedModerationPanel/>}</> : undefined}/> : activeView === 'Notificações' ? <NotificationsPage onOpen={view => setActiveView(view)} onOpenPath={onNavigate} onChanged={refreshUnread}/> : activeView === 'Conquistas' ? <AchievementsPage/> : activeView !== 'Visão geral' ? <EmptyWorkspace area={activeView} onHome={() => setActiveView('Visão geral')}/> : <main className="dashboard real-dashboard">
         <section className="dashboard-welcome"><div><p>BEM-VINDO</p><h1>Olá, <em>{callsign}.</em></h1></div></section>
         <section className="operator-strip real-operator-strip"><div className="operator-identity"><span className="operator-avatar">{initial}</span><div><small>OPERADOR</small><h2>{callsign}</h2><p>{user.displayName} · @{user.username}</p></div></div><div><small>STATUS DO PERFIL</small><strong>ATIVO</strong><span>Conta disponível</span></div></section>
         <section className="real-dashboard-intro"><div><p className="eyebrow"><span/> SUA JORNADA</p><h2>Comece pelo que importa.</h2><p>Encontre operações, organize sua equipe e acompanhe sua participação na comunidade.</p></div></section>
@@ -519,7 +522,7 @@ export default function App() {
   useEffect(() => {
     if (sessionRestoring) return
     if (currentUser && currentPath === '/') { window.history.replaceState({}, '', '/feed'); setCurrentPath('/feed') }
-    else if (!currentUser && currentPath === '/feed') setAuthMode(mode => mode ?? 'login')
+    else if (!currentUser && (currentPath === '/feed' || currentPath === '/financeiro')) setAuthMode(mode => mode ?? 'login')
   }, [currentUser, currentPath, sessionRestoring])
   const navigate = (path: string) => {
     if (window.location.pathname !== path) window.history.pushState({}, '', path)

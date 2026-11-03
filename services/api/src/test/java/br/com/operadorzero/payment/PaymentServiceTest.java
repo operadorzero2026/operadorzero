@@ -43,6 +43,7 @@ class PaymentServiceTest {
     private final OperationRepository operations = mock(OperationRepository.class);
     private final MercadoPagoClient gateway = mock(MercadoPagoClient.class);
     private final Notifier notifier = mock(Notifier.class);
+    private final MarketplaceService marketplace = mock(MarketplaceService.class);
     private final MercadoPagoProperties enabled = new MercadoPagoProperties("APP_USR-token", "segredo", null, null, Duration.ofMinutes(30));
     private final PaymentService service = service(enabled);
     private final AuthenticatedUser player = new AuthenticatedUser(20L, UUID.randomUUID(), "p@example.test", "p", "P", "P", List.of("USER"));
@@ -51,8 +52,8 @@ class PaymentServiceTest {
     private final UUID paymentPublicId = UUID.randomUUID();
 
     private PaymentService service(MercadoPagoProperties properties) {
-        return new PaymentService(repository, operations, gateway, properties, mock(AuditEventRepository.class), notifier,
-            URI.create("https://operadorzero.com.br/api/payments/mercadopago/webhook"), Clock.fixed(NOW, ZoneOffset.UTC));
+        return new PaymentService(repository, operations, gateway, properties, marketplace, mock(AuditEventRepository.class), notifier,
+            URI.create("https://operadorzero.com.br/api/payments/mercadopago/webhook"), "https://operadorzero.com.br", Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     private Context ctx(String participantStatus, Instant paidAt) {
@@ -77,7 +78,7 @@ class PaymentServiceTest {
     @ParameterizedTest(name = "{0}/{1} -> {2}")
     @CsvSource({"approved,accredited,CONFIRMED", "pending,pending_waiting_transfer,PENDING", "in_process,,PENDING",
         "rejected,cc_rejected_other_reason,REJECTED", "cancelled,expired,EXPIRED", "cancelled,by_collector,CANCELLED",
-        "refunded,,REFUNDED", "charged_back,,REFUNDED"})
+        "refunded,,REFUNDED", "charged_back,,CHARGEBACK", "approved,partially_refunded,PARTIALLY_REFUNDED", "in_mediation,,"})
     void mapsMercadoPagoStatus(String status, String detail, String expected) {
         assertThat(PaymentService.map(remote(status, detail, "x", PRICE))).isEqualTo(expected);
     }
@@ -178,7 +179,7 @@ class PaymentServiceTest {
     @Test
     void webhookForUnknownPaymentDoesNotCallMercadoPago() {
         when(repository.byProviderId("999", true)).thenReturn(Optional.empty());
-        service.notification("payment", "999");
+        service.notification("payment", "999", null);
         verify(gateway, never()).find(anyString());
     }
 

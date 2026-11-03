@@ -581,15 +581,40 @@ export const requestTeamChange = (id:string, toTeamId:string) => apiRequest<{mes
 export const cancelTeamChange = (id:string) => apiRequest<{message:string}>(`${op(id)}/team-changes/mine`, { method: 'DELETE' })
 export const decideTeamChange = (id:string, requestId:string, action:'APPROVE'|'REJECT') => apiRequest<{message:string}>(`${op(id)}/team-changes/${encodeURIComponent(requestId)}/decision`, json('POST', { action }))
 // ---- Pagamento da inscricao (Pix pelo Mercado Pago ou confirmacao do organizador) ----
-export type PaymentStatus = 'FREE'|'NOT_REGISTERED'|'UNPAID'|'PENDING'|'CONFIRMED'|'REJECTED'|'CANCELLED'|'EXPIRED'|'REFUNDED'
+export type PaymentStatus = 'FREE'|'NOT_REGISTERED'|'UNPAID'|'PENDING'|'CONFIRMED'|'REJECTED'|'CANCELLED'|'EXPIRED'|'REFUNDED'|'PARTIALLY_REFUNDED'|'CHARGEBACK'
 export type PixCharge = { id:string; amount:number; code:string; qrBase64?:string|null; ticketUrl?:string|null; expiresAt?:string|null }
-export type MyPayment = { status:PaymentStatus; amount:number; onlineEnabled:boolean; canPay:boolean; reason?:string|null; confirmedAt?:string|null; pix?:PixCharge|null }
-export type ManagedPaymentRow = { operatorId:string; callsign:string; participantStatus:string; paymentStatus:'UNPAID'|'PENDING'|'CONFIRMED'|'CANCELLED'|'REFUNDED'; method?:'PIX'|'MANUAL'|null; amount?:number|null; updatedAt?:string|null; note?:string|null }
-export type ManagedPayments = { price:number; onlineEnabled:boolean; summary:{ unpaid:number; pending:number; confirmed:number; cancelled:number; refunded:number; confirmedTotal:number }; rows:ManagedPaymentRow[] }
+export type MyPayment = { status:PaymentStatus; amount:number; onlineEnabled:boolean; canPay:boolean; reason?:string|null; confirmedAt?:string|null; pix?:PixCharge|null; checkoutEnabled:boolean; pixEnabled:boolean; pendingMethod?:'PIX'|'CHECKOUT'|null; checkoutUrl?:string|null; providerPaymentId?:string|null }
+export type PaymentProvider = 'MERCADO_PAGO_DIRECT'|'MERCADO_PAGO_MARKETPLACE'|'ORGANIZER'
+export type ManagedPaymentRow = { operatorId:string; callsign:string; participantStatus:string; paymentStatus:'UNPAID'|'PENDING'|'CONFIRMED'|'PARTIALLY_REFUNDED'|'CANCELLED'|'REFUNDED'|'CHARGEBACK'; method?:'PIX'|'MANUAL'|'CHECKOUT'|null; amount?:number|null; updatedAt?:string|null; note?:string|null; provider?:PaymentProvider|null; paymentType?:string|null; commission?:number|null; providerFee?:number|null; refunded?:number|null; net?:number|null; feesConfirmed:boolean; transactionId?:string|null; refundableOnline:boolean }
+export type ManagedPayments = { price:number; onlineEnabled:boolean; summary:{ unpaid:number; pending:number; confirmed:number; cancelled:number; refunded:number; confirmedTotal:number; providerFees:number; commission:number; netOrganizer:number; refundedTotal:number; feesEstimated:boolean }; rows:ManagedPaymentRow[]; marketplace:boolean; commissionPercent?:number|null }
 export const getMyPayment = (id:string) => apiRequest<MyPayment>(`${op(id)}/payment`)
 export const createPixPayment = (id:string) => apiRequest<MyPayment>(`${op(id)}/payment/pix`, json('POST', {}))
 export const getManagedPayments = (id:string) => apiRequest<ManagedPayments>(`${op(id)}/payments`)
 export const confirmPaymentManually = (id:string, operatorId:string, note:string) => apiRequest<{message:string}>(`${op(id)}/participants/${encodeURIComponent(operatorId)}/payment/confirm`, json('POST', { note }))
+export const createCheckoutPayment = (id:string) => apiRequest<{url:string}>(`${op(id)}/payment/checkout`, json('POST', {}))
+export const refundViaMercadoPago = (id:string, operatorId:string, note:string, amount?:number|null) => apiRequest<{message:string}>(`${op(id)}/participants/${encodeURIComponent(operatorId)}/payment/mercadopago-refund`, json('POST', { note, amount: amount ?? null }))
+// ---- Financeiro: conta Mercado Pago do organizador e area do administrador ----
+export type MercadoPagoStatus = 'NOT_CONNECTED'|'CONNECTED'|'NEEDS_RECONNECT'|'DISCONNECTED'|'ERROR'
+export type MercadoPagoConnection = { available:boolean; status:MercadoPagoStatus; accountId?:number|null; liveMode?:boolean|null; connectedAt?:string|null; expiresAt?:string|null; lastError?:string|null; commissionPercent:number; testEnvironment:boolean }
+export type FinanceOperation = { operationId:string; name:string; date:string; registrations:number; paid:number; pending:number; cancelled:number; gross:number; providerFees:number; commission:number; net:number; refunded:number; estimated:boolean }
+export type FinancePayment = { id:string; createdAt:string; operationId:string; operationName:string; organizer?:string|null; player?:string|null; provider:PaymentProvider; method:string; paymentType?:string|null; status:string; amount:number; commissionPercent?:number|null; commission?:number|null; providerFee?:number|null; refunded?:number|null; net?:number|null; feesConfirmed:boolean; transactionId?:string|null }
+export type OrganizerFinance = { connection:MercadoPagoConnection; operations:FinanceOperation[]; payments:FinancePayment[] }
+export type CommissionRow = { userId?:number|null; username?:string|null; callsign?:string|null; percent?:number|null; effectiveFrom:string; changedBy?:string|null; note?:string|null }
+export type CommissionSettings = { defaultPercent:number; organizers:CommissionRow[]; history:CommissionRow[] }
+export type AdminFinance = { totals:{ payments:number; approved:number; pending:number; refunded:number; chargebacks:number; gross:number; providerFees:number; commission:number; refundedAmount:number; estimated:boolean }; connections:{ organizers:number; connected:number; notConnected:number; needsReconnect:number }; payments:FinancePayment[] }
+export type FinanceFilters = { organizer?:string; operation?:string; from?:string; to?:string; method?:string; status?:string }
+const financeQuery = (f:FinanceFilters) => { const q = new URLSearchParams(); Object.entries(f).forEach(([k, v]) => { if (v) q.set(k, v) }); const s = q.toString(); return s ? `?${s}` : '' }
+export const getMyFinance = () => apiRequest<OrganizerFinance>('/api/me/finance')
+export const connectMercadoPago = () => apiRequest<{authorizationUrl:string}>('/api/payments/mercadopago/connect', json('POST', {}))
+export const disconnectMercadoPago = () => apiRequest<{message:string}>('/api/payments/mercadopago/connection', json('DELETE'))
+export const getCommissionSettings = () => apiRequest<CommissionSettings>('/api/admin/payments/commissions')
+export const saveCommission = (percent:number|null, username?:string, note?:string) => apiRequest<{message:string}>('/api/admin/payments/commissions', json('PUT', { percent, username: username || null, note: note || null }))
+export const getAdminFinance = (f:FinanceFilters) => apiRequest<AdminFinance>(`/api/admin/payments/overview${financeQuery(f)}`)
+export async function downloadFinanceCsv(f:FinanceFilters) {
+  const response = await fetch(`${getApiBaseUrl()}/api/admin/payments/export.csv${financeQuery(f)}`, { credentials: 'include' })
+  if (!response.ok) throw await readError(response)
+  return response.blob()
+}
 export const registerPaymentRefund = (id:string, operatorId:string, note:string) => apiRequest<{message:string}>(`${op(id)}/participants/${encodeURIComponent(operatorId)}/payment/refund`, json('POST', { note }))
 export const cancelOperationParticipation = (id:string) => apiRequest<{message:string}>(`/api/operations/${encodeURIComponent(id)}/participation/cancel`,json('POST',{}))
 export const removeOperationCover=(id:string)=>apiRequest<{message:string}>(`/api/operations/${encodeURIComponent(id)}/cover`,json('DELETE'))

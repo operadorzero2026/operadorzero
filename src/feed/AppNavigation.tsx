@@ -1,4 +1,4 @@
-import { Building2, ClipboardCheck, Clapperboard, Compass, Film, Image as ImageIcon, LayoutDashboard, Map, Medal, Bell, Plus, Target, Trophy, UserRound, Users, X, type LucideIcon } from 'lucide-react'
+import { Building2, ClipboardCheck, Clapperboard, Compass, Film, Image as ImageIcon, LayoutDashboard, Map, Medal, Bell, Plus, Target, Trophy, UserRound, Users, Wallet, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useRef, type ReactNode } from 'react'
 
 export type HubId = 'Explorar' | 'Jogos' | 'Perfil'
@@ -19,6 +19,7 @@ const hubs: Record<HubId, { eyebrow: string; title: string; links: HubLink[] }> 
     { view: 'Campos', label: 'Campos', description: 'Campos de airsoft cadastrados.', icon: Building2 },
     { view: 'Mapas', label: 'Mapas', description: 'Mapas e cenários dos campos.', icon: Map },
     { view: 'Desempenho', label: 'Desempenho', description: 'Registre e confira seus resultados.', icon: ClipboardCheck },
+    { view: 'Financeiro', label: 'Financeiro', description: 'Recebimentos pelo Mercado Pago e pagamentos das suas operações.', icon: Wallet },
   ] },
   Perfil: { eyebrow: 'OPERADOR', title: 'Perfil', links: [
     { view: 'Meu Operador', label: 'Meu Operador', description: 'Seu perfil, conta e segurança.', icon: UserRound },
@@ -33,7 +34,7 @@ const hubOf = (view: string): HubId | 'Feed' | null => {
   if (view === 'Feed') return 'Feed'
   if (view === 'Explorar' || view === 'Jogos' || view === 'Perfil') return view
   if (['Operadores', 'Rankings', 'Comunidade', 'Quadro de Honra'].includes(view)) return 'Explorar'
-  if (['Operações', 'Campos', 'Mapas', 'Desempenho'].includes(view)) return 'Jogos'
+  if (['Operações', 'Campos', 'Mapas', 'Desempenho', 'Financeiro'].includes(view)) return 'Jogos'
   return 'Perfil'
 }
 

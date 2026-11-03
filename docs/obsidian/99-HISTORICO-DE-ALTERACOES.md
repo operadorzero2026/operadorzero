@@ -1,5 +1,50 @@
 # Histórico de alterações
 
+## 2026-11-03 - Pagamentos: Mercado Pago Marketplace (Split 1:1) com comissão da plataforma
+
+### Arquivos alterados
+- Banco:
+  - `V37__mercadopago_marketplace.sql`: conexões OAuth, tentativas, comissões, notificações e campos do split em `operation_payment`;
+  - `V38__payment_status_length.sql`.
+- Servidor, pacote `payment`:
+  - novos: `MarketplaceService`, `MarketplaceRepository`, `MarketplaceController`, `FinanceRepository` e `SecretBox`;
+  - ampliados: `PaymentService`, `PaymentRepository`, `PaymentController`, `PaymentDtos`, `MercadoPagoClient` e `MercadoPagoProperties`;
+  - testes: `MarketplaceServiceTest`, `MarketplacePaymentTest` e `PaymentServiceTest`.
+- Configuração: `SecurityConfig` (callback público, área `/api/admin/payments/**` só para ADMIN), `application.yml`, `deploy/vps/compose.yml` e `.env.example`.
+- Site:
+  - novos: `src/FinancePage.tsx`, `finance.css` e `operation/paymentLabels.ts`;
+  - alterados: `operation/OperationPayment.tsx`, `operation-payment.css`, `App.tsx` (rota `/financeiro`), `feed/AppNavigation.tsx` e `api.ts`.
+- Documentação: `22-PAGAMENTOS-MERCADO-PAGO-MARKETPLACE.md`.
+
+### O que foi feito
+- O organizador conecta a própria conta Mercado Pago:
+  - OAuth com PKCE S256;
+  - state de uso único, guardado como hash, válido por 10 min e ligado à sessão de quem iniciou;
+  - tokens cifrados;
+  - renovação antes de vencer;
+  - "Necessita reconexão" quando a autorização é revogada;
+  - desconexão apaga os tokens;
+  - uma conta Mercado Pago recebe por um organizador só.
+- O jogador paga no Checkout Pro do organizador (Pix, cartão e outros meios do Mercado Pago). A comissão vai no próprio pagamento (`marketplace_fee`), calculada no servidor. O navegador nunca define valor nem comissão.
+- Comissão padrão de 10% e comissão individual por organizador, definidas só pelo administrador. Valem para pagamentos novos, e cada pagamento guarda o percentual e o valor aplicados.
+- Webhook assinado:
+  - entrega repetida não é reprocessada;
+  - o servidor consulta o pagamento com o token do organizador e confere referência, valor e conta recebedora;
+  - a consulta ao abrir a tela e a conciliação a cada 10 min recuperam notificações perdidas e buscam as tarifas efetivas.
+- Novos estados: reembolso parcial (continua pago) e contestação (deixa de contar como pago e avisa o organizador).
+- Reembolso pelo Mercado Pago, total ou parcial, pedido pelo organizador. Nunca é automático; sem saldo, o Mercado Pago recusa e nada muda.
+- Tela Financeiro:
+  - organizador: conexão, resumo por jogo (bruto, tarifas, comissão, líquido e reembolsos, marcados como estimados até a confirmação) e histórico;
+  - administrador: comissões e visão consolidada com filtros e exportação CSV.
+- O Pix direto da Etapa F foi mantido. Aparece só quando o organizador não conectou a conta e não tem divisão automática.
+- Limitação registrada: a comissão é sobre o valor bruto. O split nativo não permite "10% do líquido" exato, porque a tarifa só é conhecida depois do pagamento.
+
+### Testes
+- 292 testes do servidor passando (43 novos do marketplace).
+- Teste local contra um Mercado Pago simulado: 55 verificações do marketplace e as 25 do Pix direto continuam OK.
+- No navegador, em tela de celular: conexão OAuth completa e o botão "Pagar com Mercado Pago" do jogador.
+- Sem teste com o Mercado Pago real: falta colocar as credenciais de teste no servidor.
+
 ## 2026-11-03 - Operações, Etapa F: pagamento da inscrição (Pix pelo Mercado Pago)
 
 ### Arquivos alterados

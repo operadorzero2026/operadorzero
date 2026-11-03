@@ -1,0 +1,37 @@
+/* Tela Financeiro: compacta, legivel no celular (tabelas rolam na horizontal dentro do cartao). */
+.finance-page{display:grid;gap:16px;padding:20px clamp(16px,3vw,32px) 90px;max-width:1100px}
+.finance-head small{color:#8f9488;font-size:10px;letter-spacing:.16em}
+.finance-head h1{margin:4px 0 10px;font:800 34px/1 'Barlow Condensed',sans-serif;text-transform:uppercase}
+.finance-tabs{display:flex;flex-wrap:wrap;gap:8px}
+.finance-tabs button{padding:8px 12px;border:1px solid #ffffff2a;border-radius:999px;background:transparent;color:#c9cbbb;cursor:pointer}
+.finance-tabs button.active{border-color:var(--lime,#c9cb73);background:#232816;color:#f2f1e9}
+.finance-card{display:grid;gap:12px;padding:16px;border:1px solid #ffffff1f;border-radius:12px;background:#0d0f0b;min-width:0}
+.finance-card h2{display:flex;align-items:center;gap:8px;margin:0;font:700 18px/1.1 'Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.finance-card svg{width:17px;height:17px;flex:none}
+.finance-provider{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.finance-provider>div{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.finance-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;background:#1b1e17;font-size:12px;font-style:normal;white-space:nowrap}
+.finance-tag--ok{background:#1d2615;color:#c9cb73}.finance-tag--warn{background:#2b2512;color:#e3c35a}.finance-tag--bad{background:#2a1612;color:#ff9d84}
+.finance-muted{margin:0;color:#8f9488;font-size:13px;line-height:1.5}
+.finance-ok{margin:0;padding:9px 12px;border-radius:8px;background:#1d2615;color:#dfe3a8;font-size:13px}
+.finance-error{display:flex;align-items:center;gap:6px;margin:0;padding:9px 12px;border-radius:8px;background:#2a1612;color:#ffb1a8;font-size:13px}
+.finance-error button{margin-left:auto;border:0;background:none;color:inherit;text-decoration:underline;cursor:pointer}
+.finance-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.finance-row button,.finance-form button{display:inline-flex;align-items:center;gap:6px}
+.finance-form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px}
+.finance-form label{display:grid;gap:5px;min-width:0;flex:1 1 150px}
+.finance-form label span{color:#8f9488;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.finance-form input,.finance-form select{min-height:40px;padding:6px 10px;border:1px solid #ffffff2a;border-radius:8px;background:#0b0d09;color:#f2f1e9;font-size:14px;width:100%;box-sizing:border-box}
+.finance-list{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.finance-list li{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:#11140d}
+.finance-list li>span{display:grid;flex:1 1 180px;min-width:0}
+.finance-list small{color:#8f9488;font-size:12px}
+.finance-stats{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none;font-size:12.5px;color:#b6b9ae}
+.finance-stats li{padding:6px 10px;border-radius:8px;background:#14170f}
+.finance-stats b{color:#f2f1e9}
+.finance-table-wrap{overflow-x:auto;margin:0 -4px;-webkit-overflow-scrolling:touch}
+.finance-table{width:100%;border-collapse:collapse;font-size:12.5px;white-space:nowrap}
+.finance-table th{position:sticky;top:0;padding:7px 8px;border-bottom:1px solid #ffffff24;color:#8f9488;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.finance-table td{padding:7px 8px;border-bottom:1px solid #ffffff12}
+.finance-table td small{display:block;color:#8f9488}
+.finance-table a{color:var(--lime,#c9cb73)}

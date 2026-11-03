@@ -71,6 +71,13 @@ app:
       notification-url: ${MERCADOPAGO_NOTIFICATION_URL:}
       api-base-url: ${MERCADOPAGO_API_BASE_URL:https://api.mercadopago.com}
       pix-expiration: ${MERCADOPAGO_PIX_EXPIRATION:30m}
+      client-id: ${MERCADOPAGO_CLIENT_ID:}
+      client-secret: ${MERCADOPAGO_CLIENT_SECRET:}
+      redirect-uri: ${MERCADOPAGO_REDIRECT_URI:}
+      auth-base-url: ${MERCADOPAGO_AUTH_BASE_URL:https://auth.mercadopago.com}
+      environment: ${MERCADOPAGO_ENVIRONMENT:test}
+      default-commission-percent: ${PLATFORM_DEFAULT_COMMISSION_PERCENT:10}
+      checkout-expiration: ${MERCADOPAGO_CHECKOUT_EXPIRATION:30m}
   auth:
     enabled: ${AUTH_ENABLED:false}
     frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:4174}

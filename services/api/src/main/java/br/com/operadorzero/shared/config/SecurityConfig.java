@@ -92,6 +92,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/community/**", "/api/public/**").permitAll()
                 // Notificacao do Mercado Pago: publica, mas so tem efeito com assinatura valida (PaymentController).
                 .requestMatchers(HttpMethod.POST, "/api/payments/mercadopago/webhook").permitAll()
+                // Retorno do OAuth do Mercado Pago: navegacao do navegador; o servico confere o state e a sessao de quem iniciou.
+                .requestMatchers(HttpMethod.GET, "/api/payments/mercadopago/callback").permitAll()
+                .requestMatchers("/api/admin/payments/**").hasRole("ADMIN")
+                .requestMatchers("/api/payments/**").authenticated()
                 // Midias do feed: caminhos aleatorios e imutaveis; servidas pela API so em desenvolvimento.
                 .requestMatchers(HttpMethod.GET, "/media/**").permitAll()
                 // Link compartilhado: HTML com previa (Open Graph) que redireciona para a pagina publica do post.

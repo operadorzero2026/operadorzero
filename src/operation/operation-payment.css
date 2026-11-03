@@ -30,3 +30,6 @@
 .op-payments-list li>span small{color:#8f9488;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .op-payments-list li>button{grid-column:1/-1;justify-self:start;display:inline-flex;align-items:center;gap:6px}
 @media(min-width:640px){.op-payments-list li{grid-template-columns:minmax(0,1fr) auto auto}.op-payments-list li>button{grid-column:auto}}
+.op-payment-choose{display:grid;gap:8px;justify-items:start}
+.op-payment-choose>small{display:block}
+a.op-payment-pay{display:inline-flex;align-items:center;gap:7px;text-decoration:none}

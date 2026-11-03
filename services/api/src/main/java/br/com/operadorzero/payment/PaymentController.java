@@ -3,10 +3,15 @@ package br.com.operadorzero.payment;
 import br.com.operadorzero.identity.AuthenticatedUser;
 import br.com.operadorzero.operation.OperationDtos.MessageResponse;
 import br.com.operadorzero.payment.MercadoPagoClient.PaymentGatewayException;
+import br.com.operadorzero.payment.PaymentDtos.Checkout;
 import br.com.operadorzero.payment.PaymentDtos.Managed;
 import br.com.operadorzero.payment.PaymentDtos.ManualRequest;
 import br.com.operadorzero.payment.PaymentDtos.Mine;
+import br.com.operadorzero.payment.PaymentDtos.RefundRequest;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.Valid;
+import java.time.Clock;
+import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,10 +29,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class PaymentController {
     private static final Logger log = LoggerFactory.getLogger(PaymentController.class);
     private final PaymentService service;
+    private final PaymentRepository repository;
     private final MercadoPagoProperties properties;
+    private final Clock clock = Clock.systemUTC();
 
-    public PaymentController(PaymentService service, MercadoPagoProperties properties) {
+    public PaymentController(PaymentService service, PaymentRepository repository, MercadoPagoProperties properties) {
         this.service = service;
+        this.repository = repository;
         this.properties = properties;
     }
 
@@ -39,6 +47,12 @@ public class PaymentController {
     @PostMapping("/api/operations/{id}/payment/pix")
     Mine pix(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) {
         return service.createPix(user, id);
+    }
+
+    /** Pagamento no Checkout Pro do organizador (com divisao). Devolve so a URL do Mercado Pago. */
+    @PostMapping("/api/operations/{id}/payment/checkout")
+    Checkout checkout(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) {
+        return service.createCheckout(user, id);
     }
 
     @GetMapping("/api/operations/{id}/payments")
@@ -58,9 +72,15 @@ public class PaymentController {
         return service.registerRefund(user, id, operatorId, request.note());
     }
 
+    @PostMapping("/api/operations/{id}/participants/{operatorId}/payment/mercadopago-refund")
+    MessageResponse refundOnline(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id, @PathVariable UUID operatorId,
+                                 @Valid @RequestBody RefundRequest request) {
+        return service.refundViaMercadoPago(user, id, operatorId, request.amount(), request.note());
+    }
+
     /**
-     * Notificacao do Mercado Pago (publica, sem CSRF). Sem assinatura valida nada acontece. Responde 200 para o que nao e nosso
-     * (evita reenvios); 503 quando o Mercado Pago esta fora, para ele tentar de novo.
+     * Notificacao do Mercado Pago (publica, sem CSRF). Sem assinatura valida nada acontece. A mesma entrega (x-request-id) nao e
+     * processada duas vezes. Responde 200 para o que nao e nosso (evita reenvios); 503 quando o Mercado Pago esta fora.
      */
     @PostMapping("/api/payments/mercadopago/webhook")
     ResponseEntity<Void> webhook(@RequestParam(name = "data.id", required = false) String dataId,
@@ -68,15 +88,23 @@ public class PaymentController {
                                  @RequestParam(name = "type", required = false) String type,
                                  @RequestParam(name = "topic", required = false) String topic,
                                  @RequestHeader(name = "x-signature", required = false) String signature,
-                                 @RequestHeader(name = "x-request-id", required = false) String requestId) {
+                                 @RequestHeader(name = "x-request-id", required = false) String requestId,
+                                 @RequestBody(required = false) JsonNode body) {
         String id = dataId != null ? dataId : legacyId;
-        if (!properties.enabled() || !WebhookSignature.valid(properties.webhookSecret(), signature, requestId, id)) {
+        if (id == null && body != null && body.path("data").hasNonNull("id")) id = body.path("data").get("id").asText();
+        if (!properties.anyEnabled() || !WebhookSignature.valid(properties.webhookSecret(), signature, requestId, id)) {
             return ResponseEntity.status(401).build();
         }
+        String kind = type != null ? type : topic != null ? topic : body != null && body.hasNonNull("type") ? body.get("type").asText() : null;
+        Long mpUserId = body != null && body.hasNonNull("user_id") ? body.get("user_id").asLong() : null;
+        String delivery = requestId != null && requestId.length() <= 120 ? requestId : "sem-id:" + kind + ":" + id;
+        if (!repository.notificationIsNew(delivery, kind, id, mpUserId, clock.instant())) return ResponseEntity.ok().build();
         try {
-            service.notification(type != null ? type : topic, id);
+            Optional<Long> payment = service.notification(kind, id, mpUserId);
+            repository.notificationResult(delivery, payment.isPresent() ? "PROCESSED" : "IGNORED", payment.orElse(null), null, clock.instant());
         } catch (PaymentGatewayException unavailable) {
             log.warn("Webhook do Mercado Pago adiado: API indisponivel");
+            repository.notificationResult(delivery, "FAILED", null, "Mercado Pago indisponível", clock.instant());
             return ResponseEntity.status(503).build();
         }
         return ResponseEntity.ok().build();
