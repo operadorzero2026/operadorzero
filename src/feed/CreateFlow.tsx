@@ -1,6 +1,7 @@
 import { ArrowLeft, Camera, ChevronDown, ImagePlus, Send, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getFields, getTeamWorkspace, type VenueField } from '../api'
+import { OperationTagPicker, type TaggedOperation } from '../operation/OperationTagPicker'
 import { FrameEditor } from './FrameEditor'
 import { sourceRect, type Box, type Framing } from './framing'
 import { cancelUpload, startPostUpload, submitPostDetails } from './uploadQueue'
@@ -75,6 +76,7 @@ export function CreateFlow({ mode = 'POST', onClose }: { mode?: CreateMode; onCl
   const [team, setTeam] = useState<{ id: string; name: string } | null>(null)
   const [tagTeam, setTagTeam] = useState(false)
   const [tagged, setTagged] = useState('')
+  const [operation, setOperation] = useState<TaggedOperation | null>(null)
   const gallery = useRef<HTMLInputElement>(null)
   const camera = useRef<HTMLInputElement>(null)
   const published = useRef(false)
@@ -130,6 +132,7 @@ export function CreateFlow({ mode = 'POST', onClose }: { mode?: CreateMode; onCl
       fieldId: fieldId || null,
       teamId: tagTeam && team ? team.id : null,
       taggedUsernames: tagged.split(/[\s,]+/).map(name => name.replace(/^@/, '')).filter(Boolean).slice(0, 10),
+      operationId: operation?.id ?? null,
     })
     onClose()
   }
@@ -194,6 +197,7 @@ export function CreateFlow({ mode = 'POST', onClose }: { mode?: CreateMode; onCl
         </label>
         {team && <label className="create-check"><input type="checkbox" checked={tagTeam} onChange={event => setTagTeam(event.target.checked)}/> Marcar minha equipe ({team.name})</label>}
         <label><span>Operadores</span><input value={tagged} onChange={event => setTagged(event.target.value)} placeholder="@usuario, @outro" autoCapitalize="none"/></label>
+        <OperationTagPicker value={operation} onChange={setOperation}/>
       </details>
       <p className="create-notice">O arquivo continua subindo enquanto você escreve e depois que publicar.</p>
     </div>}

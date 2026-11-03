@@ -10,7 +10,7 @@ import { toPayload, type ReconElement } from './recon/composition'
 export type UploadPhase = 'uploading' | 'waiting-details' | 'publishing' | 'processing' | 'done' | 'error' | 'cancelled'
 export type UploadPurpose = 'POST' | 'RECON'
 export type UploadTask = { id: string; purpose: UploadPurpose; kind: 'IMAGE' | 'VIDEO'; progress: number; phase: UploadPhase; message?: string; postId?: string }
-export type PostDetails = { caption?: string; fieldId?: string | null; teamId?: string | null; taggedUsernames?: string[] }
+export type PostDetails = { caption?: string; fieldId?: string | null; teamId?: string | null; taggedUsernames?: string[]; operationId?: string | null }
 export type ReconDetails = {
   overlayText?: string | null; elements?: ReconElement[]; audioMuted?: boolean; dossierId?: string | null
   complete?: { stripAudio?: boolean; crop?: MediaCrop | null }

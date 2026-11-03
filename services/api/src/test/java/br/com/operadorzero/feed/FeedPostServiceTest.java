@@ -120,4 +120,19 @@ class FeedPostServiceTest {
     private CreatePostRequest request(String caption) {
         return new CreatePostRequest(mediaId, caption, null, null, null, null, UUID.randomUUID());
     }
+
+    @Test
+    void anyoneCanTagAnOperationButOnlyAnExistingOne() {
+        UUID operation = UUID.randomUUID();
+        when(repository.lockMedia(mediaId, 7L)).thenReturn(Optional.of(new MediaForPost(3L, "POST", "READY", false)));
+        when(repository.taggableOperation(operation)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.create(user, new CreatePostRequest(mediaId, "Fotos do jogo", null, null, null, null, UUID.randomUUID(), operation)))
+            .isInstanceOfSatisfying(BusinessException.class, e -> assertThat(e.code()).isEqualTo("OPERATION_NOT_FOUND"));
+
+        when(repository.taggableOperation(operation)).thenReturn(Optional.of(40L));
+        when(repository.insert(eq(7L), any(), any(), any(), anyBoolean(), eq(true), any(), eq(NOW))).thenReturn(new PostState(11L, UUID.randomUUID(), 7L, "PUBLISHED"));
+        service.create(user, new CreatePostRequest(mediaId, "Fotos do jogo", null, null, null, null, UUID.randomUUID(), operation));
+        verify(repository).linkOperation(11L, 40L);
+    }
+
 }

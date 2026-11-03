@@ -76,6 +76,16 @@ public class FeedPostRepository {
             (r, i) -> state(r));
     }
 
+    /** Operacao publicada (inclusive ja realizada) que pode ser marcada num post. */
+    public Optional<Long> taggableOperation(UUID operationId) {
+        return jdbc.query("SELECT id FROM airsoft_operation WHERE public_id = :id AND deleted_at IS NULL AND status NOT IN ('DRAFT','CANCELLED')",
+            Map.of("id", operationId), (r, i) -> r.getLong(1)).stream().findFirst();
+    }
+
+    public void linkOperation(long postId, long operationId) {
+        jdbc.update("UPDATE feed_post SET operation_id = :operation WHERE id = :post", Map.of("post", postId, "operation", operationId));
+    }
+
     public void attach(long postId, long mediaId, List<String> hashtags, List<Long> mentioned, List<Long> tagged) {
         jdbc.update("INSERT INTO feed_post_media(post_id, media_asset_id, position) VALUES (:post, :media, 0)", Map.of("post", postId, "media", mediaId));
         jdbc.update("INSERT INTO feed_post_metrics(post_id) VALUES (:post)", Map.of("post", postId));

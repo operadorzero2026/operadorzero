@@ -4,6 +4,7 @@ import { getOperationPage, publicMediaUrl, type OperationPage } from '../api'
 import { ExpandableText, ShareButton } from './OperationBits'
 import { OperationChat } from './OperationChat'
 import { OperationDocuments } from './OperationDocuments'
+import { OperationGallery } from './OperationGallery'
 import { OperationRegistrationPanel } from './OperationRegistrationPanel'
 import './operation-page.css'
 
@@ -59,6 +60,7 @@ export function OperationPublicPage({ operationId, loggedIn, onLogin, onSignup, 
           <li><Users/> <span>{page.modality === 'CUSTOM' && page.customModality ? page.customModality : MODALITIES[page.modality] ?? page.modality} · {money(page.price)} · {page.participantCount} {page.participantCount === 1 ? 'inscrito' : 'inscritos'}</span></li>
         </ul>
         {(page.briefing || page.description) && <section className="op-page-briefing"><h2>Briefing</h2><ExpandableText text={page.briefing || page.description}/></section>}
+        <OperationGallery key={`gallery-${loggedIn}`} operationId={page.id} loggedIn={loggedIn}/>
         {loggedIn ? <>
           <OperationDocuments operationId={page.id}/>
           <button type="button" className="op-chat-open" onClick={() => setChatOpen(true)}><MessageCircle/> Chat da operação</button>

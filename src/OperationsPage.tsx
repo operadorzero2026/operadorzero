@@ -24,6 +24,7 @@ import {
 import { OperationRegistrationPanel } from './operation/OperationRegistrationPanel'
 import { OperationDocuments } from './operation/OperationDocuments'
 import { OperationChat } from './operation/OperationChat'
+import { OperationGallery } from './operation/OperationGallery'
 import { CoverPicker, ExpandableText, ShareButton } from './operation/OperationBits'
 import { OperationCommandCenter } from './OperationCommandCenter'
 
@@ -522,6 +523,7 @@ export function OperationsPage() {
             <OperationDocuments key={`docs-${selected.id}`} operationId={selected.id}/>
             {selected.status !== 'DRAFT' && <button type="button" className="op-chat-open" onClick={() => setChatOpen(true)}><MessageCircle/> Chat da operação</button>}
             {chatOpen && <OperationChat operationId={selected.id} title={selected.name} onClose={() => setChatOpen(false)}/>}
+            {selected.status !== 'DRAFT' && <OperationGallery key={`gallery-${selected.id}`} operationId={selected.id}/>}
             <div className="operation-roster-summary"><span><MapPin /> {selected.fieldName} · {selected.city}/{selected.stateCode}</span><span><Users /> {selected.participantCount}/{selected.participantLimit ?? 'sem limite'} participantes</span></div>
             {selected.managedByCurrentUser && (statusActions[selected.status] || CANCELLABLE_STATUSES.includes(selected.status)) && <div className="operation-status-actions" aria-label="Status da operação">
               {(statusActions[selected.status] || []).map(item => <button key={item.status} type="button" className="module-secondary" disabled={pending.startsWith('status-')} onClick={() => changeStatus(item.status, item.label)}>{item.label}</button>)}

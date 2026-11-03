@@ -26,9 +26,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class FeedPostService {
+    /** operationId: "Marcar operacao" (qualquer usuario logado pode marcar; o post aparece na galeria da operacao). */
     public record CreatePostRequest(@NotNull UUID mediaId, @Size(max = 2200) String caption, UUID fieldId, UUID teamId,
                                     @Size(max = 10) List<@Size(max = 40) String> taggedUsernames, Boolean publicShare,
-                                    @NotNull UUID idempotencyKey) {}
+                                    @NotNull UUID idempotencyKey, UUID operationId) {
+        public CreatePostRequest(UUID mediaId, String caption, UUID fieldId, UUID teamId, List<String> taggedUsernames, Boolean publicShare,
+                                 UUID idempotencyKey) {
+            this(mediaId, caption, fieldId, teamId, taggedUsernames, publicShare, idempotencyKey, null);
+        }
+    }
 
     public record CreatePostResponse(UUID id, String status) {}
 
@@ -70,6 +76,9 @@ public class FeedPostService {
             .orElseThrow(() -> BusinessException.badRequest("FIELD_NOT_FOUND", "Campo não encontrado."));
         Long teamId = request.teamId() == null ? null : repository.ownActiveTeam(request.teamId(), user.internalId())
             .orElseThrow(() -> BusinessException.forbidden("Você só pode marcar a sua equipe."));
+        // Nao exige inscricao: fotografos e equipes externas tambem publicam sobre o jogo.
+        Long operationId = request.operationId() == null ? null : repository.taggableOperation(request.operationId())
+            .orElseThrow(() -> BusinessException.badRequest("OPERATION_NOT_FOUND", "Operação não encontrada."));
         List<UserRef> mentioned = repository.reachableUsers(FeedText.mentions(caption), user.internalId());
         List<String> taggedNames = request.taggedUsernames() == null ? List.of()
             : request.taggedUsernames().stream().map(name -> name.strip().replaceFirst("^@", "").toLowerCase(Locale.ROOT)).distinct().toList();
@@ -78,6 +87,7 @@ public class FeedPostService {
         boolean ready = "READY".equals(media.status());
         PostState post = repository.insert(user.internalId(), caption, fieldId, teamId,
             request.publicShare() == null || request.publicShare(), ready, request.idempotencyKey(), now);
+        if (operationId != null) repository.linkOperation(post.id(), operationId);
         repository.attach(post.id(), media.id(), FeedText.hashtags(caption),
             mentioned.stream().map(UserRef::id).toList(), tagged.stream().map(UserRef::id).toList());
         audit.record(user.internalId(), "FEED_POST_CREATED", "FEED_POST", post.publicId(), null, now);

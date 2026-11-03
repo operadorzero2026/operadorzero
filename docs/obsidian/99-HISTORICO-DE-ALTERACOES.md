@@ -1,5 +1,17 @@
 # Histórico de alterações
 
+## 2026-11-03 - Operações, Etapa D: marcar operação nos posts e galeria "Fotos e vídeos"
+
+### Arquivos alterados
+- Servidor: `feed/FeedPostService`/`FeedPostRepository` (campo `operationId` ao criar post, usando a coluna `feed_post.operation_id` que já existia); `operation/OperationGalleryController` (novo: galeria logada, galeria pública e desvincular).
+- Site: `src/operation/OperationTagPicker.tsx` e `OperationGallery.tsx` (novos); `feed/CreateFlow.tsx` ("Marcar operação" em Mais opções); galeria em `OperationPublicPage.tsx` e `OperationsPage.tsx`; `uploadQueue.ts`, `api.ts`.
+- Banco: sem migração (reaproveita `feed_post.operation_id` e `operation_moderation_action`).
+
+### O que foi feito
+- Ao criar um post, "Marcar operação": busca por nome e mostra nome e data (futuras e realizadas). Qualquer usuário logado pode marcar, sem estar inscrito.
+- "Fotos e vídeos" na página da operação: posts marcados, abrindo o post original. Logado, segue as regras do feed (bloqueios etc.); sem login, só posts compartilháveis. Continua depois do jogo; post apagado some.
+- O organizador desvincula publicações marcadas por engano, sem apagar o post; a ação fica registrada.
+
 ## 2026-11-03 - Operações, Etapa C: chat geral em tempo real, moderação, prazo de 7 dias e iPhone
 
 ### Arquivos alterados

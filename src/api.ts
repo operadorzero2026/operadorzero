@@ -475,7 +475,7 @@ export const putMediaChunk = (uploadId:string, offset:number, chunk:Blob) =>
   apiRequest<MediaUpload>(`/api/media/uploads/${encodeURIComponent(uploadId)}?offset=${offset}`, { method:'PUT', body:chunk, headers:{ 'Content-Type':'application/octet-stream' } }, 120000)
 export const completeMediaUpload = (uploadId:string, options?:{ stripAudio?:boolean; crop?:MediaCrop|null }) => apiRequest<MediaStatus>(`/api/media/uploads/${encodeURIComponent(uploadId)}/complete`, json('POST', options ?? {}))
 export const getMediaStatus = (mediaId:string) => apiRequest<MediaStatus>(`/api/media/${encodeURIComponent(mediaId)}`)
-export const createFeedPost = (body:{ mediaId:string; caption?:string|null; fieldId?:string|null; teamId?:string|null; taggedUsernames?:string[]; idempotencyKey:string }) =>
+export const createFeedPost = (body:{ mediaId:string; caption?:string|null; fieldId?:string|null; teamId?:string|null; taggedUsernames?:string[]; idempotencyKey:string; operationId?:string|null }) =>
   apiRequest<{ id:string; status:string }>('/api/feed/posts', json('POST', body))
 export const deleteFeedPost = (postId:string) => apiRequest<void>(`/api/feed/posts/${encodeURIComponent(postId)}`, { method:'DELETE' })
 export type ReconBarEntry = { username:string; callsign:string; rankCode:string; count:number; hasUnseen:boolean; latestAt:string; own:boolean }
@@ -671,3 +671,9 @@ export const pinChatMessage = (id:string, messageId:string, pinned:boolean) => a
 export const muteChatMember = (id:string, operatorId:string, duration:'1H'|'6H'|'24H'|'INDEFINITE') => apiRequest<void>(`${chatPath(id)}/mutes/${encodeURIComponent(operatorId)}`, json('POST', { duration }))
 export const unmuteChatMember = (id:string, operatorId:string) => apiRequest<void>(`${chatPath(id)}/mutes/${encodeURIComponent(operatorId)}`, { method:'DELETE' })
 export const chatStreamUrl = (id:string) => `${getApiBaseUrl()}${chatPath(id)}/stream`
+
+// ---- Galeria "Fotos e videos" da operacao (posts do feed marcados com ela) ----
+export type OperationGallery = { items:FeedPost[]; manager:boolean }
+export const getOperationGallery = (id:string) => apiRequest<OperationGallery>(`/api/operations/${encodeURIComponent(id)}/gallery`)
+export const getPublicOperationGallery = (id:string) => apiRequest<OperationGallery>(`/api/public/operations/${encodeURIComponent(id)}/gallery`)
+export const unlinkGalleryPost = (id:string, postId:string) => apiRequest<void>(`/api/operations/${encodeURIComponent(id)}/gallery/${encodeURIComponent(postId)}`, { method:'DELETE' })
