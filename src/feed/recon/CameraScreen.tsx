@@ -6,6 +6,29 @@ const HOLD_MS = 280
 
 type Captured = { file: File; kind: 'IMAGE' | 'VIDEO'; durationS?: number }
 
+/** Resolucao alta no formato do sensor (4:3), sem forcar proporcao. */
+const SENSOR: MediaTrackConstraints = { width: { ideal: 1920 }, height: { ideal: 1440 } }
+
+/**
+ * Lentes traseiras pelo nome que o aparelho informa (iPhone em ingles ou portugues, Android).
+ * main: grande-angular comum (1x), nunca a teleobjetiva; ultra: ultra-angular (0,5x).
+ * As cameras "virtuais" (Dupla/Tripla) ficam como reserva da principal.
+ */
+export function backLenses(devices: MediaDeviceInfo[]) {
+  const cameras = devices.filter(device => device.kind === 'videoinput')
+  const back = cameras.filter(device => /back|rear|traseir|environment/i.test(device.label))
+  const tele = /tele/i
+  const ultra = /ultra/i
+  const virtual = /dual|dupla|triple|tripla/i
+  const plain = back.filter(device => !tele.test(device.label) && !ultra.test(device.label) && !virtual.test(device.label))
+  const multi = back.filter(device => !tele.test(device.label) && !ultra.test(device.label) && virtual.test(device.label))
+  return {
+    main: plain[0]?.deviceId || multi[0]?.deviceId || undefined,
+    ultra: back.find(device => ultra.test(device.label))?.deviceId || undefined,
+    count: cameras.length,
+  }
+}
+
 /** Formato de gravacao: MP4 onde existe (Safari, Chrome recente), senao WebM; o servidor converte para H.264. */
 function recorderType() {
   if (typeof MediaRecorder === 'undefined') return null
@@ -34,6 +57,8 @@ export function CameraScreen({ busy, error, onPick, onCapture, onClose, onSettin
   const [elapsed, setElapsed] = useState(0)
   const [canFlip, setCanFlip] = useState(false)
   const [mode, setMode] = useState<'PHOTO' | 'VIDEO'>('PHOTO')
+  const [lens, setLens] = useState<'main' | 'ultra'>('main')
+  const [ultraAvailable, setUltraAvailable] = useState(false)
 
   const stop = useCallback(() => {
     stream.current?.getTracks().forEach(track => track.stop())
@@ -44,17 +69,39 @@ export function CameraScreen({ busy, error, onPick, onCapture, onClose, onSettin
     let cancelled = false
     if (!navigator.mediaDevices?.getUserMedia) { setStatus('unavailable'); return }
     setStatus('starting')
-    const video916 = { facingMode: { ideal: facing }, width: { ideal: 1080 }, height: { ideal: 1920 }, aspectRatio: { ideal: 9 / 16 } }
-    // Microfone so e necessario para gravar; se negado, a camera continua funcionando para fotos e video sem som.
-    navigator.mediaDevices.getUserMedia({ video: video916, audio: true })
-      .catch(() => navigator.mediaDevices.getUserMedia({ video: video916, audio: false }))
-      .then(media => {
+    // Sem exigir 9:16: o navegador entrega o quadro inteiro do sensor (4:3) e o recorte fica so na tela,
+    // como na camera do aparelho. Pedir 9:16 fazia o celular cortar o sensor e parecia zoom.
+    const open = (video: MediaTrackConstraints) => navigator.mediaDevices.getUserMedia({ video, audio: true })
+      // Microfone so e necessario para gravar; se negado, a camera continua funcionando para fotos e video sem som.
+      .catch(() => navigator.mediaDevices.getUserMedia({ video, audio: false }))
+    const start = async () => {
+      let media = await open({ facingMode: { ideal: facing }, ...SENSOR })
+      // Os nomes das lentes so aparecem depois da permissao: escolhe a principal (1x) ou a ultra-angular (0,5x).
+      const lenses = backLenses(await navigator.mediaDevices.enumerateDevices().catch(() => []))
+      const wanted = facing === 'environment' ? (lens === 'ultra' ? lenses.ultra : lenses.main) : undefined
+      const current = media.getVideoTracks()[0]?.getSettings().deviceId
+      if (wanted && wanted !== current) {
+        media.getTracks().forEach(track => track.stop())
+        media = await open({ deviceId: { exact: wanted }, ...SENSOR })
+      }
+      return { media, lenses }
+    }
+    start()
+      .then(({ media, lenses }) => {
         if (cancelled) { media.getTracks().forEach(track => track.stop()); return }
         stop()
         stream.current = media
+        // Camera "virtual" de varias lentes (ou Android com zoom): 1x e o zoom 1; 0,5x e o menor zoom disponivel.
+        const track = media.getVideoTracks()[0]
+        const zoom = (track?.getCapabilities?.() as { zoom?: { min: number; max: number } } | undefined)?.zoom
+        if (track && zoom && facing === 'environment') {
+          const target = lens === 'ultra' && !lenses.ultra ? zoom.min : Math.min(zoom.max, Math.max(zoom.min, 1))
+          void track.applyConstraints({ advanced: [{ zoom: target } as MediaTrackConstraintSet] }).catch(() => undefined)
+        }
+        setUltraAvailable(facing === 'environment' && (Boolean(lenses.ultra) || Boolean(zoom && zoom.min < 1)))
+        setCanFlip(lenses.count > 1)
         if (video.current) { video.current.srcObject = media; void video.current.play().catch(() => undefined) }
         setStatus('ready')
-        navigator.mediaDevices.enumerateDevices().then(devices => setCanFlip(devices.filter(device => device.kind === 'videoinput').length > 1)).catch(() => undefined)
       })
       .catch((error: unknown) => {
         if (cancelled) return
@@ -62,7 +109,7 @@ export function CameraScreen({ busy, error, onPick, onCapture, onClose, onSettin
         setStatus(name === 'NotAllowedError' || name === 'SecurityError' ? 'denied' : 'unavailable')
       })
     return () => { cancelled = true }
-  }, [facing, stop])
+  }, [facing, lens, stop])
   // Libera a camera ao sair desta tela (luz do aparelho apaga).
   useEffect(() => () => { window.clearTimeout(holdTimer.current); if (recorder.current?.state === 'recording') recorder.current.stop(); stop() }, [stop])
 
@@ -153,6 +200,10 @@ export function CameraScreen({ busy, error, onPick, onCapture, onClose, onSettin
     <div className="recon-camera-controls">
       <input ref={gallery} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime,video/webm,image/*,video/*" hidden
         onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) onPick(file) }}/>
+      {ultraAvailable && status === 'ready' && <div className="recon-lenses" role="radiogroup" aria-label="Lente">
+        {(['ultra', 'main'] as const).map(value => <button key={value} type="button" role="radio" aria-checked={lens === value} disabled={recording}
+          className={lens === value ? 'active' : ''} onClick={() => setLens(value)} aria-label={value === 'ultra' ? 'Ultra-angular 0,5x' : 'Grande-angular 1x'}>{value === 'ultra' ? '0,5' : '1×'}</button>)}
+      </div>}
       <button type="button" className="recon-round recon-round--big" onClick={() => gallery.current?.click()} disabled={busy || recording} aria-label="Escolher da galeria"><ImagePlus/></button>
       <button type="button" className={`recon-shutter ${recording ? 'is-recording' : ''}`} disabled={status !== 'ready' || busy}
         style={{ ['--progress' as string]: `${progress * 360}deg` }}
@@ -165,7 +216,7 @@ export function CameraScreen({ busy, error, onPick, onCapture, onClose, onSettin
         onContextMenu={event => event.preventDefault()}
         aria-label="Toque para fotografar; segure para gravar vídeo"><span/></button>
       <button type="button" className="recon-round recon-round--big" disabled={!canFlip || recording || status !== 'ready'}
-        onClick={() => setFacing(current => current === 'environment' ? 'user' : 'environment')} aria-label="Alternar câmera"><RefreshCcw/></button>
+        onClick={() => { setLens('main'); setFacing(current => current === 'environment' ? 'user' : 'environment') }} aria-label="Alternar câmera"><RefreshCcw/></button>
       <div className="recon-modes" role="radiogroup" aria-label="Modo da câmera">
         {(['PHOTO', 'VIDEO'] as const).map(value => <button key={value} type="button" role="radio" aria-checked={mode === value} disabled={recording}
           className={mode === value ? 'active' : ''} onClick={() => setMode(value)}>{value === 'PHOTO' ? 'FOTO' : 'VÍDEO'}</button>)}

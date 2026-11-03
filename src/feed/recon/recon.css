@@ -57,6 +57,9 @@ button.recon-el:focus-visible{outline:2px solid var(--feed-gold-soft);outline-of
 .recon-shutter span{width:64px;height:64px;border:4px solid #000;border-radius:50%;background:#fff;transition:transform .15s,background .15s}
 .recon-shutter.is-recording span{transform:scale(.62);border-radius:14px;background:#e4572e}
 .recon-shutter:disabled{opacity:.45}
+.recon-lenses{grid-column:1/-1;display:flex;gap:6px;padding:3px;border-radius:999px;background:#0006;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.recon-lenses button{display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:#0007;color:#fff;font:700 12px/1 Inter,sans-serif;cursor:pointer}
+.recon-lenses button.active{width:40px;height:40px;margin:-2px 0;background:#000b;color:var(--feed-gold-soft);font-size:13px}
 .recon-modes{grid-column:1/-1;display:flex;gap:4px;padding:3px;border-radius:999px;background:#0008}
 .recon-modes button{padding:6px 14px;border:0;border-radius:999px;background:none;color:#cfd0c6;font:700 12px/1 Inter,sans-serif;letter-spacing:.12em;cursor:pointer}
 .recon-modes button.active{background:#fff;color:#111}
