@@ -1,5 +1,6 @@
 import { Archive, ChevronDown, Flag, Trash2, X } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { addReconToDossier, createDossier, deleteRecon, getAuthorRecons, getDossier, getDossiers, getRecon, markReconViewed, mediaUrl, removeReconFromDossier, reportRecon,
   type DossierSummary, type ReconItem } from '../api'
 import { timeAgo } from './format'
@@ -7,6 +8,14 @@ import { useVideoSource } from './useVideoSource'
 import { ReportSheet } from './FeedSheets'
 import { ensureReconFonts, type MentionElement } from './recon/composition'
 import { ElementLayer } from './recon/ElementLayer'
+
+/**
+ * O visualizador abre direto no body: dentro da tela do feed (fixa no celular) ele ficava por baixo da barra inferior.
+ */
+const overBody = (node: ReactNode) => createPortal(node, document.body)
+export const ReconViewer = (props: Parameters<typeof ReconViewerContent>[0]) => overBody(<ReconViewerContent {...props}/>)
+export const DossierViewer = (props: Parameters<typeof DossierViewerContent>[0]) => overBody(<DossierViewerContent {...props}/>)
+export const SingleReconViewer = (props: Parameters<typeof SingleReconViewerContent>[0]) => overBody(<SingleReconViewerContent {...props}/>)
 
 /** Navega dentro do app (o App acompanha o popstate) sem precisar passar callbacks por todas as telas. */
 export function navigateInApp(path: string) {
@@ -141,12 +150,12 @@ function ReconPlayer({ header, items, startIndex, onView, onEnd, onPrevGroup, on
         <button type="button" className="feed-icon-button" onClick={onClose} aria-label="Fechar Recon"><X/></button>
       </div>
     </header>
-    {actions && <footer className="recon-actions" onPointerDown={() => setPaused(true)}>{actions(item)}</footer>}
+    {actions && <div className="recon-actions" onPointerDown={() => setPaused(true)}>{actions(item)}</div>}
   </div>
 }
 
 /** Recons dos autores da barra, em sequencia: ao terminar um autor, passa para o proximo. */
-export function ReconViewer({ usernames, start, onClose, onChanged }: { usernames: string[]; start: number; onClose: () => void; onChanged: () => void }) {
+function ReconViewerContent({ usernames, start, onClose, onChanged }: { usernames: string[]; start: number; onClose: () => void; onChanged: () => void }) {
   const [authorIndex, setAuthorIndex] = useState(start)
   const [data, setData] = useState<{ username: string; own: boolean; items: ReconItem[] } | null>(null)
   const [saving, setSaving] = useState<ReconItem | null>(null)
@@ -212,7 +221,7 @@ function SaveToDossier({ username, recon, onClose }: { username: string; recon: 
 }
 
 /** Dossie do perfil: Recons guardados, tocados em sequencia (nao contam como visualizacao). */
-export function DossierViewer({ dossierId, onClose, onChanged }: { dossierId: string; onClose: () => void; onChanged: () => void }) {
+function DossierViewerContent({ dossierId, onClose, onChanged }: { dossierId: string; onClose: () => void; onChanged: () => void }) {
   const [data, setData] = useState<Awaited<ReturnType<typeof getDossier>> | null>(null)
   useEffect(() => { getDossier(dossierId).then(setData).catch(() => onClose()) }, [dossierId, onClose])
   if (!data) return <div className="recon-viewer" role="dialog" aria-modal="true" aria-busy="true"><div className="recon-ended"><span>Carregando…</span></div></div>
@@ -224,7 +233,7 @@ export function DossierViewer({ dossierId, onClose, onChanged }: { dossierId: st
 }
 
 /** Recon aberto pelo link de uma notificacao (/recon/{id}): mostra so ele ou avisa que saiu do ar. */
-export function SingleReconViewer({ reconId, onClose }: { reconId: string; onClose: () => void }) {
+function SingleReconViewerContent({ reconId, onClose }: { reconId: string; onClose: () => void }) {
   const [data, setData] = useState<Awaited<ReturnType<typeof getRecon>> | null>(null)
   const [failed, setFailed] = useState(false)
   useEffect(() => {
