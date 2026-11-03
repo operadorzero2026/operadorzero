@@ -40,17 +40,18 @@ public final class OperationDtos {
         @NotBlank @Size(max = 40) String modality,
         @Size(max = 100) String customModality,
         @Size(max = 6000) String rules,
-        @NotBlank @Size(max = 8) String gameSize,
-        @NotNull @Positive Integer participantLimit,
-        @Positive @Max(20) Integer teamLimit,
+        @Size(max = 8) String gameSize,
+        @Positive Integer participantLimit,
+        @Positive @Max(100) Integer teamLimit,
         @NotNull @PositiveOrZero BigDecimal registrationPrice,
         @Size(max = 500) String paymentMethods,
         @NotNull @Min(12) @Max(99) Integer minimumAge,
         @Size(max = 2000) String requiredEquipment,
         @Min(100) @Max(1000) Integer fpsLimit,
-        @NotBlank @Size(max = 24) String entryMode,
+        @Size(max = 24) String entryMode,
         boolean approvalRequired,
-        boolean waitingListEnabled
+        boolean waitingListEnabled,
+        @Size(max = 12) String registrationModel
     ) {}
 
     public record UpdateStatusRequest(@NotBlank @Size(max = 32) String status, @Size(max = 500) String reason) {}
@@ -64,7 +65,6 @@ public final class OperationDtos {
         @NotNull @PositiveOrZero Long version
     ) {}
     public record DeleteOperationRequest(@NotBlank @Size(max = 500) String reason) {}
-    public record ParticipationRequest(@NotNull UUID operationTeamId, UUID operationSquadId) {}
     public record ParticipantDecisionRequest(@NotBlank @Size(max = 16) String action, @Size(max = 500) String reason) {}
     public record OperationTeamResponse(UUID id, String name, String acronym, String color, String description,
                                         int capacity, long participantCount, String status) {}
@@ -90,7 +90,7 @@ public final class OperationDtos {
         BigDecimal registrationPrice, String paymentMethods, int minimumAge, String requiredEquipment,
         Integer fpsLimit, String entryMode, boolean approvalRequired, boolean waitingListEnabled,
         String status, long participantCount, String participantStatus, boolean managedByCurrentUser, long version,
-        boolean hasCover, long coverVersion
+        boolean hasCover, long coverVersion, String registrationModel
     ) {}
 
     public record OperationListResponse(List<OperationSummary> items) {}

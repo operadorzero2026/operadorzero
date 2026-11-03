@@ -1,5 +1,21 @@
 # Histórico de alterações
 
+## 2026-11-03 - Operações, Etapa A: modelos de inscrição, funções, encerramento, remoção e troca de equipe
+
+### Arquivos alterados
+- Banco: `V33__registration_models_roles_and_removals.sql` (aditiva: `registration_model`, `registration_closed_at`, `team_change_requests_enabled`; função principal, Médico e Rádio por inscrição; campos de remoção; status `REMOVED`; tabelas `operation_participant_event` e `operation_team_change_request`). Operações existentes ficam como "por equipes" (como já funcionavam).
+- Servidor: `operation/OperationRegistration{Service,Repository,Controller,Dtos}` (novos); `OperationService`/`OperationRepository` (criação sem tamanho e sem limite obrigatório, equipes "sem limite", publicação de lista única); `CallUp*` (modelo e inscrição aberta na Convocação). As rotas antigas de inscrever/cancelar passaram para o serviço novo.
+- Site: `src/operation/` (novo: `OperationRegistrationPanel`, `RoleChooser`, `roles.ts`, `registration.css`), `OperationsPage.tsx` (formulário com modelo de inscrição, vagas opcionais; painel no detalhe), `feed/CallUpCard.tsx` (Alistar pede função e equipe), `api.ts`.
+
+### O que foi feito
+- Lista única (padrão) ou por equipes, sem limite de equipes nem de participantes.
+- Função principal obrigatória (Assalto, Sniper, DMR) + Médico e Operador de Rádio opcionais e combináveis; o jogador altera quando quiser.
+- Contadores (Médico e Rádio contados à parte) e filtros combinados por função e equipe; lista geral e por equipes.
+- Inscrições encerram no horário de início (validado no servidor); o organizador encerra antes e reabre até o início.
+- Cancelamento pelo jogador até o início (mesmo com inscrições encerradas): sai da lista, da equipe e do chat; histórico preservado; reinscrição sem duplicar.
+- Remoção pelo organizador com motivo obrigatório, aviso interno ao jogador, bloqueio de retorno e "Autorizar retorno"; histórico de remoções e liberações.
+- Troca de equipe só por pedido aprovado pelo organizador (o jogador fica na equipe original até lá); o organizador liga/desliga novos pedidos.
+
 ## 2026-11-03 - Recon modernizado: câmera, editor estilo Stories e marcação de operadores com @
 
 ### Arquivos alterados

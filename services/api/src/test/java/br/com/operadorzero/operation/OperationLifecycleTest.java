@@ -128,17 +128,6 @@ class OperationLifecycleTest {
     }
 
     @Test
-    void cancellingAParticipationPromotesTheWaitingList() {
-        AuthenticatedUser player = new AuthenticatedUser(20L, UUID.randomUUID(), "p@example.test", "p", "P", "P", List.of("USER"));
-        when(repository.lockOperation(operationId)).thenReturn(Optional.of(5L));
-        when(repository.cancelParticipation(operationId, 20L, now)).thenReturn(1);
-
-        service.cancelParticipation(player, operationId);
-
-        verify(repository).promoteWaitingList(5L, now);
-    }
-
-    @Test
     void participantConfirmsOwnPresenceOnlyWhenApproved() {
         AuthenticatedUser player = new AuthenticatedUser(20L, UUID.randomUUID(), "p@example.test", "p", "P", "P", List.of("USER"));
         when(repository.confirmOwnPresence(operationId, 20L, now)).thenReturn(0);

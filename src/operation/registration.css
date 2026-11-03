@@ -1,0 +1,101 @@
+/* Inscricoes da operacao: compacto, legivel no celular. */
+.registration{display:grid;gap:14px;margin:18px 0;padding:16px;border:1px solid var(--line,#ffffff1f);border-radius:12px;background:#0d0f0b}
+.registration h4{margin:0 0 8px;font:700 16px/1.1 'Barlow Condensed',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#e7e7dc}
+.registration-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px}
+.registration-head small{color:#8f9488;font-size:10px;letter-spacing:.16em}
+.registration-head h3{margin:4px 0 0;font:800 26px/1 'Barlow Condensed',sans-serif}
+.registration-state{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#2a1d18;color:#f0a58a;font-size:12px}
+.registration-state.is-open{background:#1d2615;color:#c9cb73}
+.registration-state svg{width:14px;height:14px}
+.registration-notice{margin:0;padding:8px 12px;border-radius:8px;background:#1b1e17;font-size:13px}
+.registration-alert{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid #e4572e66;border-radius:10px;background:#2a1612;font-size:13px;line-height:1.4}
+.registration-alert svg{flex:none;width:20px;height:20px;color:#ff8a6a}
+.registration-alert p{margin:0}
+.registration-muted{margin:0;color:#8f9488;font-size:13px}
+.registration-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.registration-row svg,.registration-tabs svg,.registration-filters svg{width:15px;height:15px;vertical-align:-3px}
+
+.role-chooser{display:grid;gap:8px;margin:0;padding:0;border:0;min-width:0}
+.role-chooser legend{margin-bottom:6px;font-weight:700;font-size:14px}
+.role-chooser small{color:#8f9488;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.role-primary,.role-extra,.registration-teams{display:flex;flex-wrap:wrap;gap:8px}
+.role-primary label,.role-extra label,.registration-teams label{display:inline-flex;align-items:center;gap:7px;min-height:42px;padding:8px 14px;border:1px solid #ffffff2a;border-radius:10px;background:#14170f;font-size:14px;cursor:pointer;user-select:none}
+.role-primary label.active,.role-extra label.active,.registration-teams label.active{border-color:var(--lime,#c9cb73);background:#232816;color:#f2f1e9}
+.role-primary input,.role-extra input,.registration-teams input{accent-color:var(--lime,#c9cb73);width:16px;height:16px;margin:0}
+.role-extra svg{width:16px;height:16px;color:var(--lime,#c9cb73)}
+.registration-teams i{width:12px;height:12px;border-radius:50%;flex:none}
+.registration-teams small{color:#8f9488}
+.registration-join{display:grid;gap:14px}
+.registration-join>.module-primary{justify-self:start}
+
+.registration-mine{display:grid;gap:10px;padding:12px;border-radius:10px;background:#141a0f}
+.registration-mine>p{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0;font-size:14px}
+.registration-mine>p svg{width:16px;height:16px;color:var(--lime,#c9cb73)}
+.registration-edit{display:grid;gap:10px}
+.registration-pending{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0;font-size:13px;color:#e3c35a}
+.registration-pending svg{width:15px;height:15px}
+.registration-pending button{padding:0;border:0;background:none;color:#c9cbbb;text-decoration:underline;cursor:pointer}
+.registration-change{display:grid;gap:8px;font-size:13px}
+.registration-change summary{display:flex;align-items:center;gap:6px;cursor:pointer;color:#c9cb73;font-weight:600}
+.registration-change summary svg{width:15px;height:15px}
+.registration-change[open]{padding:10px;border:1px solid #ffffff1f;border-radius:10px}
+.registration-change p{margin:6px 0}
+.registration-change label{display:grid;gap:4px;max-width:320px}
+.registration-change select,.registration-filters select{min-height:38px;padding:0 10px;border:1px solid #ffffff2a;border-radius:8px;background:#0b0c09;color:#fff}
+.registration-change .module-primary{justify-self:start}
+
+.registration-admin{display:grid;gap:12px;padding:12px;border:1px dashed #ffffff26;border-radius:10px}
+.registration-counts{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}
+.registration-counts li{padding:8px 12px;border-radius:8px;background:#14170f;font-size:13px}
+.registration-counts b{margin-right:4px;font:800 18px/1 'Barlow Condensed',sans-serif;color:#c9cb73}
+.registration-switch{display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer}
+.registration-switch input{accent-color:var(--lime,#c9cb73)}
+.registration-requests ul,.registration-removed ul{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.registration-requests li,.registration-removed li{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:8px;background:#14170f}
+.registration-requests li>span:first-child,.registration-removed li>span:first-child{display:grid;gap:2px;min-width:0}
+.registration-requests small,.registration-removed small{color:#8f9488;font-size:12px}
+
+.registration-toolbar{display:grid;gap:8px}
+.registration-tabs{display:flex;gap:4px}
+.registration-tabs button{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid #ffffff2a;border-radius:8px;background:transparent;color:#c9cbbb;font-size:13px;cursor:pointer}
+.registration-tabs button.active{background:#e8e8dc;color:#111}
+.registration-filters{display:flex;flex-wrap:wrap;gap:6px}
+.registration-filters button{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid #ffffff26;border-radius:999px;background:transparent;color:#c9cbbb;font-size:12px;cursor:pointer}
+.registration-filters button.active{border-color:var(--lime,#c9cb73);background:#232816;color:#fff}
+
+.registration-list,.registration-group ol{display:grid;gap:4px;margin:0;padding:0;list-style:none}
+.registration-group{display:grid;gap:6px}
+.registration-group h5{display:flex;align-items:center;gap:8px;margin:6px 0 0;font-size:14px}
+.registration-group h5 i{width:12px;height:12px;border-radius:50%}
+.registration-group h5 small{color:#8f9488}
+.registration-person{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:#11140d}
+.registration-pos{color:#6f7369;font:700 14px/1 'Barlow Condensed',sans-serif;text-align:right}
+.registration-who{display:grid;gap:2px;min-width:0}
+.registration-who b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.registration-who small{display:flex;align-items:center;gap:4px;color:#8f9488;font-size:12px;overflow:hidden;white-space:nowrap}
+.registration-who small i{display:inline-block;width:8px;height:8px;border-radius:50%}
+.registration-roles{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px}
+.registration-actions{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
+.registration-actions button{min-height:32px;padding:4px 10px;font-size:12px}
+.registration-actions svg{width:14px;height:14px;vertical-align:-2px}
+.registration-tag{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:999px;background:#232816;color:#d7d9b0;font-size:11px;font-style:normal;white-space:nowrap}
+.registration-tag svg{width:12px;height:12px}
+.registration-tag--medic{background:#3a1717;color:#ff9b8a}
+.registration-tag--radio{background:#152737;color:#8ac4ff}
+.registration-tag--status{background:#2e2a14;color:#e3c35a}
+.registration-tag--approved{background:#1d2615;color:#c9cb73}
+.registration-tag--rejected,.registration-tag--cancelled{background:#2a1d18;color:#f0a58a}
+
+.registration-modal-backdrop{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:16px;background:#000b}
+.registration-modal{display:grid;gap:12px;width:min(100%,420px);padding:18px;border-radius:14px;background:#12140f;box-shadow:0 20px 60px #000a}
+.registration-modal h4{display:flex;align-items:center;gap:8px}
+.registration-modal h4 svg{width:18px;height:18px;color:#ff8a6a}
+.registration-modal label{display:grid;gap:6px;font-size:13px}
+.registration-modal textarea{padding:10px;border:1px solid #ffffff2a;border-radius:8px;background:#0b0c09;color:#fff;font:inherit;resize:vertical}
+.registration-modal .registration-row{justify-content:flex-end}
+.registration-loading{color:#8f9488;font-size:13px}
+@media(max-width:560px){.registration{padding:12px}.registration-person{grid-template-columns:22px minmax(0,1fr)}.registration-roles{grid-column:2;justify-content:flex-start}}
+/* Botoes compactos dentro do painel (o estilo geral do modulo e grande demais aqui). */
+.registration :is(.module-primary,.module-secondary,.module-danger){display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:7px 12px;font-size:13px;line-height:1.1}
+.registration :is(.module-primary,.module-secondary,.module-danger) svg{width:15px;height:15px}
+.registration-mine>p{line-height:1.4}

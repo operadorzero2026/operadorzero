@@ -31,7 +31,16 @@ public class CallUpRepository {
     public record CallUpRow(long id, UUID publicId, String name, LocalDate date, LocalTime presentationTime, LocalTime startTime,
                             String city, String stateCode, String fieldName, String locationUrl, BigDecimal latitude, BigDecimal longitude,
                             String modality, String customModality, String gameSize, String status, long occupied, Integer limit,
-                            BigDecimal price, boolean approvalRequired, boolean waitingListEnabled, String viewerStatus, double score) {}
+                            BigDecimal price, boolean approvalRequired, boolean waitingListEnabled, String viewerStatus, double score,
+                            String registrationModel, boolean registrationOpen) {
+        public CallUpRow(long id, UUID publicId, String name, LocalDate date, LocalTime presentationTime, LocalTime startTime,
+                         String city, String stateCode, String fieldName, String locationUrl, BigDecimal latitude, BigDecimal longitude,
+                         String modality, String customModality, String gameSize, String status, long occupied, Integer limit,
+                         BigDecimal price, boolean approvalRequired, boolean waitingListEnabled, String viewerStatus, double score) {
+            this(id, publicId, name, date, presentationTime, startTime, city, stateCode, fieldName, locationUrl, latitude, longitude, modality,
+                customModality, gameSize, status, occupied, limit, price, approvalRequired, waitingListEnabled, viewerStatus, score, "TEAMS", true);
+        }
+    }
     public record Squad(UUID id, String name, int capacity, long occupied) {}
     public record Team(UUID id, String name, int capacity, long occupied, List<Squad> squads) {}
 
@@ -42,6 +51,8 @@ public class CallUpRepository {
     public List<CallUpRow> ranked(long viewer, LocalDate today, int limit) {
         return jdbc.query(select("""
             WHERE o.deleted_at IS NULL AND o.status IN (:open) AND o.operation_date BETWEEN :today AND :until
+              AND o.registration_closed_at IS NULL AND """ + OperationRegistrationRepository.STARTS_AT + """
+             > now()
             ORDER BY score DESC, o.operation_date, o.start_time, o.public_id
             LIMIT :limit
             """), new MapSqlParameterSource().addValue("viewer", viewer).addValue("open", OPEN_STATUSES)
@@ -88,7 +99,9 @@ public class CallUpRepository {
                    (SELECT count(*) FROM operation_participant p WHERE p.operation_id = o.id AND p.status IN """ + ACTIVE + """
                    ) occupied, o.participant_limit, o.registration_price, o.approval_required, o.waiting_list_enabled,
                    (SELECT p.status FROM operation_participant p WHERE p.operation_id = o.id AND p.user_id = :viewer
-                      AND p.status NOT IN ('CANCELLED','REJECTED')) viewer_status,
+                      AND p.status NOT IN ('CANCELLED','REJECTED')) viewer_status, o.registration_model,
+                   (o.status IN ('PUBLISHED','REGISTRATION_OPEN','FULL') AND o.registration_closed_at IS NULL AND """ + OperationRegistrationRepository.STARTS_AT + """
+             > now()) registration_open,
                    (1 + CASE WHEN o.state_code = me.state_code THEN 1 ELSE 0 END
                       + CASE WHEN o.state_code = me.state_code AND lower(o.city) = lower(me.city) THEN 1 ELSE 0 END
                       + CASE WHEN o.field_id IN (SELECT field_id FROM played) THEN 1.5 ELSE 0 END)
@@ -106,6 +119,7 @@ public class CallUpRepository {
             r.getString("state_code"), r.getString("field_name"), r.getString("location_url"), r.getBigDecimal("latitude"),
             r.getBigDecimal("longitude"), r.getString("modality"), r.getString("custom_modality"), r.getString("game_size"), r.getString("status"),
             r.getLong("occupied"), (Integer) r.getObject("participant_limit"), r.getBigDecimal("registration_price"),
-            r.getBoolean("approval_required"), r.getBoolean("waiting_list_enabled"), r.getString("viewer_status"), r.getDouble("score"));
+            r.getBoolean("approval_required"), r.getBoolean("waiting_list_enabled"), r.getString("viewer_status"), r.getDouble("score"),
+            r.getString("registration_model"), r.getBoolean("registration_open"));
     }
 }

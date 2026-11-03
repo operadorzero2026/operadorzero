@@ -1,6 +1,8 @@
 import { CalendarDays, Check, Clock3, MapPin, MessageCircle, Navigation, Target, Users } from 'lucide-react'
 import { useState } from 'react'
-import { getCallUp, requestOperationParticipation, type CallUp, type CallUpTeam } from '../api'
+import { getCallUp, requestOperationParticipation, type CallUp, type CallUpTeam, type PlayerRole } from '../api'
+import { RoleChooser } from '../operation/RoleChooser'
+import { DEFAULT_ROLE } from '../operation/roles'
 import { Sheet } from './FeedSheets'
 
 const MODALITIES: Record<string, string> = {
@@ -18,30 +20,36 @@ function enlistLabel(callUp: CallUp) {
   if (callUp.viewerStatus && ENLISTED.includes(callUp.viewerStatus)) return { text: 'ALISTADO', done: true }
   if (callUp.viewerStatus === 'REQUESTED') return { text: 'PEDIDO ENVIADO', done: true }
   if (callUp.viewerStatus === 'WAITING_LIST') return { text: 'NA LISTA DE ESPERA', done: true }
+  if (callUp.viewerStatus === 'REMOVED') return { text: 'REMOVIDO', done: true }
+  if (!callUp.registrationOpen) return { text: 'INSCRIÇÕES ENCERRADAS', done: true }
   if (callUp.remaining === 0) return callUp.waitingListEnabled ? { text: 'ENTRAR NA ESPERA', done: false } : { text: 'LOTADO', done: true }
   return { text: 'ALISTAR', done: false }
 }
 
-/** Opcoes de alistamento: em jogo pequeno escolhe-se o lado; nos demais, o lado e o pelotao. */
+/** Opcoes de alistamento por equipes: o lado e, quando a equipe tem pelotoes, o pelotao. Lista unica nao tem opcoes. */
 function choices(callUp: CallUp) {
-  return callUp.teams.flatMap(team => callUp.gameSize === 'SMALL'
+  if (callUp.registrationModel !== 'TEAMS') return []
+  return callUp.teams.flatMap(team => team.squads.length === 0
     ? [{ team, squad: null as CallUpTeam['squads'][number] | null }]
     : team.squads.map(squad => ({ team, squad })))
 }
+const UNLIMITED = 100000
 
 export function CallUpCard({ callUp: initial, onRequireLogin }: { callUp: CallUp; onRequireLogin?: () => void }) {
   const [callUp, setCallUp] = useState(initial)
   const [choosing, setChoosing] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
+  const [role, setRole] = useState<PlayerRole>(DEFAULT_ROLE)
+  const [choice, setChoice] = useState('')
   const label = enlistLabel(callUp)
   const options = choices(callUp)
   const percent = callUp.limit ? Math.min(100, Math.round(callUp.occupied / callUp.limit * 100)) : 0
 
-  const enlist = async (teamId: string, squadId: string | null) => {
+  const enlist = async (teamId: string | null, squadId: string | null) => {
     setBusy(true); setMessage('')
     try {
-      const result = await requestOperationParticipation(callUp.id, teamId, squadId)
+      const result = await requestOperationParticipation(callUp.id, role, teamId, squadId)
       setCallUp(await getCallUp(callUp.id))
       setMessage(result.message)
       setChoosing(false)
@@ -53,9 +61,9 @@ export function CallUpCard({ callUp: initial, onRequireLogin }: { callUp: CallUp
   }
   const start = () => {
     if (onRequireLogin) return onRequireLogin()
-    if (options.length === 1) void enlist(options[0].team.id, options[0].squad?.id ?? null)
-    else if (options.length > 1) setChoosing(true)
-    else setMessage('O organizador ainda não abriu os times para inscrição.')
+    if (callUp.registrationModel === 'TEAMS' && options.length === 0) { setMessage('O organizador ainda não abriu as equipes para inscrição.'); return }
+    setChoice(options.length === 1 ? (options[0].squad?.id ?? options[0].team.id) : '')
+    setChoosing(true)
   }
   const whatsapp = () => {
     const text = `CONVOCAÇÃO: ${callUp.name} · ${day(callUp.date)} às ${callUp.startTime.slice(0, 5)} · ${callUp.fieldName}. Aliste-se: ${callUp.shareUrl}`
@@ -89,16 +97,26 @@ export function CallUpCard({ callUp: initial, onRequireLogin }: { callUp: CallUp
       {callUp.approvalRequired && !callUp.viewerStatus && <p className="callup-note">O organizador aprova cada inscrição.</p>}
       {message && <p className="callup-note" role="status">{message}</p>}
     </div>
-    {choosing && <Sheet title="Escolha onde se alistar" onClose={() => setChoosing(false)} labelledBy="callup-choose-title">
-      {options.map(({ team, squad }) => {
-        const capacity = squad?.capacity ?? team.capacity
-        const occupied = squad?.occupied ?? team.occupied
-        const full = occupied >= capacity
-        return <button type="button" key={squad?.id ?? team.id} className="create-choice" disabled={busy || (full && !callUp.waitingListEnabled)}
-          onClick={() => void enlist(team.id, squad?.id ?? null)}>
-          <Users/><span><b>{squad ? `${team.name} · ${squad.name}` : team.name}</b><small>{occupied}/{capacity} {full ? '· lotado' : 'ocupadas'}</small></span>
-        </button>
-      })}
+    {choosing && <Sheet title="Alistar" onClose={() => setChoosing(false)} labelledBy="callup-choose-title">
+      <div className="callup-enlist-form">
+        <RoleChooser value={role} onChange={setRole}/>
+        {options.length > 0 && <fieldset className="role-chooser"><legend>Escolha sua equipe</legend>
+          {options.map(({ team, squad }) => {
+            const capacity = squad?.capacity ?? team.capacity
+            const occupied = squad?.occupied ?? team.occupied
+            const full = occupied >= capacity
+            const key = squad?.id ?? team.id
+            return <button type="button" key={key} className={`create-choice ${choice === key ? 'active' : ''}`} aria-pressed={choice === key}
+              disabled={busy || (full && !callUp.waitingListEnabled)} onClick={() => setChoice(key)}>
+              <Users/><span><b>{squad ? `${team.name} · ${squad.name}` : team.name}</b><small>{capacity >= UNLIMITED ? `${occupied} inscritos` : `${occupied}/${capacity} ${full ? '· lotado' : 'ocupadas'}`}</small></span>
+            </button>
+          })}
+        </fieldset>}
+        <button type="button" className="callup-enlist" disabled={busy || (options.length > 0 && !choice)} onClick={() => {
+          const picked = options.find(option => (option.squad?.id ?? option.team.id) === choice)
+          void enlist(picked?.team.id ?? null, picked?.squad?.id ?? null)
+        }}>{busy ? 'ALISTANDO…' : 'CONFIRMAR ALISTAMENTO'}</button>
+      </div>
     </Sheet>}
   </article>
 }

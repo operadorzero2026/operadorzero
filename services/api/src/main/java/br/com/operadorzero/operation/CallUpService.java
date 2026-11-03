@@ -29,7 +29,8 @@ public class CallUpService {
     public record CallUp(UUID id, String name, LocalDate date, LocalTime presentationTime, LocalTime startTime, String city, String stateCode,
                          String fieldName, String directionsUrl, String modality, String customModality, String gameSize, String status,
                          long occupied, Integer limit, Integer remaining, boolean lastSpots, BigDecimal price, boolean approvalRequired,
-                         boolean waitingListEnabled, String viewerStatus, List<Team> teams, String shareUrl) {}
+                         boolean waitingListEnabled, String viewerStatus, List<Team> teams, String shareUrl, String registrationModel,
+                         boolean registrationOpen) {}
 
     public record CallUpPage(List<CallUp> items) {}
 
@@ -76,7 +77,8 @@ public class CallUpService {
             return new CallUp(row.publicId(), row.name(), row.date(), row.presentationTime(), row.startTime(), row.city(), row.stateCode(),
                 row.fieldName(), directions(row), row.modality(), row.customModality(), row.gameSize(), row.status(), row.occupied(),
                 row.limit(), remaining, lastSpots, row.price(), row.approvalRequired(), row.waitingListEnabled(),
-                withViewer ? row.viewerStatus() : null, teams.getOrDefault(row.id(), List.of()), shareUrl(row.publicId()));
+                withViewer ? row.viewerStatus() : null, teams.getOrDefault(row.id(), List.of()), shareUrl(row.publicId()),
+                row.registrationModel(), row.registrationOpen());
         }).toList();
     }
 

@@ -109,7 +109,7 @@ export type TeamWorkspace = { team: Team | null; receivedInvitations: TeamInvita
 
 export type VenueField = { id:string; name:string; description?:string|null; city:string; stateCode:string; addressLine?:string|null; addressNumber?:string|null; district?:string|null; region?:string|null; locationUrl?:string|null; phone?:string|null; contactEmail?:string|null; complement?:string|null; postalCode?:string|null; rules?:string|null; openingHours?:string|null; amenities?:string|null; maximumCapacity?:number|null; averagePrice?:number|null; paymentMethods?:string|null; managedByCurrentUser:boolean; version:number }
 export type VenueMap = { id:string; fieldId:string; fieldName:string; city:string; stateCode:string; name:string; terrainType:string; description?:string|null; approximateSize?:string|null; capacity?:number|null; respawnAreas?:string|null; bases?:string|null; objectives?:string|null; strategicPoints?:string|null; neutralAreas?:string|null; prohibitedAreas?:string|null; routes?:string|null; notes?:string|null; specificRules?:string|null; managedByCurrentUser:boolean; version:number }
-export type Operation = { id:string; name:string; description:string; fieldId:string; fieldName:string; mapId?:string|null; mapName?:string|null; city:string; stateCode:string; operationDate:string; presentationTime:string; startTime:string; endTime:string; modality:string; status:string; gameSize:'SMALL'|'MEDIUM'|'LARGE'; participantLimit:number|null; participantCount:number; registrationPrice:number; participantStatus?:string|null; managedByCurrentUser:boolean; hasCover:boolean; coverVersion:number; briefing?:string|null; version?:number }
+export type Operation = { id:string; name:string; description:string; fieldId:string; fieldName:string; mapId?:string|null; mapName?:string|null; city:string; stateCode:string; operationDate:string; presentationTime:string; startTime:string; endTime:string; modality:string; status:string; gameSize:'SMALL'|'MEDIUM'|'LARGE'; participantLimit:number|null; participantCount:number; registrationPrice:number; participantStatus?:string|null; managedByCurrentUser:boolean; hasCover:boolean; coverVersion:number; briefing?:string|null; version?:number; registrationModel?:RegistrationModel }
 export type OperationTeam = { id:string; name:string; acronym?:string|null; color:string; description?:string|null; capacity:number; participantCount:number; status:string }
 export type OperationParticipant = { operatorId:string; callsign:string; displayName:string; teamName?:string|null; teamAcronym?:string|null; status:string; operationTeamId?:string|null; operationTeamName?:string|null }
 export type OperationRoster = { teams:OperationTeam[]; participants:OperationParticipant[]; currentUserTeamId?:string|null; currentUserStatus?:string|null }
@@ -497,7 +497,7 @@ export const removeReconFromDossier = (dossierId:string, reconId:string) => apiR
 export const deleteDossier = (id:string) => apiRequest<void>(`/api/dossiers/${encodeURIComponent(id)}`, { method:'DELETE' })
 export type CallUpSquad = { id:string; name:string; capacity:number; occupied:number }
 export type CallUpTeam = { id:string; name:string; capacity:number; occupied:number; squads:CallUpSquad[] }
-export type CallUp = { id:string; name:string; date:string; presentationTime?:string|null; startTime:string; city:string; stateCode:string; fieldName:string; directionsUrl?:string|null; modality:string; customModality?:string|null; gameSize:'SMALL'|'MEDIUM'|'LARGE'; status:string; occupied:number; limit?:number|null; remaining?:number|null; lastSpots:boolean; price?:number|null; approvalRequired:boolean; waitingListEnabled:boolean; viewerStatus?:string|null; teams:CallUpTeam[]; shareUrl:string }
+export type CallUp = { id:string; name:string; date:string; presentationTime?:string|null; startTime:string; city:string; stateCode:string; fieldName:string; directionsUrl?:string|null; modality:string; customModality?:string|null; gameSize:'SMALL'|'MEDIUM'|'LARGE'; status:string; occupied:number; limit?:number|null; remaining?:number|null; lastSpots:boolean; price?:number|null; approvalRequired:boolean; waitingListEnabled:boolean; viewerStatus?:string|null; teams:CallUpTeam[]; shareUrl:string; registrationModel:RegistrationModel; registrationOpen:boolean }
 export type DecorationBalance = { quota:number; used:number; remaining:number; resetsAt:string }
 export type HonorBoard = { weekStart:string; weekEnd:string; current:boolean; items:{ position:number; decorations:number; post:FeedPost }[] }
 export const getDecorationBalance = () => apiRequest<DecorationBalance>('/api/feed/decorations/balance')
@@ -528,7 +528,30 @@ export async function uploadOperationCover(id:string,file:File) {
 }
 export const operationCoverUrl = (id:string,version:number) => `${getApiBaseUrl()}/api/operations/${encodeURIComponent(id)}/cover?v=${version}`
 export const publishOperation = (id:string) => apiRequest<Operation>(`/api/operations/${encodeURIComponent(id)}/publish`,json('POST',{}))
-export const requestOperationParticipation = (id:string,operationTeamId:string,operationSquadId?:string|null) => apiRequest<{message:string}>(`/api/operations/${encodeURIComponent(id)}/participation`,json('POST',{operationTeamId,operationSquadId:operationSquadId||null}))
+export const requestOperationParticipation = (id:string,role:PlayerRole,operationTeamId?:string|null,operationSquadId?:string|null) => apiRequest<{message:string}>(`/api/operations/${encodeURIComponent(id)}/participation`,json('POST',{operationTeamId:operationTeamId||null,operationSquadId:operationSquadId||null,...role}))
+
+// ---- Inscricao (lista unica ou por equipes), funcoes, remocoes e trocas de equipe ----
+export type RegistrationModel = 'SINGLE_LIST'|'TEAMS'
+export type PrimaryRole = 'ASSAULT'|'SNIPER'|'DMR'
+export type PlayerRole = { primaryRole:PrimaryRole; medic:boolean; radio:boolean }
+export type RegistrationTeam = { id:string; name:string; acronym?:string|null; color:string; capacity?:number|null; participantCount:number }
+export type RegistrationParticipant = { operatorId:string; username:string; callsign:string; displayName:string; status:string; requestedAt:string; position:number; primaryRole?:PrimaryRole|null; medic:boolean; radio:boolean; teamId?:string|null; teamName?:string|null; teamColor?:string|null }
+export type RegistrationCounts = { total:number; assault:number; sniper:number; dmr:number; medic:number; radio:number; withoutRole:number }
+export type RegistrationMine = { status:string; primaryRole?:PrimaryRole|null; medic:boolean; radio:boolean; teamId?:string|null; teamName?:string|null; removalReason?:string|null; removedAt?:string|null; pendingChange?:{ id:string; toTeamId:string; toTeamName:string; createdAt:string }|null }
+export type TeamChangeItem = { id:string; operatorId:string; callsign:string; fromTeamName?:string|null; toTeamName?:string|null; createdAt:string; status:'PENDING'|'APPROVED'|'REJECTED'|'CANCELLED'; decidedAt?:string|null }
+export type RemovedPlayer = { operatorId:string; callsign:string; reason:string; removedAt:string; removedBy?:string|null; returnAuthorizedAt?:string|null }
+export type RegistrationOverview = { model:RegistrationModel; open:boolean; closedReason?:'STARTED'|'MANUAL'|'STATUS'|null; closedAt?:string|null; startsAt:string; canCancel:boolean; teamChangeRequestsEnabled:boolean; managed:boolean; teams:RegistrationTeam[]; participants:RegistrationParticipant[]; counts:RegistrationCounts; mine?:RegistrationMine|null; changeRequests:TeamChangeItem[]; removed:RemovedPlayer[] }
+const op = (id:string) => `/api/operations/${encodeURIComponent(id)}`
+export const getRegistration = (id:string) => apiRequest<RegistrationOverview>(`${op(id)}/registration`)
+export const updateMyRole = (id:string, role:PlayerRole) => apiRequest<{message:string}>(`${op(id)}/participation/role`, json('PUT', role))
+export const removeParticipant = (id:string, operatorId:string, reason:string) => apiRequest<{message:string}>(`${op(id)}/participants/${encodeURIComponent(operatorId)}/remove`, json('POST', { reason }))
+export const authorizeParticipantReturn = (id:string, operatorId:string) => apiRequest<{message:string}>(`${op(id)}/participants/${encodeURIComponent(operatorId)}/authorize-return`, json('POST', {}))
+export const closeRegistration = (id:string) => apiRequest<{message:string}>(`${op(id)}/registration/close`, json('POST', {}))
+export const reopenRegistration = (id:string) => apiRequest<{message:string}>(`${op(id)}/registration/reopen`, json('POST', {}))
+export const setTeamChangeRequests = (id:string, enabled:boolean) => apiRequest<{message:string}>(`${op(id)}/registration/settings`, json('PATCH', { teamChangeRequestsEnabled: enabled }))
+export const requestTeamChange = (id:string, toTeamId:string) => apiRequest<{message:string}>(`${op(id)}/team-changes`, json('POST', { toTeamId }))
+export const cancelTeamChange = (id:string) => apiRequest<{message:string}>(`${op(id)}/team-changes/mine`, { method: 'DELETE' })
+export const decideTeamChange = (id:string, requestId:string, action:'APPROVE'|'REJECT') => apiRequest<{message:string}>(`${op(id)}/team-changes/${encodeURIComponent(requestId)}/decision`, json('POST', { action }))
 export const cancelOperationParticipation = (id:string) => apiRequest<{message:string}>(`/api/operations/${encodeURIComponent(id)}/participation/cancel`,json('POST',{}))
 export const removeOperationCover=(id:string)=>apiRequest<{message:string}>(`/api/operations/${encodeURIComponent(id)}/cover`,json('DELETE'))
 export const getOperationStructure=(id:string)=>apiRequest<OperationStructure>(`/api/operations/${encodeURIComponent(id)}/structure`)

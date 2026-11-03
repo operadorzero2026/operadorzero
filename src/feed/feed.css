@@ -312,3 +312,7 @@ body:has(.upload-status) .create-flow{padding-bottom:calc(72px + env(safe-area-i
   backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);box-shadow:0 2px 10px #0003;text-shadow:0 1px 2px #0006}
 .recon-actions button:hover,.recon-actions button:focus-visible{background:#ffffff33}
 .recon-actions svg{width:15px;height:15px}
+/* Alistar pela Convocacao: funcao (e equipe, se houver) antes de confirmar. */
+.callup-enlist-form{display:grid;gap:14px}
+.callup-enlist-form .create-choice.active{border-color:var(--feed-gold);background:#2a2410}
+.callup-enlist-form .callup-enlist{width:100%}

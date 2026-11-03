@@ -1,10 +1,6 @@
 import { CalendarClock, CalendarDays, MapPin, Pencil, Plus, Search, Target, Trash2, Users, X } from 'lucide-react'
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  type ParticipantAction,
-  cancelOperationParticipation,
-  confirmOperationPresence,
-  decideOperationParticipant,
   updateOperationStatus,
   createOperation,
   deleteOperation,
@@ -20,14 +16,13 @@ import {
   OperationStructure,
   operationCoverUrl,
   publishOperation,
-  requestOperationParticipation,
   updateOperation,
   uploadOperationCover,
   VenueField,
   VenueMap,
 } from './api'
+import { OperationRegistrationPanel } from './operation/OperationRegistrationPanel'
 import { OperationCommandCenter } from './OperationCommandCenter'
-import { operatorTeamLabel } from './operator-label'
 
 const modalityLabels: Record<string, string> = {
   ELIMINATION: 'Mata-mata',
@@ -54,34 +49,17 @@ const statusLabels: Record<string, string> = {
   CANCELLED: 'Cancelada',
 }
 
-const participantStatusLabels: Record<string, string> = {
-  REQUESTED: 'Aguardando aprovação',
-  APPROVED: 'Aprovado',
-  CONFIRMED: 'Presença confirmada',
-  CHECKED_IN: 'Check-in feito',
-  WAITING_LIST: 'Lista de espera',
-  REJECTED: 'Recusado',
-}
 
-// Ações do organizador por status do participante, na ordem em que aparecem.
-const participantActions: Record<string, Array<{ action: ParticipantAction; label: string }>> = {
-  REQUESTED: [{ action: 'APPROVE', label: 'Aprovar' }, { action: 'REJECT', label: 'Recusar' }],
-  WAITING_LIST: [{ action: 'APPROVE', label: 'Aprovar se houver vaga' }, { action: 'REJECT', label: 'Recusar' }],
-  APPROVED: [{ action: 'CONFIRM', label: 'Confirmar presença' }, { action: 'CHECK_IN', label: 'Check-in' }, { action: 'REJECT', label: 'Recusar' }],
-  CONFIRMED: [{ action: 'CHECK_IN', label: 'Check-in' }, { action: 'REJECT', label: 'Recusar' }],
-  CHECKED_IN: [{ action: 'UNDO_CHECK_IN', label: 'Desfazer check-in' }],
-}
 
 // Próximos status que o organizador pode escolher a partir do status atual (o backend valida de novo).
 const statusActions: Record<string, Array<{ status: string; label: string; danger?: boolean }>> = {
-  PUBLISHED: [{ status: 'CONFIRMATION_PENDING', label: 'Encerrar inscrições' }, { status: 'IN_PROGRESS', label: 'Iniciar operação' }],
-  REGISTRATION_OPEN: [{ status: 'CONFIRMATION_PENDING', label: 'Encerrar inscrições' }, { status: 'IN_PROGRESS', label: 'Iniciar operação' }],
-  FULL: [{ status: 'REGISTRATION_OPEN', label: 'Reabrir inscrições' }, { status: 'CONFIRMATION_PENDING', label: 'Encerrar inscrições' }, { status: 'IN_PROGRESS', label: 'Iniciar operação' }],
+  PUBLISHED: [{ status: 'IN_PROGRESS', label: 'Iniciar operação' }],
+  REGISTRATION_OPEN: [{ status: 'IN_PROGRESS', label: 'Iniciar operação' }],
+  FULL: [{ status: 'REGISTRATION_OPEN', label: 'Reabrir inscrições' }, { status: 'IN_PROGRESS', label: 'Iniciar operação' }],
   CONFIRMATION_PENDING: [{ status: 'REGISTRATION_OPEN', label: 'Reabrir inscrições' }, { status: 'IN_PROGRESS', label: 'Iniciar operação' }],
   IN_PROGRESS: [{ status: 'FINISHED', label: 'Finalizar operação' }],
 }
 const CANCELLABLE_STATUSES = ['PUBLISHED', 'REGISTRATION_OPEN', 'FULL', 'CONFIRMATION_PENDING', 'IN_PROGRESS']
-const BEFORE_START = ['PUBLISHED', 'REGISTRATION_OPEN', 'FULL', 'CONFIRMATION_PENDING']
 
 export function OperationsPage() {
   const [items, setItems] = useState<Operation[]>([]),
@@ -96,8 +74,7 @@ export function OperationsPage() {
     [structure, setStructure] = useState<OperationStructure | null>(null),
     [rosterError, setRosterError] = useState(''),
     [structureError, setStructureError] = useState(''),
-    [selectedTeam, setSelectedTeam] = useState(''),
-    [selectedSquad, setSelectedSquad] = useState(''),
+    [registrationModel, setRegistrationModel] = useState<'SINGLE_LIST' | 'TEAMS'>('SINGLE_LIST'),
     [coverPreview, setCoverPreview] = useState(''),
     [deleteReason, setDeleteReason] = useState(''),
     [operationEditMode, setOperationEditMode] = useState(false),
@@ -156,9 +133,9 @@ export function OperationsPage() {
         modality: d.get('modality'),
         customModality: d.get('customModality'),
         rules: d.get('rules'),
-        gameSize: d.get('gameSize'),
-        participantLimit: Number(d.get('participantLimit')),
-        teamLimit: d.get('teamLimit') ? Number(d.get('teamLimit')) : null,
+        registrationModel,
+        participantLimit: d.get('participantLimit') ? Number(d.get('participantLimit')) : null,
+        teamLimit: registrationModel === 'TEAMS' ? Number(d.get('teamLimit') || 2) : null,
         registrationPrice: Number(d.get('registrationPrice') || 0),
         paymentMethods: d.get('paymentMethods'),
         minimumAge: Number(d.get('minimumAge')),
@@ -169,7 +146,7 @@ export function OperationsPage() {
         waitingListEnabled: d.get('waitingListEnabled') === 'on',
       })
       if (cover instanceof File && cover.size > 0) await uploadOperationCover(created.id, cover)
-      setFeedback('Rascunho salvo. Agora configure os times e esquadrões antes de publicar.')
+      setFeedback(registrationModel === 'TEAMS' ? 'Rascunho salvo. Ajuste nomes e cores das equipes e publique.' : 'Rascunho salvo. Revise e publique para abrir as inscrições.')
       setShowCreate(false)
       setCoverPreview('')
       await load('')
@@ -205,16 +182,12 @@ export function OperationsPage() {
     setStructure(null)
     setRosterError('')
     setStructureError('')
-    setSelectedTeam('')
-    setSelectedSquad('')
     const [rosterResult, structureResult] = await Promise.allSettled([
       getOperationRoster(item.id),
       getOperationStructure(item.id),
     ])
     if (rosterResult.status === 'fulfilled') {
-      const result = rosterResult.value
-      setRoster(result)
-      setSelectedTeam(result.currentUserTeamId || result.teams.find(team => team.participantCount < team.capacity)?.id || result.teams[0]?.id || '')
+      setRoster(rosterResult.value)
     } else {
       setRosterError(rosterResult.reason instanceof Error ? rosterResult.reason.message : 'Não foi possível carregar os times e participantes.')
     }
@@ -278,30 +251,6 @@ export function OperationsPage() {
       if (!reason) return
     } else if (!window.confirm(`${label}?`)) return
     void runOperationAction(`status-${status}`, async () => setSelected(await updateOperationStatus(selected.id, status, reason)), 'Status da operação atualizado.')
-  }
-  const decide = (operatorId: string, action: ParticipantAction) => {
-    if (!selected) return
-    const reason = action === 'REJECT' ? window.prompt('Motivo da recusa (opcional):') ?? undefined : undefined
-    if (action === 'REJECT' && reason === undefined) return
-    void runOperationAction(`decide-${operatorId}`, () => decideOperationParticipant(selected.id, operatorId, action, reason), 'Inscrição atualizada.')
-  }
-  const participate = async (item: Operation, cancel = false, operationTeamId = '', operationSquadId = '') => {
-    setPending(item.id)
-    try {
-      if (cancel) await cancelOperationParticipation(item.id)
-      else await requestOperationParticipation(item.id, operationTeamId, operationSquadId || null)
-      setFeedback(
-        cancel ? 'Participação cancelada.' : 'Solicitação registrada.',
-      )
-      await load(query)
-      if (selected?.id === item.id) await openOperation(item)
-    } catch (err) {
-      setFeedback(
-        err instanceof Error ? err.message : 'Não foi possível concluir.',
-      )
-    } finally {
-      setPending('')
-    }
   }
   return (
     <main className="module-page">
@@ -431,20 +380,19 @@ export function OperationsPage() {
                 {coverPreview&&<img className="operation-cover-preview" src={coverPreview} alt="Prévia da capa"/>}
               </label>
               <label>
-                <span>Tamanho do jogo</span>
-                <select name="gameSize" defaultValue="SMALL" required>
-                  <option value="SMALL">Pequeno · até 50 jogadores e 2 times</option>
-                  <option value="MEDIUM">Médio · até 100 jogadores e 2 a 4 times</option>
-                  <option value="LARGE">Grande · estrutura ampliada</option>
+                <span>Modelo de inscrição</span>
+                <select name="registrationModel" value={registrationModel} onChange={event => setRegistrationModel(event.target.value === 'TEAMS' ? 'TEAMS' : 'SINGLE_LIST')}>
+                  <option value="SINGLE_LIST">Lista única (padrão) · times definidos no dia</option>
+                  <option value="TEAMS">Por equipes · o jogador escolhe a equipe</option>
                 </select>
               </label>
+              {registrationModel === 'TEAMS' && <label>
+                <span>Quantidade de equipes</span>
+                <input type="number" name="teamLimit" min={2} max={100} defaultValue={2} required />
+              </label>}
               <label>
-                <span>Vagas</span>
-                <input type="number" name="participantLimit" min={1} defaultValue={50} required />
-              </label>
-              <label>
-                <span>Limite de equipes</span>
-                <input type="number" name="teamLimit" min={2} defaultValue={2} required />
+                <span>Vagas (opcional)</span>
+                <input type="number" name="participantLimit" min={1} placeholder="Sem limite" />
               </label>
               <label>
                 <span>Inscrição informada (R$)</span>
@@ -505,7 +453,7 @@ export function OperationsPage() {
               Permitir lista de espera
             </label>
             <button type="submit" className="module-primary" disabled={pending === 'create'}>
-              {pending === 'create' ? 'Salvando…' : 'Continuar para times e esquadrões'}
+              {pending === 'create' ? 'Salvando…' : 'Salvar rascunho'}
             </button>
           </form>
         </section>
@@ -581,29 +529,8 @@ export function OperationsPage() {
                 <small>A exclusão remove a operação das telas, mas preserva auditoria e registros relacionados.</small>
               </div>
             </section>}
-            {rosterError ? <p className="module-feedback" role="alert">{rosterError} <button type="button" onClick={() => void openOperation(selected)}>Tentar novamente</button></p> : !roster ? <p>Carregando times e participantes…</p> : <>
-              <div className="operation-team-grid">
-                {roster.teams.map(team => <article key={team.id} className={selectedTeam === team.id ? 'active' : ''}>
-                  <label><input type="radio" name="operationTeam" value={team.id} checked={selectedTeam === team.id} onChange={() => {setSelectedTeam(team.id);setSelectedSquad('')}} disabled={Boolean(roster.currentUserTeamId)} /><strong>{team.name}</strong><small>{team.participantCount}/{team.capacity} inscritos</small></label>
-                  <div>{roster.participants.filter(person => person.operationTeamId === team.id).map(person => <p key={person.operatorId}><span className="operator-avatar">{person.callsign.charAt(0).toUpperCase()}</span><b>{operatorTeamLabel(person)}</b><small>{person.status === 'APPROVED' ? person.displayName : participantStatusLabels[person.status] || person.displayName}</small></p>)}</div>
-                  {selectedTeam===team.id&&structure?.gameSize!=='SMALL'&&<div className="operation-squad-choice"><b>Escolha obrigatória do esquadrão</b>{structure?.teams.find(t=>t.id===team.id)?.squads.map(s=><label key={s.id}><input type="radio" name="operationSquad" value={s.id} checked={selectedSquad===s.id} disabled={s.status!=='OPEN'||s.participantCount>=s.capacity} onChange={()=>setSelectedSquad(s.id)}/>{s.name} · {s.participantCount}/{s.capacity}</label>)}{structure?.teams.find(t=>t.id===team.id)?.squads.length===0&&<small className="module-feedback">Este time ainda não possui esquadrão disponível. O organizador precisa concluir a estrutura.</small>}</div>}
-                </article>)}
-              </div>
-              {roster.participants.length === 0 && <p className="module-empty">Ainda não há participantes inscritos.</p>}
-              {!roster.currentUserTeamId && <button className="module-primary" disabled={!selectedTeam || (structure?.gameSize!=='SMALL'&&!selectedSquad) || pending === selected.id} onClick={() => void participate(selected, false, selectedTeam, selectedSquad)}>{pending === selected.id ? 'Inscrevendo…' : 'Entrar no time e esquadrão escolhidos'}</button>}
-              {roster.currentUserTeamId && <div className="operation-my-participation">
-                <p className="module-feedback">Você está inscrito em {roster.teams.find(team => team.id === roster.currentUserTeamId)?.name || 'um time'}{roster.currentUserStatus ? ` · ${participantStatusLabels[roster.currentUserStatus] || roster.currentUserStatus}` : ''}.</p>
-                {roster.currentUserStatus === 'APPROVED' && BEFORE_START.includes(selected.status) && <button type="button" className="module-primary" disabled={pending === 'confirm-presence'} onClick={() => void runOperationAction('confirm-presence', () => confirmOperationPresence(selected.id), 'Presença confirmada.')}>{pending === 'confirm-presence' ? 'Confirmando…' : 'Confirmar presença'}</button>}
-                {['REQUESTED', 'APPROVED', 'WAITING_LIST', 'CONFIRMED'].includes(roster.currentUserStatus ?? '') && BEFORE_START.includes(selected.status) && <button type="button" className="module-secondary" disabled={pending === selected.id} onClick={() => { if (window.confirm('Cancelar sua inscrição nesta operação?')) void participate(selected, true) }}>Cancelar inscrição</button>}
-              </div>}
-              {selected.managedByCurrentUser && roster.participants.length > 0 && <section className="operation-participant-admin" aria-label="Gerenciar inscrições">
-                <header><Users/><div><small>ORGANIZAÇÃO</small><h3>Inscrições</h3><p>Aprove, recuse, confirme presença e faça o check-in. Só participantes com presença confirmada ou check-in entram no desempenho e no ranking.</p></div></header>
-                <ul>{roster.participants.map(person => <li key={person.operatorId}>
-                  <span><b>{operatorTeamLabel(person)}</b><small>{person.operationTeamName || 'Sem time'} · {participantStatusLabels[person.status] || person.status}</small></span>
-                  <span>{(participantActions[person.status] || []).map(item => <button key={item.action} type="button" className={item.action === 'REJECT' ? 'module-danger' : 'module-secondary'} disabled={pending === `decide-${person.operatorId}`} onClick={() => decide(person.operatorId, item.action)}>{item.label}</button>)}</span>
-                </li>)}</ul>
-              </section>}
-            </>}
+            {rosterError && <p className="module-feedback" role="alert">{rosterError}</p>}
+            {selected.status !== 'DRAFT' && <OperationRegistrationPanel key={selected.id} operationId={selected.id} structure={structure} onChanged={() => void load(query)}/>}
             {structureError ? <p className="module-feedback" role="alert">{structureError} <button type="button" onClick={() => void openOperation(selected)}>Tentar novamente</button></p> : <OperationCommandCenter operation={selected} initialStructure={structure} editMode={operationEditMode} onPublish={publish} participants={roster?.participants ?? []} onRosterChanged={() => void openOperation(selected, true)}/>}
           </section>
         </div>

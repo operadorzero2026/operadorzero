@@ -10,7 +10,6 @@ import br.com.operadorzero.operation.OperationDtos.SaveOperationRequest;
 import br.com.operadorzero.operation.OperationDtos.UpdateStatusRequest;
 import br.com.operadorzero.operation.OperationDtos.UpdateOperationRequest;
 import br.com.operadorzero.operation.OperationDtos.DeleteOperationRequest;
-import br.com.operadorzero.operation.OperationDtos.ParticipationRequest;
 import br.com.operadorzero.operation.OperationDtos.ParticipantDecisionRequest;
 import br.com.operadorzero.operation.OperationDtos.OperationRosterResponse;
 import br.com.operadorzero.operation.OperationRepository.FieldRef;
@@ -36,6 +35,7 @@ public class OperationService {
     private static final Set<String> STATUSES = Set.of("DRAFT", "PUBLISHED", "REGISTRATION_OPEN", "FULL",
         "CONFIRMATION_PENDING", "IN_PROGRESS", "FINISHED", "CANCELLED");
     private static final Set<String> GAME_SIZES = Set.of("SMALL", "MEDIUM", "LARGE");
+    private static final Set<String> REGISTRATION_MODELS = Set.of("SINGLE_LIST", "TEAMS");
     private static final Set<String> BEFORE_START = Set.of("PUBLISHED", "REGISTRATION_OPEN", "FULL", "CONFIRMATION_PENDING");
     // Status de destino -> status de origem permitidos. Rascunho so sai por /publish; finalizada e cancelada sao finais.
     private static final Map<String, Set<String>> STATUS_TRANSITIONS = Map.of(
@@ -98,14 +98,17 @@ public class OperationService {
         if ("CUSTOM".equals(modality) && (request.customModality() == null || request.customModality().isBlank())) {
             throw BusinessException.badRequest("CUSTOM_MODALITY_REQUIRED", "Informe a modalidade personalizada.");
         }
-        String entryMode = allowed(request.entryMode(), ENTRY_MODES, "INVALID_ENTRY_MODE", "Selecione uma forma de entrada válida.");
+        String entryMode = allowed(request.entryMode() == null ? "INDIVIDUAL" : request.entryMode(), ENTRY_MODES, "INVALID_ENTRY_MODE", "Selecione uma forma de entrada válida.");
+        // Lista unica e o padrao; por equipes, o organizador cria quantas equipes quiser.
+        String model = allowed(request.registrationModel() == null ? "SINGLE_LIST" : request.registrationModel(), REGISTRATION_MODELS,
+            "INVALID_REGISTRATION_MODEL", "Escolha lista única ou inscrição por equipes.");
         FieldRef field = repository.activeField(request.fieldId()).orElseThrow(() -> BusinessException.notFound("Campo não encontrado."));
         Long mapId = null;
         if (request.mapId() != null) mapId = repository.activeMap(request.mapId(), field.id())
             .orElseThrow(() -> BusinessException.badRequest("MAP_FIELD_MISMATCH", "O mapa não pertence ao campo selecionado."));
         Instant now = clock.instant();
-        UUID id = repository.create(user.internalId(), field, mapId, request, modality, entryMode, gameSize, now);
-        repository.createTeams(id, user.internalId());
+        UUID id = repository.create(user.internalId(), field, mapId, request, modality, entryMode, gameSize, model, now);
+        if ("TEAMS".equals(model)) repository.createTeams(id, user.internalId());
         audit.record(user.internalId(), "OPERATION_CREATED", "OPERATION", id, null, now);
         return detail(user, id);
     }
@@ -217,35 +220,13 @@ public class OperationService {
     public OperationResponse publish(AuthenticatedUser user, UUID id) {
         Instant now = clock.instant();
         if (!repository.publishStructureReady(id, user.internalId())) {
-            throw BusinessException.conflict("OPERATION_STRUCTURE_INCOMPLETE", "Antes de publicar, configure os times e ao menos um esquadrão em cada time. Jogos pequenos exigem exatamente dois times e não usam esquadrões.");
+            throw BusinessException.conflict("OPERATION_STRUCTURE_INCOMPLETE", "Antes de publicar, crie pelo menos duas equipes.");
         }
         if (repository.publish(id, user.internalId(), now) != 1) {
             throw BusinessException.conflict("OPERATION_NOT_PUBLISHABLE", "A operação não foi encontrada ou não está mais como rascunho.");
         }
         audit.record(user.internalId(), "OPERATION_PUBLISHED", "OPERATION", id, null, now);
         return detail(user, id);
-    }
-
-    @Transactional
-    public MessageResponse requestParticipation(AuthenticatedUser user, UUID id, ParticipationRequest request) {
-        Instant now = clock.instant();
-        if (repository.requestParticipation(id, request.operationTeamId(), request.operationSquadId(), user.internalId(), now) != 1) {
-            throw BusinessException.conflict("PARTICIPATION_UNAVAILABLE", "A inscrição não está disponível para este time.");
-        }
-        audit.record(user.internalId(), "OPERATION_PARTICIPATION_REQUESTED", "OPERATION", id, null, now);
-        return new MessageResponse("Solicitação registrada.");
-    }
-
-    @Transactional
-    public MessageResponse cancelParticipation(AuthenticatedUser user, UUID id) {
-        Instant now = clock.instant();
-        Long operationId = repository.lockOperation(id).orElse(null);
-        if (operationId == null || repository.cancelParticipation(id, user.internalId(), now) != 1) {
-            throw BusinessException.conflict("PARTICIPATION_NOT_CANCELLABLE", "Esta participação não pode ser cancelada.");
-        }
-        audit.record(user.internalId(), "OPERATION_PARTICIPATION_CANCELLED", "OPERATION", id, null, now);
-        repository.promoteWaitingList(operationId, now);
-        return new MessageResponse("Participação cancelada.");
     }
 
     @Transactional
@@ -280,9 +261,11 @@ public class OperationService {
             throw BusinessException.badRequest("INVALID_OPERATION_TIME", "A apresentação deve ocorrer antes do início, e o término após o início.");
         }
     }
+    /** Sem tamanho informado (formulario novo): sem limite de jogadores, estrutura "grande". */
     private String validateSize(SaveOperationRequest request) {
+        if (request.gameSize() == null || request.gameSize().isBlank()) return "LARGE";
         String size = allowed(request.gameSize(), GAME_SIZES, "INVALID_GAME_SIZE", "Selecione um tamanho de jogo válido.");
-        int limit = request.participantLimit();
+        int limit = request.participantLimit() == null ? Integer.MAX_VALUE : request.participantLimit();
         int teams = request.teamLimit() == null ? 2 : request.teamLimit();
         if ("SMALL".equals(size) && (limit > 50 || teams != 2)) {
             throw BusinessException.badRequest("SMALL_OPERATION_LIMITS", "Jogo pequeno aceita até 50 jogadores e exatamente 2 times.");

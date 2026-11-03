@@ -101,16 +101,16 @@ public class OperationRepository {
     }
 
     public UUID create(long userId, FieldRef field, Long mapId, SaveOperationRequest request, String modality,
-                       String entryMode, String gameSize, Instant now) {
+                       String entryMode, String gameSize, String registrationModel, Instant now) {
         return jdbc.queryForObject("""
             INSERT INTO airsoft_operation(organizer_user_id, field_id, map_id, name, description, city, state_code,
               operation_date, presentation_time, start_time, end_time, modality, custom_modality, rules,
               game_size, command_roles_enabled, participant_limit, team_limit, registration_price, payment_methods, minimum_age, required_equipment,
-              fps_limit, entry_mode, approval_required, waiting_list_enabled, created_at, updated_at)
+              fps_limit, entry_mode, approval_required, waiting_list_enabled, registration_model, created_at, updated_at)
             VALUES (:userId,:fieldId,:mapId,:name,:description,:city,:stateCode,:date,:presentation,:start,:end,
               :modality,:customModality,:rules,:gameSize,(:gameSize <> 'SMALL'),:participantLimit,:teamLimit,:price,:paymentMethods,:minimumAge,
-              :requiredEquipment,:fpsLimit,:entryMode,:approvalRequired,:waitingListEnabled,:now,:now) RETURNING public_id
-            """, saveParams(userId, field, mapId, request, modality, entryMode, gameSize, now), UUID.class);
+              :requiredEquipment,:fpsLimit,:entryMode,:approvalRequired,:waitingListEnabled,:model,:now,:now) RETURNING public_id
+            """, saveParams(userId, field, mapId, request, modality, entryMode, gameSize, now).addValue("model", registrationModel), UUID.class);
     }
 
     /** Muda o status somente a partir dos status de origem permitidos para a transicao. */
@@ -223,13 +223,14 @@ public class OperationRepository {
             Map.of("id", operationId, "userId", userId), Long.class).isEmpty();
     }
 
+    /** Equipes iniciais (o organizador renomeia e cria mais). Sem limite de jogadores, a capacidade fica "sem limite". */
     public void createTeams(UUID operationId, long userId) {
         jdbc.update("""
             INSERT INTO operation_team(operation_id, name, capacity, sort_order)
-            SELECT o.id, CASE n WHEN 1 THEN 'Time Alfa' WHEN 2 THEN 'Time Bravo' ELSE 'Time ' || n END,
-                   CEIL(o.participant_limit::numeric / LEAST(COALESCE(o.team_limit, 2), 20))::integer, n
+            SELECT o.id, CASE n WHEN 1 THEN 'Time Alfa' WHEN 2 THEN 'Time Bravo' WHEN 3 THEN 'Time Charlie' WHEN 4 THEN 'Time Delta' ELSE 'Time ' || n END,
+                   COALESCE(CEIL(o.participant_limit::numeric / COALESCE(o.team_limit, 2))::integer, 100000), n
             FROM airsoft_operation o
-            CROSS JOIN LATERAL generate_series(1, LEAST(COALESCE(o.team_limit, 2), 20)) AS n
+            CROSS JOIN LATERAL generate_series(1, LEAST(COALESCE(o.team_limit, 2), 100)) AS n
             WHERE o.public_id = :operationId AND o.organizer_user_id = :userId AND o.deleted_at IS NULL
             ON CONFLICT (operation_id, sort_order) DO NOTHING
             """, Map.of("operationId", operationId, "userId", userId));
@@ -290,66 +291,21 @@ public class OperationRepository {
             """, Map.of("now", Timestamp.from(now), "id", operationId, "userId", userId));
     }
 
+    /** Lista unica publica direto; por equipes exige ao menos duas equipes (esquadroes sao opcionais). */
     public boolean publishStructureReady(UUID operationId, long userId) {
         return Boolean.TRUE.equals(jdbc.queryForObject("""
-            SELECT CASE
-              WHEN o.game_size='SMALL' THEN count(DISTINCT t.id)=2 AND count(DISTINCT s.id)=0
-              WHEN o.game_size='MEDIUM' THEN count(DISTINCT t.id) BETWEEN 2 AND 4
-                AND count(DISTINCT t.id)=count(DISTINCT s.operation_team_id)
-              ELSE count(DISTINCT t.id)>=2 AND count(DISTINCT t.id)=count(DISTINCT s.operation_team_id)
-            END
+            SELECT o.registration_model = 'SINGLE_LIST' OR count(DISTINCT t.id) >= 2
             FROM airsoft_operation o
             LEFT JOIN operation_team t ON t.operation_id=o.id
-            LEFT JOIN operation_squad s ON s.operation_team_id=t.id
             WHERE o.public_id=:id AND o.organizer_user_id=:userId AND o.status='DRAFT' AND o.deleted_at IS NULL
-            GROUP BY o.id,o.game_size
+            GROUP BY o.id,o.registration_model
             """, Map.of("id",operationId,"userId",userId), Boolean.class));
     }
 
-    public int requestParticipation(UUID operationId, UUID operationTeamId, UUID operationSquadId, long userId, Instant now) {
-        if (jdbc.queryForList("SELECT id FROM airsoft_operation WHERE public_id=:id AND deleted_at IS NULL FOR UPDATE", Map.of("id", operationId), Long.class).isEmpty()) return 0;
-        if (jdbc.queryForList("SELECT id FROM operation_team WHERE public_id=:id FOR UPDATE", Map.of("id", operationTeamId), Long.class).isEmpty()) return 0;
-        if (operationSquadId != null) {
-            if (jdbc.queryForList("SELECT id FROM operation_squad WHERE public_id=:id FOR UPDATE", Map.of("id", operationSquadId), Long.class).isEmpty()) return 0;
-        }
-        return jdbc.update("""
-            INSERT INTO operation_participant(operation_id,user_id,status,operation_team_id,operation_squad_id,requested_at,updated_at)
-            SELECT o.id,:userId,
-              CASE WHEN tc.total >= ot.capacity OR (o.participant_limit IS NOT NULL AND oc.total >= o.participant_limit)
-                        OR (CAST(:operationSquadId AS uuid) IS NOT NULL AND sc.total >= os.capacity) THEN 'WAITING_LIST'
-                   WHEN o.organizer_user_id = :userId THEN 'APPROVED'
-                   WHEN o.approval_required THEN 'REQUESTED' ELSE 'APPROVED' END,
-              ot.id,os.id,:now,:now
-            FROM airsoft_operation o
-            JOIN operation_team ot ON ot.operation_id = o.id AND ot.public_id = :operationTeamId AND ot.status='OPEN'
-            LEFT JOIN operation_squad os ON os.operation_team_id=ot.id AND os.public_id=:operationSquadId AND os.status='OPEN'
-            CROSS JOIN LATERAL (SELECT count(*) total FROM operation_participant p
-              WHERE p.operation_team_id = ot.id AND p.status IN ('REQUESTED','APPROVED','CONFIRMED','CHECKED_IN')) tc
-            CROSS JOIN LATERAL (SELECT count(*) total FROM operation_participant p
-              WHERE p.operation_id = o.id AND p.status IN ('REQUESTED','APPROVED','CONFIRMED','CHECKED_IN')) oc
-            CROSS JOIN LATERAL (SELECT count(*) total FROM operation_participant p
-              WHERE p.operation_squad_id = os.id AND p.status IN ('REQUESTED','APPROVED','CONFIRMED','CHECKED_IN')) sc
-            WHERE o.public_id=:id AND o.deleted_at IS NULL AND o.status IN ('PUBLISHED','REGISTRATION_OPEN','FULL')
-              AND (CAST(:operationSquadId AS uuid) IS NULL OR os.id IS NOT NULL)
-              AND (o.game_size = 'SMALL' OR CAST(:operationSquadId AS uuid) IS NOT NULL)
-              AND (o.game_size <> 'SMALL' OR CAST(:operationSquadId AS uuid) IS NULL)
-              AND ((tc.total < ot.capacity AND (o.participant_limit IS NULL OR oc.total < o.participant_limit)
-                    AND (CAST(:operationSquadId AS uuid) IS NULL OR sc.total < os.capacity)) OR o.waiting_list_enabled)
-            ON CONFLICT (operation_id,user_id) DO UPDATE
-              SET status=EXCLUDED.status, operation_team_id=EXCLUDED.operation_team_id, operation_squad_id=EXCLUDED.operation_squad_id,
-                  requested_at=EXCLUDED.requested_at, updated_at=EXCLUDED.updated_at
-              WHERE operation_participant.status IN ('CANCELLED','REJECTED')
-            """, new MapSqlParameterSource().addValue("id", operationId).addValue("operationTeamId", operationTeamId)
-                .addValue("operationSquadId", operationSquadId).addValue("userId", userId).addValue("now", Timestamp.from(now)));
-    }
-
-    public int cancelParticipation(UUID operationId, long userId, Instant now) {
-        return jdbc.update("""
-            UPDATE operation_participant p SET status='CANCELLED',updated_at=:now
-            FROM airsoft_operation o WHERE p.operation_id=o.id AND o.public_id=:id AND o.deleted_at IS NULL AND p.user_id=:userId
-              AND p.status IN ('REQUESTED','APPROVED','WAITING_LIST','CONFIRMED')
-              AND o.status IN ('PUBLISHED','REGISTRATION_OPEN','FULL','CONFIRMATION_PENDING')
-            """, Map.of("id", operationId, "userId", userId, "now", Timestamp.from(now)));
+    public boolean isOperationAdmin(long operationId, long userId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+            SELECT EXISTS (SELECT 1 FROM operation_role_assignment WHERE operation_id = :operation AND user_id = :user AND role = 'OPERATION_ADMIN')
+            """, Map.of("operation", operationId, "user", userId), Boolean.class));
     }
 
     public int saveCover(UUID operationId, long userId, String contentType, byte[] data, Instant now) {
@@ -416,7 +372,7 @@ public class OperationRepository {
             r.getString("required_equipment"), (Integer) r.getObject("fps_limit"), r.getString("entry_mode"),
             r.getBoolean("approval_required"), r.getBoolean("waiting_list_enabled"), r.getString("status"),
             r.getLong("participant_count"), r.getString("participant_status"), r.getLong("organizer_user_id") == userId, r.getLong("version"),
-            r.getBoolean("has_cover"), r.getLong("cover_version"));
+            r.getBoolean("has_cover"), r.getLong("cover_version"), r.getString("registration_model"));
     }
     private String normalize(String value) { return value == null ? "" : value.trim().replaceAll("\\s+", " "); }
     private String nullable(String value) { String normalized = normalize(value); return normalized.isEmpty() ? null : normalized; }

@@ -164,13 +164,14 @@ class FoundationRulesTest {
 
     @Test
     void participationQueryTypesNullableSquadUuidAndApprovesOrganizer() throws Exception {
+        String service = Files.readString(Path.of(
+            "src/main/java/br/com/operadorzero/operation/OperationRegistrationService.java"));
         String repository = Files.readString(Path.of(
-            "src/main/java/br/com/operadorzero/operation/OperationRepository.java"));
+            "src/main/java/br/com/operadorzero/operation/OperationRegistrationRepository.java"));
 
-        assertThat(repository).contains("CAST(:operationSquadId AS uuid) IS NULL",
-            "CAST(:operationSquadId AS uuid) IS NOT NULL",
-            "WHEN o.organizer_user_id = :userId THEN 'APPROVED'");
-        assertThat(repository).doesNotContain(":operationSquadId IS NULL", ":operationSquadId IS NOT NULL");
+        // O organizador entra aprovado; o esquadrao e resolvido para o id interno antes da consulta (sem UUID nulo sem tipo).
+        assertThat(service).contains("op.organizerUserId() == user.internalId() || !op.approvalRequired() ? \"APPROVED\"");
+        assertThat(repository).contains(":squad").doesNotContain(":operationSquadId IS NULL", ":operationSquadId IS NOT NULL");
     }
 
     @Test
