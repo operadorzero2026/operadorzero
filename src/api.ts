@@ -510,7 +510,25 @@ export const getPublicCallUp = (id:string) => apiRequest<CallUp>(`/api/public/ca
 export const mediaUrl = (url?:string|null) => !url ? undefined : /^(https?:|data:)/.test(url) ? url : `${getApiBaseUrl()}${url}`
 export type PublicOperation = { id:string; name:string; operationDate:string; startTime:string; city:string; stateCode:string; fieldName:string; modality:string; status:string; participantCount:number; participantLimit?:number|null; registrationPrice?:number|null }
 export const getPublicAgenda = () => apiRequest<{items:PublicOperation[]}>('/api/public/operations')
-export const getOperations = (query = '') => apiRequest<{items:Operation[]}>(`/api/operations?q=${encodeURIComponent(query)}&limit=100`)
+export const getOperations = (query = '', range:{ from?:string; to?:string } = {}) => apiRequest<{items:Operation[]}>(`/api/operations?q=${encodeURIComponent(query)}&limit=100${range.from ? `&from=${range.from}` : ''}${range.to ? `&to=${range.to}` : ''}`)
+
+// ---- Pagina da operacao (link permanente), documentos PDF e historico ----
+export type OperationPage = { id:string; name:string; description:string; briefing?:string|null; coverUrl?:string|null; date:string; presentationTime?:string|null; startTime:string; endTime:string; fieldName:string; city:string; stateCode:string; directionsUrl?:string|null; modality:string; customModality?:string|null; price?:number|null; status:string; startsAt:string; endsAt:string; finished:boolean; registrationOpen:boolean; registrationModel:RegistrationModel; organizerCallsign:string; organizerUsername:string; participantCount:number; shareUrl:string }
+export const getOperationPage = (id:string) => apiRequest<OperationPage>(`/api/public/operations/${encodeURIComponent(id)}`)
+export const publicMediaUrl = (path?:string|null) => path ? `${getApiBaseUrl()}${path}` : undefined
+export type OperationDocument = { id:string; title:string; fileName:string; sizeBytes:number; version:number; updatedAt:string; updatedBy?:string|null; recentlyUpdated:boolean }
+export type DocumentAccess = 'MANAGER'|'ALLOWED'|'NOT_REGISTERED'|'PAYMENT_PENDING'|'STARTED'|'CANCELLED'
+export type DocumentListing = { access:DocumentAccess; manager:boolean; availableUntil:string; count:number; items:OperationDocument[] }
+export const getOperationDocuments = (id:string) => apiRequest<DocumentListing>(`/api/operations/${encodeURIComponent(id)}/documents`)
+export const operationDocumentUrl = (id:string, documentId:string) => `${getApiBaseUrl()}/api/operations/${encodeURIComponent(id)}/documents/${encodeURIComponent(documentId)}/file`
+const pdf = (method:'POST'|'PUT', file:File) => ({ method, body:file, headers:{ 'Content-Type':'application/pdf' } })
+export const uploadOperationDocument = (id:string, file:File, title?:string) =>
+  apiRequest<OperationDocument>(`/api/media/uploads/operation-documents/${encodeURIComponent(id)}?fileName=${encodeURIComponent(file.name)}${title ? `&title=${encodeURIComponent(title)}` : ''}`, pdf('POST', file), 120000)
+export const replaceOperationDocument = (id:string, documentId:string, file:File) =>
+  apiRequest<OperationDocument>(`/api/media/uploads/operation-documents/${encodeURIComponent(id)}/${encodeURIComponent(documentId)}?fileName=${encodeURIComponent(file.name)}`, pdf('PUT', file), 120000)
+export const deleteOperationDocument = (id:string, documentId:string) => apiRequest<void>(`/api/operations/${encodeURIComponent(id)}/documents/${encodeURIComponent(documentId)}`, { method:'DELETE' })
+export type OperationHistoryItem = { id:string; name:string; coverUrl?:string|null; date:string; organizerCallsign:string; teamName?:string|null; primaryRole?:PrimaryRole|null; medic:boolean; radio:boolean }
+export const getOperationHistory = (username:string) => apiRequest<OperationHistoryItem[]>(`/api/operators/${encodeURIComponent(username)}/operations`)
 export const getOperation = (id:string) => apiRequest<Operation>(`/api/operations/${encodeURIComponent(id)}`)
 export const getOperationRoster = (id:string) => apiRequest<OperationRoster>(`/api/operations/${encodeURIComponent(id)}/roster`)
 export const decideOperationParticipant = (id:string, operatorId:string, action:ParticipantAction, reason?:string) =>

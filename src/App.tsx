@@ -68,7 +68,7 @@ import { DossierStrip } from './feed/DossierStrip'
 import { FeedModerationPanel } from './feed/FeedModerationPanel'
 import { PublicPostPage } from './feed/PublicPostPage'
 import { GoogleSignupPrompt } from './GoogleSignupPrompt'
-import { PublicCallUpPage } from './feed/PublicCallUpPage'
+import { OperationPublicPage } from './operation/OperationPublicPage'
 import { HonorBoardPage } from './feed/HonorBoard'
 import { BottomNav, CreateSheet, HubPage, type HubId } from './feed/AppNavigation'
 import { OperationsPage } from './OperationsPage'
@@ -511,7 +511,7 @@ export default function App() {
   const sharedCallUp = currentPath.match(/^\/convocacao\/([0-9a-f-]{36})$/)?.[1]
   if (sharedCallUp && !sessionRestoring) {
     return <>
-      <PublicCallUpPage operationId={sharedCallUp} loggedIn={Boolean(currentUser)} onLogin={() => setAuthMode('login')} onOpenFeed={() => navigate('/feed')}/>
+      <OperationPublicPage operationId={sharedCallUp} loggedIn={Boolean(currentUser)} onLogin={() => setAuthMode('login')} onSignup={() => setAuthMode('signup')} onOpenFeed={() => navigate('/feed')}/>
       {authModal}
     </>
   }

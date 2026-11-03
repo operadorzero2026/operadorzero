@@ -36,4 +36,9 @@ if [ -n "$OFFSITE_REMOTE" ]; then
     rclone sync "$media_dir/public" "${OFFSITE_REMOTE%/}media" --fast-list
     echo "$(date -Iseconds) midias sincronizadas para ${OFFSITE_REMOTE%/}media"
   fi
+  # PDFs das operacoes (pasta privada, fora do que o Nginx serve).
+  if [ -n "$media_dir" ] && [ -d "$media_dir/private" ]; then
+    rclone sync "$media_dir/private" "${OFFSITE_REMOTE%/}media-private" --fast-list
+    echo "$(date -Iseconds) documentos privados sincronizados para ${OFFSITE_REMOTE%/}media-private"
+  fi
 fi

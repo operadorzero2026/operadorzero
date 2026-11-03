@@ -2,7 +2,7 @@ import { ArrowLeftRight, Ban, Check, CircleSlash, HeartPulse, ListOrdered, Lock,
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   authorizeParticipantReturn, cancelOperationParticipation, cancelTeamChange, closeRegistration, confirmOperationPresence, decideOperationParticipant,
-  decideTeamChange, getRegistration, removeParticipant, reopenRegistration, requestOperationParticipation, requestTeamChange, setTeamChangeRequests,
+  decideTeamChange, getOperationStructure, getRegistration, removeParticipant, reopenRegistration, requestOperationParticipation, requestTeamChange, setTeamChangeRequests,
   updateMyRole, type OperationStructure, type ParticipantAction, type PlayerRole, type PrimaryRole, type RegistrationOverview, type RegistrationParticipant,
 } from '../api'
 import { RoleChooser } from './RoleChooser'
@@ -47,6 +47,7 @@ export function OperationRegistrationPanel({ operationId, structure, onChanged }
   const [filter, setFilter] = useState<Filter>({ roles: [], medic: false, radio: false, team: '' })
   const [removing, setRemoving] = useState<RegistrationParticipant | null>(null)
   const [reason, setReason] = useState('')
+  const [ownStructure, setOwnStructure] = useState<OperationStructure | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -59,6 +60,10 @@ export function OperationRegistrationPanel({ operationId, structure, onChanged }
     }
   }, [operationId])
   useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    if (structure !== undefined || data?.model !== 'TEAMS') return
+    getOperationStructure(operationId).then(setOwnStructure).catch(() => setOwnStructure(null))
+  }, [structure, data?.model, operationId])
 
   const run = async (key: string, action: () => Promise<{ message: string } | unknown>) => {
     setPending(key); setNotice('')
@@ -76,7 +81,7 @@ export function OperationRegistrationPanel({ operationId, structure, onChanged }
     }
   }
 
-  const squads = structure?.teams.find(item => item.id === team)?.squads ?? []
+  const squads = (structure ?? ownStructure)?.teams.find(item => item.id === team)?.squads ?? []
   const active = data?.mine && STATUS_LABELS[data.mine.status]
   const visible = useMemo(() => {
     if (!data) return []

@@ -32,5 +32,5 @@ class OperationSizeRulesTest {
     }
     private OperationDtos.SaveOperationRequest request(String size,int players,int teams){return new OperationDtos.SaveOperationRequest(
         "Operação teste","Descrição segura",UUID.randomUUID(),null,LocalDate.of(2026,8,1),LocalTime.of(8,0),LocalTime.of(9,0),LocalTime.of(17,0),
-        "ELIMINATION",null,"Regras",size,players,teams,BigDecimal.ZERO,null,18,null,null,"INDIVIDUAL",false,true,"TEAMS");}
+        "ELIMINATION",null,"Regras",size,players,teams,BigDecimal.ZERO,null,18,null,null,"INDIVIDUAL",false,true,"TEAMS",null);}
 }

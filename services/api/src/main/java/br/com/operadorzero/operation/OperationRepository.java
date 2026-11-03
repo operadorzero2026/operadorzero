@@ -42,9 +42,12 @@ public class OperationRepository {
             LEFT JOIN operation_participant mine ON mine.operation_id = o.id AND mine.user_id = :userId
             LEFT JOIN (SELECT operation_id, count(*) total FROM operation_participant
                        WHERE status IN ('APPROVED','CONFIRMED','CHECKED_IN') GROUP BY operation_id) pc ON pc.operation_id = o.id
+            JOIN app_user org_user ON org_user.id = o.organizer_user_id
+            JOIN operator_profile org ON org.user_id = o.organizer_user_id
             WHERE o.deleted_at IS NULL
               AND (o.status <> 'DRAFT' OR o.organizer_user_id = :userId)
-              AND (:q = '' OR lower(o.name) LIKE :query OR lower(f.name) LIKE :query)
+              AND (:q = '' OR lower(o.name) LIKE :query OR lower(f.name) LIKE :query OR lower(org.callsign) LIKE :query
+                   OR lower(org_user.username) LIKE :query)
               AND (:city = '' OR lower(o.city) = lower(:city))
               AND (:stateCode = '' OR o.state_code = upper(:stateCode))
               AND (:modality = '' OR o.modality = upper(:modality))
@@ -106,11 +109,12 @@ public class OperationRepository {
             INSERT INTO airsoft_operation(organizer_user_id, field_id, map_id, name, description, city, state_code,
               operation_date, presentation_time, start_time, end_time, modality, custom_modality, rules,
               game_size, command_roles_enabled, participant_limit, team_limit, registration_price, payment_methods, minimum_age, required_equipment,
-              fps_limit, entry_mode, approval_required, waiting_list_enabled, registration_model, created_at, updated_at)
+              fps_limit, entry_mode, approval_required, waiting_list_enabled, registration_model, briefing, created_at, updated_at)
             VALUES (:userId,:fieldId,:mapId,:name,:description,:city,:stateCode,:date,:presentation,:start,:end,
               :modality,:customModality,:rules,:gameSize,(:gameSize <> 'SMALL'),:participantLimit,:teamLimit,:price,:paymentMethods,:minimumAge,
-              :requiredEquipment,:fpsLimit,:entryMode,:approvalRequired,:waitingListEnabled,:model,:now,:now) RETURNING public_id
-            """, saveParams(userId, field, mapId, request, modality, entryMode, gameSize, now).addValue("model", registrationModel), UUID.class);
+              :requiredEquipment,:fpsLimit,:entryMode,:approvalRequired,:waitingListEnabled,:model,:briefing,:now,:now) RETURNING public_id
+            """, saveParams(userId, field, mapId, request, modality, entryMode, gameSize, now).addValue("model", registrationModel)
+                .addValue("briefing", request.briefing() == null || request.briefing().isBlank() ? null : request.briefing().strip()), UUID.class);
     }
 
     /** Muda o status somente a partir dos status de origem permitidos para a transicao. */

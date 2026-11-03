@@ -22,6 +22,8 @@ import {
   VenueMap,
 } from './api'
 import { OperationRegistrationPanel } from './operation/OperationRegistrationPanel'
+import { OperationDocuments } from './operation/OperationDocuments'
+import { CoverPicker, ExpandableText, ShareButton } from './operation/OperationBits'
 import { OperationCommandCenter } from './OperationCommandCenter'
 
 const modalityLabels: Record<string, string> = {
@@ -75,13 +77,18 @@ export function OperationsPage() {
     [rosterError, setRosterError] = useState(''),
     [structureError, setStructureError] = useState(''),
     [registrationModel, setRegistrationModel] = useState<'SINGLE_LIST' | 'TEAMS'>('SINGLE_LIST'),
-    [coverPreview, setCoverPreview] = useState(''),
+    [coverFile, setCoverFile] = useState<File | null>(null),
+    [period, setPeriod] = useState<'upcoming' | 'past' | 'all'>('upcoming'),
+    [searchDate, setSearchDate] = useState(''),
     [deleteReason, setDeleteReason] = useState(''),
     [operationEditMode, setOperationEditMode] = useState(false),
     [operatorLocation, setOperatorLocation] = useState({ city: '', stateCode: '' })
   const load = useCallback(async (q = '') => {
     try {
-      const [operations, availableFields] = await Promise.all([getOperations(q), getFields()])
+      const today = new Date().toLocaleDateString('en-CA')
+      const yesterday = new Date(Date.now() - 86_400_000).toLocaleDateString('en-CA')
+      const range = searchDate ? { from: searchDate, to: searchDate } : period === 'upcoming' ? { from: today } : period === 'past' ? { to: yesterday } : {}
+      const [operations, availableFields] = await Promise.all([getOperations(q, range), getFields()])
       setItems(operations.items)
       setFields(availableFields.items)
       try {
@@ -93,9 +100,11 @@ export function OperationsPage() {
     } catch {
       setFeedback('Não foi possível carregar as operações.')
     }
-  }, [])
+  }, [period, searchDate])
   useEffect(() => {
-    void load()
+    void load(query)
+    // A busca por texto roda no "Pesquisar"; periodo e data recarregam na hora.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load])
   const orderedItems = useMemo(() => {
     const city = operatorLocation.city.toLocaleLowerCase('pt-BR')
@@ -117,7 +126,7 @@ export function OperationsPage() {
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const d = new FormData(e.currentTarget)
-    const cover = d.get('cover')
+    const cover = coverFile
     setPending('create')
     setFeedback('')
     try {
@@ -134,6 +143,7 @@ export function OperationsPage() {
         customModality: d.get('customModality'),
         rules: d.get('rules'),
         registrationModel,
+        briefing: d.get('briefing'),
         participantLimit: d.get('participantLimit') ? Number(d.get('participantLimit')) : null,
         teamLimit: registrationModel === 'TEAMS' ? Number(d.get('teamLimit') || 2) : null,
         registrationPrice: Number(d.get('registrationPrice') || 0),
@@ -145,10 +155,10 @@ export function OperationsPage() {
         approvalRequired: d.get('approvalRequired') === 'on',
         waitingListEnabled: d.get('waitingListEnabled') === 'on',
       })
-      if (cover instanceof File && cover.size > 0) await uploadOperationCover(created.id, cover)
+      if (cover) await uploadOperationCover(created.id, cover)
       setFeedback(registrationModel === 'TEAMS' ? 'Rascunho salvo. Ajuste nomes e cores das equipes e publique.' : 'Rascunho salvo. Revise e publique para abrir as inscrições.')
       setShowCreate(false)
-      setCoverPreview('')
+      setCoverFile(null)
       await load('')
       await openOperation(created, true)
     } catch (err) {
@@ -292,10 +302,19 @@ export function OperationsPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             maxLength={80}
-            placeholder="Nome da operação ou campo"
+            placeholder="Nome, campo ou organizador"
           />
           <button>Pesquisar</button>
         </form>
+        <div className="operation-search-filters">
+          <div className="create-segmented" role="radiogroup" aria-label="Período">
+            {([['upcoming', 'Futuras'], ['past', 'Realizadas'], ['all', 'Todas']] as const).map(([value, label]) =>
+              <button key={value} type="button" role="radio" aria-checked={period === value && !searchDate} className={period === value && !searchDate ? 'active' : ''}
+                onClick={() => { setSearchDate(''); setPeriod(value) }}>{label}</button>)}
+          </div>
+          <label><span className="sr-only">Data</span><input type="date" value={searchDate} onChange={event => setSearchDate(event.target.value)} aria-label="Filtrar por data"/></label>
+          {searchDate && <button type="button" className="module-secondary" onClick={() => setSearchDate('')}>Limpar data</button>}
+        </div>
       </section>
       {showCreate && (
         <section className="module-section">
@@ -308,11 +327,7 @@ export function OperationsPage() {
             <Target />
           </div>
           <form className="module-form" onSubmit={submit}>
-            <label className="operation-cover-field">
-              <span>Imagem de capa</span>
-              <input name="cover" type="file" accept="image/png,image/jpeg" />
-              <small>PNG ou JPEG, até 2 MB e 2048 × 2048 pixels.</small>
-            </label>
+            <CoverPicker file={coverFile} onFile={setCoverFile} onRemove={() => setCoverFile(null)}/>
             <div className="form-grid">
               <label>
                 <span>Nome</span>
@@ -375,11 +390,6 @@ export function OperationsPage() {
                 <input name="customModality" maxLength={100} />
               </label>
               <label>
-                <span>Imagem de capa</span>
-                <input type="file" name="cover" accept="image/png,image/jpeg" onChange={event=>{const file=event.target.files?.[0];setCoverPreview(file?URL.createObjectURL(file):'')}} />
-                {coverPreview&&<img className="operation-cover-preview" src={coverPreview} alt="Prévia da capa"/>}
-              </label>
-              <label>
                 <span>Modelo de inscrição</span>
                 <select name="registrationModel" value={registrationModel} onChange={event => setRegistrationModel(event.target.value === 'TEAMS' ? 'TEAMS' : 'SINGLE_LIST')}>
                   <option value="SINGLE_LIST">Lista única (padrão) · times definidos no dia</option>
@@ -430,7 +440,11 @@ export function OperationsPage() {
             </div>
             <label>
               <span>Descrição</span>
-              <textarea name="description" maxLength={4000} required />
+              <textarea name="description" maxLength={4000} required placeholder="Resumo curto que aparece na agenda." />
+            </label>
+            <label>
+              <span>Briefing ou história</span>
+              <textarea name="briefing" maxLength={12000} rows={6} placeholder="Contexto, objetivos, cronograma e regras. Pode ser longo: na página aparecem 3 linhas e o “Ver mais”." />
             </label>
             <label>
               <span>Regras</span>
@@ -495,12 +509,15 @@ export function OperationsPage() {
         <div className="classified-modal-backdrop" role="presentation" onClick={() => { setSelected(null); setOperationEditMode(false) }}>
           <section className="classified-modal operation-detail-modal" role="dialog" aria-modal="true" aria-label={`Detalhes de ${selected.name}`} onClick={(event) => event.stopPropagation()}>
             <button type="button" className="classified-modal-close" aria-label="Fechar" onClick={() => { setSelected(null); setOperationEditMode(false) }}><X /></button>
+            {selected.status !== 'DRAFT' && <div className="operation-detail-share"><ShareButton url={`${window.location.origin}/c/${selected.id}`} title={selected.name}/></div>}
             {selected.managedByCurrentUser && <button type="button" className="module-secondary operation-edit-toggle" aria-pressed={operationEditMode} onClick={() => setOperationEditMode(active => !active)}><Pencil /> {operationEditMode ? 'Encerrar edição' : 'Editar operação'}</button>}
             {selected.hasCover ? <img className="operation-detail-cover" src={operationCoverUrl(selected.id,selected.coverVersion)} alt={`Capa de ${selected.name}`} />:<div className="operation-detail-cover operation-cover-placeholder"><Target/><span>Operador Zero</span></div>}
             <small>{statusLabels[selected.status] || selected.status}</small>
             <h2>{selected.name}</h2>
             <p>{selected.description}</p>
-            {selected.briefing && <section className="operation-briefing"><small>BRIEFING DO JOGO</small><p>{selected.briefing}</p></section>}
+            {selected.briefing && <section className="operation-briefing"><small>BRIEFING DO JOGO</small><ExpandableText text={selected.briefing}/></section>}
+            {selected.status !== 'DRAFT' && <a className="operation-open-page" href={`/convocacao/${selected.id}`}>Abrir página da operação</a>}
+            <OperationDocuments key={`docs-${selected.id}`} operationId={selected.id}/>
             <div className="operation-roster-summary"><span><MapPin /> {selected.fieldName} · {selected.city}/{selected.stateCode}</span><span><Users /> {selected.participantCount}/{selected.participantLimit ?? 'sem limite'} participantes</span></div>
             {selected.managedByCurrentUser && (statusActions[selected.status] || CANCELLABLE_STATUSES.includes(selected.status)) && <div className="operation-status-actions" aria-label="Status da operação">
               {(statusActions[selected.status] || []).map(item => <button key={item.status} type="button" className="module-secondary" disabled={pending.startsWith('status-')} onClick={() => changeStatus(item.status, item.label)}>{item.label}</button>)}
@@ -519,10 +536,9 @@ export function OperationsPage() {
                 <label><span>Motivo da alteração</span><input name="reason" maxLength={500} required placeholder="Ex.: remarcação por condições climáticas"/></label>
                 <button className="module-primary" disabled={pending === `edit-${selected.id}`}>{pending === `edit-${selected.id}` ? 'Salvando…' : 'Salvar alterações'}</button>
               </form>
-              <div className="operation-cover-tools">
-                <label className="module-secondary"><input type="file" accept="image/png,image/jpeg" hidden onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void runOperationAction('cover', async () => setSelected(await uploadOperationCover(selected.id, file)), 'Capa atualizada.') }}/>{selected.hasCover ? 'Trocar capa' : 'Adicionar capa'}</label>
-                {selected.hasCover && <button type="button" className="module-secondary" disabled={pending === 'cover'} onClick={() => { if (window.confirm('Remover a capa desta operação?')) void runOperationAction('cover', () => removeOperationCover(selected.id), 'Capa removida.') }}>Remover capa</button>}
-              </div>
+              <CoverPicker previewUrl={selected.hasCover ? operationCoverUrl(selected.id, selected.coverVersion) : null} busy={pending === 'cover'}
+                onFile={file => void runOperationAction('cover', async () => setSelected(await uploadOperationCover(selected.id, file)), 'Capa atualizada.')}
+                onRemove={selected.hasCover ? () => { if (window.confirm('Remover a capa desta operação?')) void runOperationAction('cover', () => removeOperationCover(selected.id), 'Capa removida.') } : undefined}/>
               <div className="operation-delete-zone">
                 <label><span>Motivo para excluir</span><textarea value={deleteReason} onChange={event=>setDeleteReason(event.target.value)} maxLength={500} placeholder="Explique por que esta operação será removida."/></label>
                 <button type="button" onClick={()=>void removeManagedOperation()} disabled={pending === `delete-${selected.id}`}><Trash2/>{pending === `delete-${selected.id}` ? 'Excluindo…' : 'Excluir operação'}</button>

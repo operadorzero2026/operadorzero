@@ -20,9 +20,13 @@ import org.springframework.web.util.HtmlUtils;
 public class CallUpController {
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("EEE, dd/MM", Locale.forLanguageTag("pt-BR"));
     private final CallUpService service;
+    private final OperationPageRepository pages;
+    private final OperationPageController pageController;
 
-    public CallUpController(CallUpService service) {
+    public CallUpController(CallUpService service, OperationPageRepository pages, OperationPageController pageController) {
         this.service = service;
+        this.pages = pages;
+        this.pageController = pageController;
     }
 
     @GetMapping("/api/feed/callups")
@@ -42,24 +46,34 @@ public class CallUpController {
             .orElse(ResponseEntity.notFound().build());
     }
 
-    /** Previa (Open Graph) para o WhatsApp; quem abre vai para /convocacao/{id}. */
+    /**
+     * Previa (Open Graph) para o WhatsApp: capa, nome e um resumo. O link e permanente: depois do jogo continua abrindo
+     * a pagina da operacao (historico). Quem abre vai para /convocacao/{id}.
+     */
     @GetMapping(value = "/c/{id}", produces = MediaType.TEXT_HTML_VALUE)
     ResponseEntity<String> share(@PathVariable UUID id) {
-        var callUp = service.single(id, -1, false);
+        var page = pages.page(id);
         String target = service.shareUrl(id).replace("/c/", "/convocacao/");
-        if (callUp.isEmpty()) {
+        if (page.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).contentType(MediaType.TEXT_HTML)
-                .body(html("Convocação encerrada · Operador Zero", "Este jogo não está mais com inscrição aberta.", target));
+                .body(html("Operação não encontrada · Operador Zero", "Veja as próximas operações no Operador Zero.", target, null));
         }
-        CallUp value = callUp.get();
-        String title = "CONVOCAÇÃO: " + value.name();
-        String spots = value.limit() == null ? value.occupied() + " alistados" : value.occupied() + "/" + value.limit() + " vagas";
-        String description = DAY.format(value.date()) + " às " + value.startTime().toString().substring(0, 5) + " · " + value.fieldName()
-            + " (" + value.city() + "/" + value.stateCode() + ") · " + spots;
-        return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).cacheControl(CacheControl.noCache()).body(html(title, description, target));
+        var value = pageController.response(page.get());
+        String title = (value.registrationOpen() ? "CONVOCAÇÃO: " : "") + value.name();
+        String when = DAY.format(value.date()) + " às " + value.startTime().toString().substring(0, 5) + " · " + value.fieldName()
+            + " (" + value.city() + "/" + value.stateCode() + ")";
+        String summary = value.briefing() != null && !value.briefing().isBlank() ? value.briefing() : value.description();
+        String description = (value.finished() ? "Operação realizada · " : "") + when + (summary == null ? "" : " · " + excerpt(summary));
+        return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).cacheControl(CacheControl.noCache())
+            .body(html(title, description, target, pageController.absoluteCover(page.get())));
     }
 
-    private static String html(String title, String description, String target) {
+    private static String excerpt(String text) {
+        String flat = text.replaceAll("\\s+", " ").strip();
+        return flat.length() > 160 ? flat.substring(0, 157) + "…" : flat;
+    }
+
+    private static String html(String title, String description, String target, String image) {
         String t = HtmlUtils.htmlEscape(title, "UTF-8");
         String d = HtmlUtils.htmlEscape(description, "UTF-8");
         String u = HtmlUtils.htmlEscape(target, "UTF-8");
@@ -68,6 +82,8 @@ public class CallUpController {
             + "<meta name=\"description\" content=\"" + d + "\"><meta property=\"og:type\" content=\"website\">"
             + "<meta property=\"og:site_name\" content=\"Operador Zero\"><meta property=\"og:title\" content=\"" + t + "\">"
             + "<meta property=\"og:description\" content=\"" + d + "\"><meta property=\"og:url\" content=\"" + u + "\">"
+            + (image == null ? "" : "<meta property=\"og:image\" content=\"" + HtmlUtils.htmlEscape(image, "UTF-8") + "\">"
+                + "<meta name=\"twitter:card\" content=\"summary_large_image\">")
             + "<meta http-equiv=\"refresh\" content=\"0; url=" + u + "\"><link rel=\"canonical\" href=\"" + u + "\"></head>"
             + "<body><p><a href=\"" + u + "\">Abrir a convocação no Operador Zero</a></p></body></html>";
     }

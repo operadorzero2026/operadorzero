@@ -1,5 +1,22 @@
 # Histórico de alterações
 
+## 2026-11-03 - Operações, Etapa B: página da operação, capa compacta, briefing, PDFs, compartilhar, pesquisa e histórico
+
+### Arquivos alterados
+- Banco: `V34__operation_documents.sql` (aditiva: `operation_document` e `operation_document_event`).
+- Servidor: `operation/OperationDocument{Service,Repository,Controller,Storage}` (novos), `OperationPage{Repository,Controller}` (novos: página pública, capa pública, histórico do perfil), `CallUpController` (prévia `/c/{id}` com capa, funciona depois do jogo), `OperationService`/`OperationRepository`/`OperationDtos` (briefing na criação; pesquisa por organizador).
+- Site: `src/operation/` (novos: `OperationPublicPage`, `OperationDocuments`, `OperationHistory`, `OperationBits` com `CoverPicker`/`ExpandableText`/`ShareButton`, `operation-page.css`), `OperationsPage.tsx`, `OperatorsSocialPage.tsx`, `App.tsx` (`/convocacao/{id}` usa a página nova; `PublicCallUpPage` removido), `api.ts`.
+- Deploy: `backup.sh` também copia a pasta privada dos PDFs (`media-private`).
+
+### O que foi feito
+- Capa compacta "Imagem de capa [+]" com miniatura, trocar e remover (criação e edição).
+- Briefing longo já na criação; na página aparecem 3 linhas com "Ver mais"/"Ver menos".
+- PDFs "Missões e documentos": vários por operação, até 9 MB cada, numa pasta privada do servidor. Acesso conferido a cada abertura: organizador sempre; jogador só com inscrição aprovada, em operação paga só com pagamento confirmado, e só até o horário de início. Substituir mantém o documento, registra quem/quando e mostra "Documento atualizado" dentro da operação (sem notificação geral).
+- Página permanente da operação (`/convocacao/{id}`): capa, briefing, data, horários, local, inscrição; sem login convida a entrar e volta para a mesma página. Depois do jogo vira histórico, sem inscrição.
+- Compartilhar no canto superior direito (menu nativo do celular ou copiar link); prévia do WhatsApp com capa, nome e resumo.
+- Pesquisa por nome, campo, organizador e data, com Futuras/Realizadas/Todas.
+- Perfil: "Operações realizadas" com equipe, funções, organizador e link.
+
 ## 2026-11-03 - Operações, Etapa A: modelos de inscrição, funções, encerramento, remoção e troca de equipe
 
 ### Arquivos alterados

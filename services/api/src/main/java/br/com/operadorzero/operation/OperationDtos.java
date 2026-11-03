@@ -51,7 +51,8 @@ public final class OperationDtos {
         @Size(max = 24) String entryMode,
         boolean approvalRequired,
         boolean waitingListEnabled,
-        @Size(max = 12) String registrationModel
+        @Size(max = 12) String registrationModel,
+        @Size(max = 12000) String briefing
     ) {}
 
     public record UpdateStatusRequest(@NotBlank @Size(max = 32) String status, @Size(max = 500) String reason) {}

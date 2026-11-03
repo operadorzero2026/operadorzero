@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { OperationHistory } from './operation/OperationHistory'
 import { ArrowLeft, Bookmark, CalendarDays, Check, ChevronDown, Flag, MapPin, Medal, MessageCircle, MoreHorizontal, Radio, Search, Shield, ShieldBan, Target, ThumbsUp, UserMinus, UserPlus, Users } from 'lucide-react'
 import {
   acceptOperatorFriendship, blockOperator, cancelOperatorFriendship, communityImageUrl, CommunityPostSummary,
@@ -79,18 +80,18 @@ function PublicProfile({username,own,onNavigate,onEditProfile}:{username:string;
       <section className="oz-profile-feed">
         {tab==='feed'&&<ProfileFeed posts={posts} own={own} onNavigate={onNavigate} onChange={setPosts}/>} 
         {tab==='about'&&<ProfileCard title="SOBRE O OPERADOR"><p>{profile.bio||'Nenhuma apresentação adicionada.'}</p></ProfileCard>}
-        {tab==='operations'&&<OperationsList profile={profile} onNavigate={onNavigate}/>} 
+        {tab==='operations'&&<OperationsList profile={profile} username={username} onNavigate={onNavigate}/>} 
         {tab==='teams'&&<ProfileCard title="EQUIPE ATUAL"><h3>{op.teamName||'SEM TIME'}</h3><p>{op.teamName?`${op.teamAcronym||op.teamName} · ${teamRole(profile.teamRole)}`:'Este operador não integra uma equipe.'}</p></ProfileCard>}
         {tab==='friends'&&<ProfileCard title="AMIZADES"><p>{profile.friendCount?`${profile.friendCount} amizade${profile.friendCount===1?'':'s'} registrada${profile.friendCount===1?'':'s'}.`:'Nenhuma amizade registrada.'}</p></ProfileCard>}
       </section>
-      <aside className="oz-profile-right"><OperationsList profile={profile} onNavigate={onNavigate}/><ProfileCard title="CONQUISTAS"><div className="oz-achievement"><Medal/><div><b>Nenhuma conquista registrada</b><p>As conquistas aparecerão após serem concedidas pelo sistema.</p></div></div></ProfileCard></aside>
+      <aside className="oz-profile-right"><OperationsList profile={profile} username={username} onNavigate={onNavigate}/><ProfileCard title="CONQUISTAS"><div className="oz-achievement"><Medal/><div><b>Nenhuma conquista registrada</b><p>As conquistas aparecerão após serem concedidas pelo sistema.</p></div></div></ProfileCard></aside>
     </section>
     {own&&<button className="oz-new-post" onClick={()=>onNavigate('/comunidade/nova')}><b>+</b> Nova publicação</button>}
   </main>
 }
 
 function ProfileCard({title,children}:{title:string;children:React.ReactNode}) { return <section className="oz-profile-card"><h2>{title}</h2>{children}</section> }
-function OperationsList({profile,onNavigate}:{profile:OperatorProfileOverview;onNavigate:(path:string)=>void}) { return <ProfileCard title="ÚLTIMAS OPERAÇÕES">{profile.recentOperations.length?<div className="oz-recent-operations">{profile.recentOperations.map(item=><button key={item.id} onClick={()=>onNavigate(`/operacoes/${item.id}`)}>{item.hasCover?<img src={operationCoverUrl(item.id,item.coverVersion)} alt=""/>:<CalendarDays/>}<span><b>{item.name}</b><small>{new Date(item.date+'T12:00:00').toLocaleDateString('pt-BR')} · {item.city}/{item.stateCode}</small></span></button>)}</div>:<p>Nenhuma operação concluída.</p>}</ProfileCard> }
+function OperationsList({profile,username,onNavigate}:{profile:OperatorProfileOverview;username:string;onNavigate:(path:string)=>void}) { return <OperationHistory username={username} onOpen={id=>onNavigate(`/convocacao/${id}`)} fallback={<ProfileCard title="ÚLTIMAS OPERAÇÕES">{profile.recentOperations.length?<div className="oz-recent-operations">{profile.recentOperations.map(item=><button key={item.id} onClick={()=>onNavigate(`/convocacao/${item.id}`)}>{item.hasCover?<img src={operationCoverUrl(item.id,item.coverVersion)} alt=""/>:<CalendarDays/>}<span><b>{item.name}</b><small>{new Date(item.date+'T12:00:00').toLocaleDateString('pt-BR')} · {item.city}/{item.stateCode}</small></span></button>)}</div>:<p>Nenhuma operação concluída.</p>}</ProfileCard>}/> }
 
 function ProfileFeed({posts,own,onNavigate,onChange}:{posts:CommunityPostSummary[];own:boolean;onNavigate:(path:string)=>void;onChange:(items:CommunityPostSummary[])=>void}) {
   const toggle=async(post:CommunityPostSummary,kind:'vote'|'save')=>{const response=kind==='vote'?await toggleCommunityVote(post.id):await toggleCommunityBookmark(post.id);onChange(posts.map(item=>item.id===post.id?{...item,...(kind==='vote'?{votedByCurrentUser:response.active,voteCount:response.count}:{savedByCurrentUser:response.active})}:item))}
