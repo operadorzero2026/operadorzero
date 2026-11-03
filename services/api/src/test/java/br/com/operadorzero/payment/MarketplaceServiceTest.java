@@ -184,6 +184,16 @@ class MarketplaceServiceTest {
     }
 
     @Test
+    void defaultCommissionWithoutConfigurationIsSevenPercentOfTheGross() {
+        MarketplaceService fallback = new MarketplaceService(repository, gateway, new MercadoPagoProperties(null, null, null, null, null),
+            box, mock(AuditEventRepository.class), "https://operadorzero.com.br", Clock.fixed(NOW, ZoneOffset.UTC));
+        when(repository.defaultPercent(NOW)).thenReturn(Optional.empty());
+        when(repository.overrideRow(7L, NOW)).thenReturn(Optional.empty());
+        assertThat(fallback.commissionPercent(7L)).isEqualByComparingTo("7");
+        assertThat(MarketplaceService.commissionAmount(new BigDecimal("100.00"), fallback.commissionPercent(7L))).isEqualByComparingTo("7.00");
+    }
+
+    @Test
     void invalidCommissionIsRefused() {
         assertThatThrownBy(() -> service.setDefaultCommission(organizer, new BigDecimal("60"), null)).isInstanceOf(BusinessException.class);
         assertThatThrownBy(() -> service.setDefaultCommission(organizer, new BigDecimal("-1"), null)).isInstanceOf(BusinessException.class);

@@ -33,7 +33,7 @@ public record MercadoPagoProperties(String accessToken, String webhookSecret, UR
         if (authBaseUrl == null) authBaseUrl = URI.create("https://auth.mercadopago.com");
         if (pixExpiration == null || pixExpiration.isNegative() || pixExpiration.isZero()) pixExpiration = Duration.ofMinutes(30);
         if (checkoutExpiration == null || checkoutExpiration.isNegative() || checkoutExpiration.isZero()) checkoutExpiration = Duration.ofMinutes(30);
-        if (defaultCommissionPercent == null) defaultCommissionPercent = BigDecimal.TEN;
+        if (defaultCommissionPercent == null) defaultCommissionPercent = BigDecimal.valueOf(7);
         if (environment == null || environment.isBlank()) environment = "test";
     }
 

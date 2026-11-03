@@ -18,7 +18,7 @@ O Pix direto da Etapa F continua existindo. Ele cai na conta da plataforma, sem 
 - Ao criar a preferência, o meio de pagamento ainda não foi escolhido: o jogador escolhe no checkout. Por isso a tarifa real ainda é desconhecida. A tarifa também depende do meio, do parcelamento, do prazo de recebimento e das condições da conta do organizador.
 - Por isso **não dá para garantir "10% do líquido"** com o split nativo. O sistema calcula a comissão sobre o **valor bruto** (percentual configurado × preço, arredondado para baixo) e guarda em cada pagamento o percentual e o valor aplicados.
 - Depois da aprovação, o sistema guarda a tarifa efetiva (`fee_details`), a comissão cobrada e o líquido do organizador. Isso é **conciliação**: registra o que aconteceu, não muda a divisão.
-- **Decisão do responsável (2026-11-03): comissão de 10% sobre o valor bruto da inscrição.** Exemplo: inscrição de R$ 100,00 → R$ 10,00 para o Operador Zero; a tarifa do Mercado Pago sai da parte do organizador. Transferências posteriores entre contas não são feitas.
+- **Decisão do responsável (2026-11-03): comissão padrão de 7% sobre o valor bruto da inscrição.** Exemplo: inscrição de R$ 100,00 → R$ 7,00 para o Operador Zero; o Mercado Pago fica com a tarifa dele, descontada da parte do organizador, que recebe o restante (R$ 93,00 menos a tarifa). Transferências posteriores entre contas não são feitas. O administrador pode mudar o padrão ou dar percentuais individuais em Financeiro.
 
 ## Configuração no Mercado Pago Developers
 
@@ -38,7 +38,7 @@ Aplicação existente: **Operador Zero**, Checkout Pro, API de Preferences, Mark
 | `MERCADOPAGO_CLIENT_SECRET` | plataforma (aplicação) | OAuth dos organizadores (só no servidor) |
 | `MERCADOPAGO_WEBHOOK_SECRET` | plataforma (aplicação) | assinatura das notificações |
 | `MERCADOPAGO_ENVIRONMENT` | — | `test` (contas e credenciais de teste) ou `production` |
-| `PLATFORM_DEFAULT_COMMISSION_PERCENT` | — | comissão padrão até o administrador gravar outra (10) |
+| `PLATFORM_DEFAULT_COMMISSION_PERCENT` | — | comissão padrão até o administrador gravar outra (7) |
 | `MERCADOPAGO_ACCESS_TOKEN` | plataforma (opcional) | Pix direto sem divisão (Etapa F) |
 
 Os tokens de cada organizador **não** são variáveis de ambiente. Ficam cifrados (AES-GCM) em `mercadopago_connection`, com chave derivada de `AUTH_HASH_KEY`. Se `AUTH_HASH_KEY` for trocada, os organizadores precisam reconectar.

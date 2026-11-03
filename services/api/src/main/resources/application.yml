@@ -76,7 +76,7 @@ app:
       redirect-uri: ${MERCADOPAGO_REDIRECT_URI:}
       auth-base-url: ${MERCADOPAGO_AUTH_BASE_URL:https://auth.mercadopago.com}
       environment: ${MERCADOPAGO_ENVIRONMENT:test}
-      default-commission-percent: ${PLATFORM_DEFAULT_COMMISSION_PERCENT:10}
+      default-commission-percent: ${PLATFORM_DEFAULT_COMMISSION_PERCENT:7}
       checkout-expiration: ${MERCADOPAGO_CHECKOUT_EXPIRATION:30m}
   auth:
     enabled: ${AUTH_ENABLED:false}
