@@ -2,6 +2,7 @@ import { ArrowLeft, Clock3, Send, UsersRound } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { getDossiers, type DossierSummary } from '../../api'
 import { inspect } from '../CreateFlow'
+import { filterCode, paintFilter, type TacticalFilterId } from '../filters/tacticalFilters'
 import { sourceRect, type Framing } from '../framing'
 import { cancelUpload, retryUpload, startPostUpload, submitPostDetails, uploadStore, type ReconDetails } from '../uploadQueue'
 import { CameraScreen } from './CameraScreen'
@@ -13,14 +14,14 @@ import { MediaFrame, ReconEditor, type Fit, type StudioMedia } from './ReconEdit
 const EXPORT_WIDTH = 1080
 const round = (value: number) => Math.round(value * 1000) / 1000
 
-/** Foto final em 9:16 (1080 x 1920), sem EXIF/GPS. "Inteiro" coloca a foto completa sobre um fundo desfocado dela mesma. */
-async function exportPhoto(media: StudioMedia, framing: Framing, fit: Fit): Promise<Blob> {
+/** Foto final em 9:16 (1080 x 1920), sem EXIF/GPS, com o filtro tatico. "Inteiro" coloca a foto completa sobre um fundo desfocado dela mesma. */
+async function exportPhoto(media: StudioMedia, framing: Framing, fit: Fit, filter: TacticalFilterId): Promise<Blob> {
   const bitmap = await createImageBitmap(media.file, { imageOrientation: 'from-image' })
   const width = EXPORT_WIDTH
   const height = Math.round(width / FRAME_ASPECT)
   const canvas = document.createElement('canvas')
   canvas.width = width; canvas.height = height
-  const context = canvas.getContext('2d')!
+  const context = canvas.getContext('2d', { willReadFrequently: filter !== 'none' })!
   const cover = sourceRect(media.size, FRAME_ASPECT, fit === 'cover' ? framing : { x: 0.5, y: 0.5, zoom: 1 })
   if (fit === 'contain') {
     context.filter = 'blur(40px) brightness(0.6)'
@@ -33,6 +34,7 @@ async function exportPhoto(media: StudioMedia, framing: Framing, fit: Fit): Prom
   } else {
     context.drawImage(bitmap, cover.x, cover.y, cover.width, cover.height, 0, 0, width, height)
   }
+  paintFilter(context, width, height, filter)
   bitmap.close()
   return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Falha ao preparar a foto.')), 'image/jpeg', 0.9))
 }
@@ -60,6 +62,7 @@ export function ReconStudio({ username, callsign, onClose }: { username: string;
   const [elements, setElements] = useState<ReconElement[]>([])
   const [framing, setFraming] = useState<Framing>({ x: 0.5, y: 0.5, zoom: 1 })
   const [fit, setFit] = useState<Fit>('cover')
+  const [filter, setFilter] = useState<TacticalFilterId>('none')
   const [audioMuted, setAudioMuted] = useState(false)
   const [dossierId, setDossierId] = useState('')
   const [dossiers, setDossiers] = useState<DossierSummary[] | null>(null)
@@ -94,7 +97,7 @@ export function ReconStudio({ username, callsign, onClose }: { username: string;
     setError(''); setBusy(true)
     try {
       const next = await load()
-      setMedia(next); setElements([]); setFraming({ x: 0.5, y: 0.5, zoom: 1 }); setFit('cover'); setAudioMuted(false)
+      setMedia(next); setElements([]); setFraming({ x: 0.5, y: 0.5, zoom: 1 }); setFit('cover'); setFilter('none'); setAudioMuted(false)
       if (next.kind === 'VIDEO') setTaskId(startPostUpload(next.file, 'VIDEO', null, 'RECON'))
       setStep('editor')
     } catch (e) {
@@ -114,13 +117,13 @@ export function ReconStudio({ username, callsign, onClose }: { username: string;
     setError(''); setBusy(true)
     try {
       let id = taskId
-      if (media.kind === 'IMAGE' && !id) { id = startPostUpload(await exportPhoto(media, framing, fit), 'IMAGE', null, 'RECON'); setTaskId(id) }
+      if (media.kind === 'IMAGE' && !id) { id = startPostUpload(await exportPhoto(media, framing, fit, filter), 'IMAGE', null, 'RECON'); setTaskId(id) }
       if (!id) return
       const details: ReconDetails = {
         elements, dossierId: dossierId || null,
         audioMuted: media.kind === 'VIDEO' ? audioMuted : undefined,
         complete: media.kind === 'VIDEO'
-          ? { stripAudio: audioMuted, crop: fit === 'cover' ? { x: round(framing.x), y: round(framing.y), zoom: round(framing.zoom) } : null }
+          ? { stripAudio: audioMuted, crop: fit === 'cover' ? { x: round(framing.x), y: round(framing.y), zoom: round(framing.zoom) } : null, filterCode: filterCode(filter) ?? '' }
           : undefined,
       }
       // Depois de um erro: os detalhes atualizados seguem junto e o envio continua de onde parou.
@@ -151,6 +154,7 @@ export function ReconStudio({ username, callsign, onClose }: { username: string;
 
     {step === 'editor' && media && <ReconEditor media={media} elements={elements} onElements={next => edited(() => setElements(next))}
       framing={framing} onFraming={next => edited(() => setFraming(next))} fit={fit} onFit={next => edited(() => setFit(next))}
+      filter={filter} onFilter={next => edited(() => setFilter(next))}
       audioMuted={audioMuted} onAudioMuted={setAudioMuted} avatar={avatar} busy={busy || publishing}
       onClose={requestClose} onPublish={() => void publish()} onNext={() => setStep('confirm')} onSettings={() => setSettings(true)}/>}
 
@@ -161,7 +165,7 @@ export function ReconStudio({ username, callsign, onClose }: { username: string;
       </header>
       <div className="recon-confirm-body">
         <div className="recon-confirm-preview"><div className="recon-preview-frame">
-          <MediaFrame media={media} framing={framing} fit={fit} muted/>
+          <MediaFrame media={media} framing={framing} fit={fit} muted filter={filter}/>
           <ElementLayer elements={elements}/>
         </div></div>
         <ul className="recon-confirm-info">

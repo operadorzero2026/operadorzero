@@ -82,14 +82,17 @@ public class MediaRepository {
     }
 
     /** Enquadramento so substitui o do inicio do envio quando vem preenchido. */
-    public void applyCompleteOptions(long assetId, boolean stripAudio, Crop crop) {
+    /** filterCode nulo mantem o filtro escolhido no inicio do envio; vazio remove. */
+    public void applyCompleteOptions(long assetId, boolean stripAudio, Crop crop, String filterCode) {
         jdbc.update("""
             UPDATE media_asset SET strip_audio = :strip,
+                   filter_code = CASE WHEN CAST(:filter AS varchar) IS NULL THEN filter_code ELSE NULLIF(CAST(:filter AS varchar), '') END,
                    crop_x = CASE WHEN :hasCrop THEN :cropX ELSE crop_x END,
                    crop_y = CASE WHEN :hasCrop THEN :cropY ELSE crop_y END,
                    crop_zoom = CASE WHEN :hasCrop THEN :cropZoom ELSE crop_zoom END
             WHERE id = :id
             """, new MapSqlParameterSource().addValue("id", assetId).addValue("strip", stripAudio).addValue("hasCrop", crop != null)
+                .addValue("filter", filterCode)
                 .addValue("cropX", crop == null ? null : crop.x()).addValue("cropY", crop == null ? null : crop.y())
                 .addValue("cropZoom", crop == null ? null : crop.zoom()));
     }

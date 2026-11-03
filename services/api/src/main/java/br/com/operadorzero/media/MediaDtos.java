@@ -25,8 +25,13 @@ public final class MediaDtos {
                                      @Size(max = 32) @Pattern(regexp = "[a-z0-9_]*") String filterCode,
                                      @Valid Crop crop) {}
 
-    /** Opcoes conhecidas so ao publicar (editor do Recon): tirar o audio e o enquadramento final do video. */
-    public record CompleteUploadRequest(Boolean stripAudio, @Valid Crop crop) {}
+    /** Opcoes conhecidas so ao publicar (editor do Recon): tirar o audio, o enquadramento final e o filtro tatico do video. */
+    public record CompleteUploadRequest(Boolean stripAudio, @Valid Crop crop,
+                                        @Size(max = 32) @Pattern(regexp = "[a-z0-9_]*") String filterCode) {
+        public CompleteUploadRequest(Boolean stripAudio, Crop crop) {
+            this(stripAudio, crop, null);
+        }
+    }
 
     public record UploadResponse(UUID uploadId, UUID mediaId, int chunkBytes, long receivedBytes, long totalBytes, String status) {}
 

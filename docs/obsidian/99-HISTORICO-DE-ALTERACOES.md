@@ -1,5 +1,38 @@
 # Histórico de alterações
 
+## 2026-11-03 - Feed, Fase 1: Filtros táticos
+
+### Arquivos alterados
+- Site:
+  - novos: `src/feed/filters/tacticalFilters.ts` (efeitos), `FilterPreview.tsx` (prévia ao vivo e escolha) e `filters.css`;
+  - `feed/CreateFlow.tsx`: novo passo "Filtro" no post;
+  - `feed/recon/ReconEditor.tsx` e `ReconStudio.tsx`: botão de filtros no editor do Recon;
+  - `feed/uploadQueue.ts` e `api.ts`.
+- Servidor:
+  - `media/VideoFilters.java`: os quatro filtros no ffmpeg, compatíveis com o 4.4 da produção;
+  - `MediaProcessor`: confere o filtro num quadro antes e, se o ffmpeg recusar, processa sem filtro;
+  - `MediaDtos`, `MediaUploadService`, `MediaRepository`: o filtro pode ser escolhido na publicação do Recon;
+  - teste novo: `VideoFiltersTest`, que roda o ffmpeg de verdade quando há `FFMPEG_PATH`.
+- Banco: sem migração (usa a coluna `media_asset.filter_code`, que já existia).
+
+### O que foi feito
+- Quatro filtros na criação de Post e de Recon, em foto e vídeo, com prévia ao vivo:
+  - **Visão Noturna:** verde, ruído e vinheta;
+  - **Térmica:** paleta "ferro";
+  - **Luneta:** círculo, retícula e bordas escuras;
+  - **Capacete:** HUD com cantos, mira, rumo, relógio e munição decorativa.
+- Foto: o filtro é aplicado no aparelho e a foto sobe já filtrada.
+- Vídeo: sobe o original com o código do filtro, e o servidor aplica o efeito equivalente no ffmpeg, mantendo a qualidade. O relógio do HUD usa a hora de Brasília do processamento.
+- Arquitetura extensível: um filtro novo é uma entrada em `TACTICAL_FILTERS` (site) e um código em `VideoFilters` (servidor).
+
+### Testes
+- 303 testes do servidor passando, incluindo os quatro filtros processados pelo ffmpeg real.
+- Teste local de ponta a ponta: 10 verificações. Cobriram os 4 filtros em vídeo, o filtro escolhido na publicação do Recon, a volta para "Normal", filtro desconhecido recusado e foto sem filtro no servidor.
+- No navegador, em tela de celular:
+  - Recon de foto com os 4 filtros e publicação com o HUD aplicado;
+  - Post de vídeo com prévia ao vivo da Térmica, e vídeo processado idêntico à prévia.
+- Não validado no ffmpeg 4.4 da produção (permissão negada para rodar o teste no container). Se ele recusar algum filtro, o vídeo é publicado sem filtro e o motivo fica registrado no log.
+
 ## 2026-11-03 - Webhook do Mercado Pago aceita as assinaturas dos dois modos
 
 ### O que foi feito

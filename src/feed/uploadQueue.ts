@@ -13,11 +13,11 @@ export type UploadTask = { id: string; purpose: UploadPurpose; kind: 'IMAGE' | '
 export type PostDetails = { caption?: string; fieldId?: string | null; teamId?: string | null; taggedUsernames?: string[]; operationId?: string | null }
 export type ReconDetails = {
   overlayText?: string | null; elements?: ReconElement[]; audioMuted?: boolean; dossierId?: string | null
-  complete?: { stripAudio?: boolean; crop?: MediaCrop | null }
+  complete?: { stripAudio?: boolean; crop?: MediaCrop | null; filterCode?: string | null }
 }
 
 type Internal = UploadTask & {
-  file: Blob; crop: MediaCrop | null; uploadId?: string; mediaId?: string; chunksDone: boolean; uploaded: boolean
+  file: Blob; crop: MediaCrop | null; filterCode: string | null; uploadId?: string; mediaId?: string; chunksDone: boolean; uploaded: boolean
   details?: PostDetails | ReconDetails; idempotencyKey: string; cancelled: boolean; running: boolean
 }
 
@@ -44,9 +44,10 @@ export const uploadStore = {
   getSnapshot: () => snapshot,
 }
 
-export function startPostUpload(file: Blob, kind: 'IMAGE' | 'VIDEO', crop: MediaCrop | null, purpose: UploadPurpose = 'POST'): string {
+/** filterCode: filtro tatico que o servidor aplica no video (fotos ja chegam filtradas). */
+export function startPostUpload(file: Blob, kind: 'IMAGE' | 'VIDEO', crop: MediaCrop | null, purpose: UploadPurpose = 'POST', filterCode: string | null = null): string {
   const id = crypto.randomUUID()
-  tasks = [...tasks, { id, purpose, kind, progress: 0, phase: 'uploading', file, crop, chunksDone: false, uploaded: false,
+  tasks = [...tasks, { id, purpose, kind, progress: 0, phase: 'uploading', file, crop, filterCode: kind === 'VIDEO' ? filterCode : null, chunksDone: false, uploaded: false,
     idempotencyKey: crypto.randomUUID(), cancelled: false, running: false }]
   publish()
   void run(id)
@@ -86,7 +87,7 @@ async function run(id: string) {
     let chunkBytes = 0
     let offset = 0
     if (!uploadId) {
-      const upload = await startMediaUpload({ purpose: task.purpose, kind: task.kind, contentType: task.file.type || 'application/octet-stream', totalBytes: task.file.size, crop: task.crop })
+      const upload = await startMediaUpload({ purpose: task.purpose, kind: task.kind, contentType: task.file.type || 'application/octet-stream', totalBytes: task.file.size, crop: task.crop, filterCode: task.filterCode })
       uploadId = upload.uploadId; chunkBytes = upload.chunkBytes; offset = upload.receivedBytes
       update(id, { uploadId, mediaId: upload.mediaId })
     } else {

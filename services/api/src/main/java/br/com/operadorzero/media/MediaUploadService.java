@@ -110,6 +110,10 @@ public class MediaUploadService {
         if (row.receivedBytes() != row.totalBytes()) {
             throw BusinessException.conflict("UPLOAD_INCOMPLETE", "Ainda faltam partes do arquivo.");
         }
+        if (options != null && options.filterCode() != null && !options.filterCode().isBlank()
+            && (!VideoFilters.isKnown(options.filterCode()) || !"VIDEO".equals(row.kind()))) {
+            throw BusinessException.badRequest("UNKNOWN_FILTER", "Filtro indisponível.");
+        }
         Path part = partFile(row);
         FileSniffer.Detected detected = detect(row, part, now);
         try {
@@ -121,7 +125,7 @@ public class MediaUploadService {
         }
         repository.completeUpload(row.uploadId(), row.assetId(), detected.type(), now);
         if (options != null && "VIDEO".equals(row.kind())) {
-            repository.applyCompleteOptions(row.assetId(), Boolean.TRUE.equals(options.stripAudio()), options.crop());
+            repository.applyCompleteOptions(row.assetId(), Boolean.TRUE.equals(options.stripAudio()), options.crop(), options.filterCode());
         }
         return new MediaStatusResponse(row.assetPublicId(), row.kind(), "QUEUED", null);
     }

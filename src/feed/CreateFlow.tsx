@@ -2,6 +2,8 @@ import { ArrowLeft, Camera, ChevronDown, ImagePlus, Send, X } from 'lucide-react
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getFields, getTeamWorkspace, type VenueField } from '../api'
 import { OperationTagPicker, type TaggedOperation } from '../operation/OperationTagPicker'
+import { FilterPicker, FilterPreview } from './filters/FilterPreview'
+import { filterCode, paintFilter, type TacticalFilterId } from './filters/tacticalFilters'
 import { FrameEditor } from './FrameEditor'
 import { sourceRect, type Box, type Framing } from './framing'
 import { cancelUpload, startPostUpload, submitPostDetails } from './uploadQueue'
@@ -46,22 +48,25 @@ export async function inspect(file: File, mode: CreateMode): Promise<Picked> {
   return { file, kind, url, size: meta.size, durationS: meta.durationS }
 }
 
-/** Recorta e reencoda a foto no aparelho (1080 px de largura): sai sem EXIF/GPS e na proporcao escolhida. */
-async function exportPhoto(picked: Picked, aspect: number, framing: Framing): Promise<Blob> {
+/** Recorta, aplica o filtro tatico e reencoda a foto no aparelho (1080 px de largura): sai sem EXIF/GPS e na proporcao escolhida. */
+async function exportPhoto(picked: Picked, aspect: number, framing: Framing, filter: TacticalFilterId): Promise<Blob> {
   const bitmap = await createImageBitmap(picked.file, { imageOrientation: 'from-image' })
   const rect = sourceRect(picked.size, aspect, framing)
   const width = Math.min(1080, Math.round(rect.width))
   const height = Math.round(width / aspect)
   const canvas = document.createElement('canvas')
   canvas.width = width; canvas.height = height
-  canvas.getContext('2d')!.drawImage(bitmap, rect.x, rect.y, rect.width, rect.height, 0, 0, width, height)
+  const context = canvas.getContext('2d', { willReadFrequently: filter !== 'none' })!
+  context.drawImage(bitmap, rect.x, rect.y, rect.width, rect.height, 0, 0, width, height)
+  paintFilter(context, width, height, filter)
   bitmap.close()
   return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Falha ao preparar a foto.')), 'image/jpeg', 0.9))
 }
 
 export function CreateFlow({ mode = 'POST', onClose }: { mode?: CreateMode; onClose: () => void }) {
   const recon = mode === 'RECON'
-  const [step, setStep] = useState<'pick' | 'frame' | 'details'>('pick')
+  const [step, setStep] = useState<'pick' | 'frame' | 'filter' | 'details'>('pick')
+  const [filter, setFilter] = useState<TacticalFilterId>('none')
   const [picked, setPicked] = useState<Picked | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -93,6 +98,7 @@ export function CreateFlow({ mode = 'POST', onClose }: { mode?: CreateMode; onCl
       setPicked(result)
       setFraming({ x: 0.5, y: 0.5, zoom: 1 })
       setReframe(false)
+      setFilter('none')
       setStep('frame')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Não foi possível abrir o arquivo.')
@@ -101,13 +107,13 @@ export function CreateFlow({ mode = 'POST', onClose }: { mode?: CreateMode; onCl
     }
   }
 
-  const confirmFrame = async () => {
+  const confirmFilter = async () => {
     if (!picked) return
     setError(''); setBusy(true)
     try {
       const id = picked.kind === 'IMAGE'
-        ? startPostUpload(await exportPhoto(picked, aspect, framing), 'IMAGE', null, mode)
-        : startPostUpload(picked.file, 'VIDEO', reframe ? { x: round(framing.x), y: round(framing.y), zoom: round(framing.zoom) } : null, mode)
+        ? startPostUpload(await exportPhoto(picked, aspect, framing, filter), 'IMAGE', null, mode)
+        : startPostUpload(picked.file, 'VIDEO', reframe ? { x: round(framing.x), y: round(framing.y), zoom: round(framing.zoom) } : null, mode, filterCode(filter))
       setTaskId(id)
       setStep('details')
     } catch (e) {
@@ -139,15 +145,16 @@ export function CreateFlow({ mode = 'POST', onClose }: { mode?: CreateMode; onCl
 
   const back = () => {
     if (step === 'details' && taskId) { cancelUpload(taskId); setTaskId(null) }
-    setStep(step === 'details' ? 'frame' : 'pick')
+    setStep(step === 'details' ? 'filter' : step === 'filter' ? 'frame' : 'pick')
   }
 
   return <div className="create-flow" role="dialog" aria-modal="true" aria-labelledby="create-flow-title">
     <header>
       {step === 'pick' ? <button type="button" className="feed-icon-button" onClick={onClose} aria-label="Fechar"><X/></button>
         : <button type="button" className="feed-icon-button" onClick={back} aria-label="Voltar"><ArrowLeft/></button>}
-      <h2 id="create-flow-title">{step === 'pick' ? (recon ? 'Novo Recon' : 'Novo post') : step === 'frame' ? 'Enquadrar' : recon ? 'Texto do Recon' : 'Descrição'}</h2>
-      {step === 'frame' && <button type="button" className="button button--small" disabled={busy} onClick={() => void confirmFrame()}>Avançar</button>}
+      <h2 id="create-flow-title">{step === 'pick' ? (recon ? 'Novo Recon' : 'Novo post') : step === 'frame' ? 'Enquadrar' : step === 'filter' ? 'Filtro' : recon ? 'Texto do Recon' : 'Descrição'}</h2>
+      {step === 'frame' && <button type="button" className="button button--small" disabled={busy} onClick={() => setStep('filter')}>Avançar</button>}
+      {step === 'filter' && <button type="button" className="button button--small" disabled={busy} onClick={() => void confirmFilter()}>{busy ? 'Preparando…' : 'Avançar'}</button>}
       {step === 'details' && <button type="button" className="button button--small" onClick={publishPost}><Send/> Publicar</button>}
     </header>
     {error && <p className="module-feedback module-feedback--error" role="alert">{error}</p>}
@@ -172,6 +179,15 @@ export function CreateFlow({ mode = 'POST', onClose }: { mode?: CreateMode; onCl
       {picked.kind === 'VIDEO' && !reframe
         ? <div className="create-original"><video src={picked.url} muted loop autoPlay playsInline/><p>O vídeo aparece inteiro; o que não for 9:16 fica com fundo desfocado.</p></div>
         : <FrameEditor src={picked.url} kind={picked.kind} media={picked.size} aspect={picked.kind === 'IMAGE' ? aspect : VIDEO_ASPECT} framing={framing} onChange={setFraming}/>}
+    </div>}
+
+    {step === 'filter' && picked && <div className="create-filter">
+      <div className="create-filter-stage" style={stageStyle(picked.kind === 'IMAGE' ? aspect : reframe ? VIDEO_ASPECT : picked.size.width / picked.size.height)}>
+        <FilterPreview kind={picked.kind} url={picked.url} filter={filter}
+          region={picked.kind === 'IMAGE' ? sourceRect(picked.size, aspect, framing) : reframe ? sourceRect(picked.size, VIDEO_ASPECT, framing) : null}/>
+      </div>
+      <FilterPicker value={filter} onChange={setFilter}/>
+      <p className="create-notice">{picked.kind === 'VIDEO' ? 'Prévia ao vivo. O filtro é aplicado no vídeo depois do envio, com a qualidade original.' : 'O filtro sai aplicado na foto publicada.'}</p>
     </div>}
 
     {step === 'details' && recon && <div className="create-details">
@@ -205,3 +221,5 @@ export function CreateFlow({ mode = 'POST', onClose }: { mode?: CreateMode; onCl
 }
 
 const round = (value: number) => Math.round(value * 1000) / 1000
+/** Previa do filtro na proporcao final, cabendo na largura e na altura da tela. */
+const stageStyle = (ratio: number) => ({ aspectRatio: String(ratio), width: `min(100%, 460px, calc((100dvh - 260px) * ${ratio.toFixed(4)}))` })

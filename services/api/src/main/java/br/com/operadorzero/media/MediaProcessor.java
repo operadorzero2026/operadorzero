@@ -114,16 +114,34 @@ public class MediaProcessor {
         try { Files.deleteIfExists(source); } catch (IOException ignored) { /* removido na limpeza */ }
     }
 
+    /**
+     * Confere o filtro tatico num unico quadro antes de processar o video inteiro: se o ffmpeg recusar (ex.: versao sem algum
+     * recurso), o video segue sem filtro em vez de falhar para o jogador.
+     */
+    private String checkedFilter(AssetRow asset, Path source, Path out, Window crop, String filter, Size size) throws IOException {
+        Path check = out.resolve("filter-check.webp");
+        try {
+            ffmpeg.run(MediaPlans.posterArgs(source, check, crop, filter, size, 0), IMAGE_TIMEOUT);
+            return filter;
+        } catch (MediaRejected rejected) {
+            log.warn("Filtro tatico {} recusado pelo ffmpeg na midia {}; processando sem filtro", asset.filterCode(), asset.publicId());
+            return null;
+        } finally {
+            Files.deleteIfExists(check);
+        }
+    }
+
     private Result video(AssetRow asset, Path source, Path out) throws IOException, MediaRejected {
         Probe probe = ffmpeg.probe(source);
         if (probe.durationMs() == null || probe.durationMs() <= 0) throw new MediaRejected("INVALID_VIDEO");
         if (probe.durationMs() > MediaSettings.maxDurationMs(asset.purpose()) + 500) throw new MediaRejected("VIDEO_TOO_LONG");
-        String filter = VideoFilters.graph(asset.filterCode()).orElse(null);
+        String filter = VideoFilters.graph(asset.filterCode(), clock.instant()).orElse(null);
         Window crop = MediaPlans.cropWindow(probe.width(), probe.height(), asset.crop());
         int width = crop == null ? probe.width() : crop.width();
         int height = crop == null ? probe.height() : crop.height();
         List<Rendition> ladder = MediaPlans.ladder(width, height);
         boolean audio = probe.hasAudio() && !asset.stripAudio();
+        if (filter != null) filter = checkedFilter(asset, source, out, crop, filter, MediaPlans.fit(width, height, Math.min(360, Math.min(width, height))));
         ffmpeg.run(MediaPlans.hlsArgs(source.toAbsolutePath(), crop, ladder, audio, filter), VIDEO_TIMEOUT, out);
         Rendition smallest = ladder.getFirst();
         ffmpeg.run(MediaPlans.fallbackMp4Args(source, out.resolve("fallback.mp4"), crop, smallest, audio, filter), VIDEO_TIMEOUT);

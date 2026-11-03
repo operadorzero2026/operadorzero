@@ -184,3 +184,7 @@ button.recon-el:focus-visible{outline:2px solid var(--feed-gold-soft);outline-of
 .recon-publishing-bar{display:block;height:4px;border-radius:2px;background:#ffffff26;overflow:hidden}
 .recon-publishing-bar span{display:block;height:100%;background:var(--feed-gold);transition:width .2s}
 @media(prefers-reduced-motion:reduce){.recon-sheet-backdrop,.recon-sheet-panel{animation:none}.recon-rec i{animation:none}}
+/* Filtro tatico: previa em canvas por cima da midia (abaixo dos textos, adesivos e mencoes). */
+.recon-media-frame .recon-filter-layer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.recon-round.is-active{background:var(--lime,#c9cb73);color:#10130c}
+.recon-filter-note{margin:10px 4px 0;color:#b6b9ae;font-size:13px}

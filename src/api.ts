@@ -483,7 +483,7 @@ export const getMediaUpload = (uploadId:string) => apiRequest<MediaUpload>(`/api
 /** Pedaco cru; o servidor so aceita o offset que ja recebeu, entao repetir apos falha de rede e seguro. */
 export const putMediaChunk = (uploadId:string, offset:number, chunk:Blob) =>
   apiRequest<MediaUpload>(`/api/media/uploads/${encodeURIComponent(uploadId)}?offset=${offset}`, { method:'PUT', body:chunk, headers:{ 'Content-Type':'application/octet-stream' } }, 120000)
-export const completeMediaUpload = (uploadId:string, options?:{ stripAudio?:boolean; crop?:MediaCrop|null }) => apiRequest<MediaStatus>(`/api/media/uploads/${encodeURIComponent(uploadId)}/complete`, json('POST', options ?? {}))
+export const completeMediaUpload = (uploadId:string, options?:{ stripAudio?:boolean; crop?:MediaCrop|null; filterCode?:string|null }) => apiRequest<MediaStatus>(`/api/media/uploads/${encodeURIComponent(uploadId)}/complete`, json('POST', options ?? {}))
 export const getMediaStatus = (mediaId:string) => apiRequest<MediaStatus>(`/api/media/${encodeURIComponent(mediaId)}`)
 export const createFeedPost = (body:{ mediaId:string; caption?:string|null; fieldId?:string|null; teamId?:string|null; taggedUsernames?:string[]; idempotencyKey:string; operationId?:string|null }) =>
   apiRequest<{ id:string; status:string }>('/api/feed/posts', json('POST', body))

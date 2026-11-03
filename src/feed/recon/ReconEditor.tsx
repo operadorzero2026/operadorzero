@@ -1,6 +1,8 @@
-import { ArrowRight, Copy, Maximize2, Minimize2, MoreHorizontal, Pencil, Settings, Smile, Trash2, Type, Volume2, VolumeX, X } from 'lucide-react'
+import { Aperture, ArrowRight, Copy, Maximize2, Minimize2, MoreHorizontal, Pencil, Settings, Smile, Trash2, Type, Volume2, VolumeX, X } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import type { OperatorSummary } from '../../api'
+import { FilterPicker, FilterPreview } from '../filters/FilterPreview'
+import type { TacticalFilterId } from '../filters/tacticalFilters'
 import { clamp, sourceRect, type Box, type Framing } from '../framing'
 import { FRAME_ASPECT, MAX_ELEMENTS, MAX_MENTIONS, MENTION_STYLES, newId, nextZ, type DrawingElement, type ReconElement, type Stroke, type TextElement } from './composition'
 import { ElementLayer } from './ElementLayer'
@@ -27,8 +29,14 @@ export function mediaPlacement(media: Box, box: Box, framing: Framing) {
   return { scale, style: { width: media.width * scale, height: media.height * scale, transform: `translate(${-rect.x * scale}px, ${-rect.y * scale}px)` } }
 }
 
-export function MediaFrame({ media, framing, fit, muted, videoRef }: { media: StudioMedia; framing: Framing; fit: Fit; muted: boolean; videoRef?: React.RefObject<HTMLVideoElement | null> }) {
+export function MediaFrame({ media, framing, fit, muted, videoRef, filter = 'none' }: { media: StudioMedia; framing: Framing; fit: Fit; muted: boolean; videoRef?: React.RefObject<HTMLVideoElement | null>; filter?: TacticalFilterId }) {
   const frame = useRef<HTMLDivElement>(null)
+  const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null)
+  // O video continua tocando (som e tempo); com filtro, a previa em canvas o desenha por cima ja filtrado.
+  const attachVideo = useCallback((element: HTMLVideoElement | null) => {
+    if (videoRef) videoRef.current = element
+    setVideoElement(element)
+  }, [videoRef])
   const [box, setBox] = useState<Box>({ width: 0, height: 0 })
   useLayoutEffect(() => {
     const element = frame.current
@@ -45,7 +53,9 @@ export function MediaFrame({ media, framing, fit, muted, videoRef }: { media: St
     {!cover && media.kind === 'IMAGE' && <img className="recon-media-backdrop" src={media.url} alt="" aria-hidden="true"/>}
     {media.kind === 'IMAGE'
       ? <img src={media.url} alt="" draggable={false} style={cover ? placement.style : undefined}/>
-      : <video ref={videoRef} src={media.url} loop playsInline autoPlay muted={muted} style={cover ? placement.style : undefined}/>}
+      : <video ref={attachVideo} src={media.url} loop playsInline autoPlay muted={muted} style={cover ? placement.style : undefined}/>}
+    {filter !== 'none' && <FilterPreview className="recon-filter-layer" kind={media.kind} url={media.url} videoElement={media.kind === 'VIDEO' ? videoElement : null}
+      filter={filter} fit={fit} region={cover ? sourceRect(media.size, FRAME_ASPECT, framing) : null}/>}
   </div>
 }
 
@@ -54,9 +64,10 @@ export function MediaFrame({ media, framing, fit, muted, videoRef }: { media: St
  * Gestos: arrastar move, pinca muda o tamanho, girar dois dedos gira, arrastar ate a lixeira apaga,
  * dois toques no texto editam e um toque na mencao troca o estilo. Sem elemento, os gestos enquadram a midia.
  */
-export function ReconEditor({ media, elements, onElements, framing, onFraming, fit, onFit, audioMuted, onAudioMuted, avatar, busy, onClose, onPublish, onNext, onSettings }: {
+export function ReconEditor({ media, elements, onElements, framing, onFraming, fit, onFit, filter, onFilter, audioMuted, onAudioMuted, avatar, busy, onClose, onPublish, onNext, onSettings }: {
   media: StudioMedia; elements: ReconElement[]; onElements: (next: ReconElement[]) => void
   framing: Framing; onFraming: (framing: Framing) => void; fit: Fit; onFit: (fit: Fit) => void
+  filter: TacticalFilterId; onFilter: (filter: TacticalFilterId) => void
   audioMuted: boolean; onAudioMuted: (muted: boolean) => void; avatar: string; busy: boolean
   onClose: () => void; onPublish: () => void; onNext: () => void; onSettings: () => void
 }) {
@@ -69,7 +80,7 @@ export function ReconEditor({ media, elements, onElements, framing, onFraming, f
   const [dragging, setDragging] = useState<string | null>(null)
   const [overTrash, setOverTrash] = useState(false)
   const [guides, setGuides] = useState({ v: false, h: false })
-  const [tool, setTool] = useState<null | 'text' | 'draw' | 'add' | 'more'>(null)
+  const [tool, setTool] = useState<null | 'text' | 'draw' | 'add' | 'filter' | 'more'>(null)
   const [editingText, setEditingText] = useState<TextElement | null>(null)
   const [notice, setNotice] = useState('')
   const latest = useRef({ elements, framing })
@@ -223,7 +234,7 @@ export function ReconEditor({ media, elements, onElements, framing, onFraming, f
 
   return <div className="recon-editor">
     <div ref={stage} className="recon-frame recon-editor-stage" onPointerDown={event => begin(event)} onWheel={wheel}>
-      <MediaFrame media={media} framing={framing} fit={fit} muted={audioMuted} videoRef={video}/>
+      <MediaFrame media={media} framing={framing} fit={fit} muted={audioMuted} videoRef={video} filter={filter}/>
       <ElementLayer elements={elements} selectedId={selected} hiddenId={editingText?.id} onElementPointerDown={(event, element) => begin(event, element)}/>
       {guides.v && <i className="recon-guide recon-guide--v" aria-hidden="true"/>}
       {guides.h && <i className="recon-guide recon-guide--h" aria-hidden="true"/>}
@@ -237,6 +248,7 @@ export function ReconEditor({ media, elements, onElements, framing, onFraming, f
         <button type="button" className="recon-round recon-round--text" onClick={() => { setEditingText(null); setTool('text') }} aria-label="Adicionar texto">Aa</button>
         <button type="button" className="recon-round" onClick={() => setTool('add')} aria-label="Adesivos e menções"><Smile/></button>
         <button type="button" className="recon-round" onClick={() => setTool('draw')} aria-label="Desenhar"><Pencil/></button>
+        <button type="button" className={`recon-round ${filter !== 'none' ? 'is-active' : ''}`} onClick={() => setTool('filter')} aria-label="Filtros táticos"><Aperture/></button>
         <button type="button" className="recon-round" onClick={() => setTool('more')} aria-label="Mais opções"><MoreHorizontal/></button>
       </div>
     </header>}
@@ -269,6 +281,10 @@ export function ReconEditor({ media, elements, onElements, framing, onFraming, f
     {tool === 'draw' && <DrawPad initial={drawing?.strokes ?? []} onDone={saveDrawing} onCancel={() => setTool(null)}/>}
     {tool === 'add' && <StickerSheet mentionsLeft={MAX_MENTIONS - mentionCount} onMention={addMention}
       onSticker={emoji => { setTool(null); add({ id: newId(), type: 'STICKER', emoji, x: 0.5, y: 0.5, scale: 1, rotation: 0, z: nextZ(elements) }) }} onClose={() => setTool(null)}/>}
+    {tool === 'filter' && <BottomSheet title="Filtros táticos" onClose={() => setTool(null)}>
+      <FilterPicker value={filter} onChange={onFilter}/>
+      <p className="recon-filter-note">{media.kind === 'VIDEO' ? 'Prévia ao vivo. O filtro é aplicado no vídeo depois do envio.' : 'O filtro sai aplicado na foto.'}</p>
+    </BottomSheet>}
     {tool === 'more' && <BottomSheet title="Mais opções" onClose={() => setTool(null)}>
       <div className="recon-more">
         <button type="button" onClick={() => { onFit(fit === 'cover' ? 'contain' : 'cover'); setTool(null) }}>
