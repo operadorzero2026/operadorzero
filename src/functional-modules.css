@@ -781,7 +781,7 @@
 
 /* Central da operacao: configuracoes, funcoes, mover participante e moderacao do chat. */
 .operation-chat-messages p.moderated{opacity:.55}.operation-chat-tools{display:inline-flex;gap:6px;margin-left:auto}.operation-chat-tools button{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border:1px solid #3a3f2f;background:transparent;color:#b9bca9;font-size:11px;cursor:pointer}.operation-chat-tools button svg{width:12px;height:12px}.operation-chat-lock{margin-top:8px;display:inline-flex;align-items:center;gap:6px}
-.operation-structure-settings,.operation-roles,.operation-move{margin-top:18px;padding-top:14px;border-top:1px solid #34382b}.operation-check{display:flex!important;flex-direction:row!important;align-items:center;gap:8px}.operation-roles ul{list-style:none;padding:0;margin:8px 0;display:grid;gap:6px}.operation-roles li{display:flex;justify-content:space-between;align-items:center;gap:8px}.operation-roles li button,.operation-squad button{background:transparent;border:0;color:#b9bca9;cursor:pointer}.operation-roles li button svg,.operation-squad button svg{width:14px;height:14px}
+.operation-structure-settings,.operation-roles,.operation-move{margin-top:18px;padding-top:14px;border-top:1px solid #34382b}.operation-structure-settings .operation-setting-check{display:flex;flex-direction:row;align-items:flex-start;gap:10px;margin:10px 0;font-size:14px;line-height:1.4;color:#d8dacd;text-transform:none;letter-spacing:0}.operation-structure-settings .operation-setting-check input{flex:none;width:20px;min-width:20px;height:20px;min-height:0;margin:1px 0 0;padding:0;accent-color:#b7b95e}.operation-roles ul{list-style:none;padding:0;margin:8px 0;display:grid;gap:6px}.operation-roles li{display:flex;justify-content:space-between;align-items:center;gap:8px}.operation-roles li button,.operation-squad button{background:transparent;border:0;color:#b9bca9;cursor:pointer}.operation-roles li button svg,.operation-squad button svg{width:14px;height:14px}
 .operation-inline-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.operation-inline-form h4{flex-basis:100%;margin:0}.operation-inline-form select{min-width:160px;flex:1;height:40px;background:#0d0f0c;color:#f2f1e9;border:1px solid #3a3f2f;padding:0 8px}
 .operation-cover-tools{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.operation-cover-tools label{cursor:pointer}
 
@@ -813,3 +813,21 @@
 .operator-actions-notice { margin: 0; color: #b7b95e; font-size: 0.85rem; }
 .operator-profile-dialog { max-height: calc(100vh - 40px); overflow-y: auto; }
 .oz-profile-invites { width: min(100% - 28px, 1120px); margin: 12px auto 0; }
+
+/* Central da operacao no celular: acoes do time agrupadas, cabecalho alinhado a esquerda e seletor de cor compacto. */
+.operation-structure-grid article{min-width:0}
+.operation-structure-grid article>header{justify-content:flex-start;gap:10px}
+.operation-structure-grid article>header>div{min-width:0}
+.operation-structure-grid article>header b{overflow-wrap:anywhere}
+.operation-structure-grid .team-color{flex:none;width:8px;height:36px;border-radius:4px}
+.operation-team-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.operation-team-actions>button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:0 14px;border:1px solid #b7b95e;background:#b7b95e;color:#0e100d;font-weight:800;cursor:pointer}
+.operation-team-actions>button:hover{background:#d9dba0;border-color:#d9dba0}
+.operation-team-actions svg{width:16px;height:16px}
+.operation-team-create{align-items:stretch}
+.operation-team-create input{min-width:0;min-height:44px;box-sizing:border-box}
+.operation-team-create input[type=color]{width:100%;height:44px;padding:3px;border:1px solid #34382b;border-radius:8px;background:#0d0f0b;-webkit-appearance:none;appearance:none;cursor:pointer}
+.operation-team-create input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+.operation-team-create input[type=color]::-webkit-color-swatch{border:0;border-radius:6px}
+.operation-team-create input[type=color]::-moz-color-swatch{border:0;border-radius:6px}
+.operation-inline-form select{min-height:42px;padding:0 10px;border:1px solid #34382b;border-radius:6px;background:#0d0f0b;color:#f2f1e9;font-size:14px}

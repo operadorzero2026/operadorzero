@@ -1,5 +1,24 @@
 # Histórico de alterações
 
+## 2026-11-04 - Correção: organização do jogo no celular (Central da operação)
+
+### Problemas relatados (iPhone)
+- Opções "Usar funções de comando", "Permitir que uma pessoa acumule funções" e "Qualquer pessoa logada pode ler o chat geral" empilhadas umas sobre as outras, por cima do formulário de data. Causa: a classe `operation-check` também existe na página inicial, com `position:absolute`.
+- Mensagem "null is not an object (evaluating 't.currentTarget.reset')" ao criar time. O time era criado, mas o formulário não limpava, o que levava a criar o mesmo time de novo. Causa: o evento do formulário já não existe depois do `await`.
+- Botões do time ("Editar time", "Excluir time", "Esquadrão") encavalados, nome do time saindo da tela e seletor de cor virando uma elipse enorme.
+
+### O que foi feito
+- `OperationCommandCenter.tsx`:
+  - classe própria `operation-setting-check` nas opções;
+  - formulário guardado antes do `await` ao criar time;
+  - ações do time agrupadas em `operation-team-actions`.
+- `PerformancePage.tsx`: o mesmo ajuste do `await` ao registrar desempenho.
+- `functional-modules.css`: opções com caixa ao lado do texto, cabeçalho do time alinhado à esquerda, seletor de cor compacto e seletores de função com altura de toque.
+
+### Testes
+- No navegador em 390 px, com um organizador e uma operação em rascunho por equipes: criar time sem erro e com o formulário limpo, opções legíveis, data e briefing sem sobreposição.
+- Tipos e lint sem erros novos.
+
 ## 2026-11-03 - Feed, Fase 2: Patentes visíveis
 
 ### Arquivos alterados
