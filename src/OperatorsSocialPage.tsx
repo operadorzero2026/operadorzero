@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { OperationHistory } from './operation/OperationHistory'
+import { RankCard } from './gamification/RankCard'
 import { ArrowLeft, Bookmark, CalendarDays, Check, ChevronDown, Flag, MapPin, Medal, MessageCircle, MoreHorizontal, Radio, Search, Shield, ShieldBan, Target, ThumbsUp, UserMinus, UserPlus, Users } from 'lucide-react'
 import {
   acceptOperatorFriendship, blockOperator, cancelOperatorFriendship, communityImageUrl, CommunityPostSummary,
@@ -70,9 +71,12 @@ function PublicProfile({username,own,onNavigate,onEditProfile}:{username:string;
     {notice&&<p className="oz-social-notice" role="status">{notice}</p>}
     {!own&&connection?.status==='ACCEPTED'&&<section className="oz-profile-invites"><OperatorActions username={username} showFriendButton={false}/></section>}
     <nav className="oz-profile-metrics" aria-label="Estatísticas do perfil">{metrics.map(([label,value])=><button key={label} onClick={()=>label==='AMIGOS'?onNavigate('/operadores/amigos'):label==='OPERAÇÕES'?setTab('operations'):undefined}><b>{value}</b><small>{label}</small></button>)}</nav>
+    {/* No celular a coluna da esquerda some: a patente aparece aqui, antes das abas. */}
+    <div className="oz-profile-rank-mobile"><RankCard username={username} own={own}/></div>
     <nav className="oz-profile-tabs">{([['feed','Feed'],['about','Sobre'],['operations','Operações'],['teams','Equipes'],['friends','Amigos']] as const).map(([id,label])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}>{id==='feed'?<Radio/>:id==='operations'?<Target/>:id==='teams'?<Shield/>:<Users/>}{label}</button>)}</nav>
     <section className="oz-profile-body">
       <aside className="oz-profile-left">
+        <RankCard username={username} own={own}/>
         <ProfileCard title="SOBRE"><p>{profile.bio||'Nenhuma apresentação adicionada.'}</p>{profile.preferredPosition&&<mark>{position(profile.preferredPosition)}</mark>}</ProfileCard>
         <ProfileCard title={`AMIGOS EM COMUM (${profile.mutualFriends.length})`}>{profile.mutualFriends.length?<div className="oz-mutuals">{profile.mutualFriends.map(friend=><button key={friend.id} onClick={()=>onNavigate(`/operadores/${friend.username}`)} title={friend.callsign}><Avatar operator={friend}/></button>)}</div>:<p>Nenhum amigo em comum.</p>}</ProfileCard>
         <ProfileCard title="EQUIPAMENTOS PRINCIPAIS">{profile.equipment.length?<ul className="oz-equipment">{profile.equipment.map((item,index)=><li key={`${item.category}-${index}`}><Target/><span><small>{item.category}</small>{item.name}</span></li>)}</ul>:<p>Nenhum equipamento público.</p>}</ProfileCard>

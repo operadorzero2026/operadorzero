@@ -1,5 +1,36 @@
 # Histórico de alterações
 
+## 2026-11-03 - Feed, Fase 2: Patentes visíveis
+
+### Arquivos alterados
+- Banco: `V39__rank_promotion_seen.sql` (aditiva: `operator_xp.promotion_seen_at`; promoções anteriores marcadas como vistas).
+- Servidor:
+  - novos: `gamification/RankService`, `RankController` e `OperationXpJob`;
+  - `SecurityConfig`: `/api/admin/gamification/**` só para ADMIN.
+- Site:
+  - novos: `src/gamification/RankCard.tsx`, `PromotionCelebration.tsx`, `AdminGamificationPanel.tsx` e `rank.css`;
+  - `OperatorsSocialPage.tsx`: cartão no perfil (coluna esquerda e, no celular, acima das abas);
+  - `App.tsx`: comemoração e painel do administrador em Perfil;
+  - `api.ts`.
+
+### O que foi feito
+- O motor de XP já existia (livro-razão, limites diários, desconto entre as mesmas contas, 12 patentes, insígnia no feed, nos comentários e nos Recons). Agora ele aparece para o operador.
+- **Perfil:** insígnia grande, patente, XP, barra até a próxima e quanto falta. No próprio perfil, os últimos ganhos de XP.
+- **Comemoração de promoção:** tela animada uma única vez por patente. O servidor guarda que já foi vista.
+- **XP por jogo concluído** (`OPERATION_COMPLETED`, regra que já existia mas nunca era acionada): a cada 30 minutos, quem confirmou presença ou fez check-in em operações já terminadas (últimos 30 dias) ganha o XP uma única vez.
+- **Administrador** (Perfil → Patentes e XP): edita XP, limite diário, desconto entre as mesmas contas e as faixas das patentes. As faixas são recalculadas sem aviso de promoção.
+
+### Testes
+- 303 testes do servidor passando.
+- Teste local de ponta a ponta: 18 verificações:
+  - patente própria e de outro operador;
+  - permissões e ajustes do administrador;
+  - XP pago pela tarefa agendada uma só vez;
+  - promoção com notificação e comemoração única;
+  - faixa inválida recusada.
+- No navegador, em tela de celular: comemoração e cartão no perfil.
+- O painel do administrador foi testado só pela API.
+
 ## 2026-11-03 - Feed, Fase 1: Filtros táticos
 
 ### Arquivos alterados

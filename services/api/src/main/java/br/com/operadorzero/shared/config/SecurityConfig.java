@@ -95,6 +95,7 @@ public class SecurityConfig {
                 // Retorno do OAuth do Mercado Pago: navegacao do navegador; o servico confere o state e a sessao de quem iniciou.
                 .requestMatchers(HttpMethod.GET, "/api/payments/mercadopago/callback").permitAll()
                 .requestMatchers("/api/admin/payments/**").hasRole("ADMIN")
+                .requestMatchers("/api/admin/gamification/**").hasRole("ADMIN")
                 .requestMatchers("/api/payments/**").authenticated()
                 // Midias do feed: caminhos aleatorios e imutaveis; servidas pela API so em desenvolvimento.
                 .requestMatchers(HttpMethod.GET, "/media/**").permitAll()

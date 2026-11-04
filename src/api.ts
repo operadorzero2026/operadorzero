@@ -538,6 +538,17 @@ export const replaceOperationDocument = (id:string, documentId:string, file:File
   apiRequest<OperationDocument>(`/api/media/uploads/operation-documents/${encodeURIComponent(id)}/${encodeURIComponent(documentId)}?fileName=${encodeURIComponent(file.name)}`, pdf('PUT', file), 120000)
 export const deleteOperationDocument = (id:string, documentId:string) => apiRequest<void>(`/api/operations/${encodeURIComponent(id)}/documents/${encodeURIComponent(documentId)}`, { method:'DELETE' })
 export type OperationHistoryItem = { id:string; name:string; coverUrl?:string|null; date:string; organizerCallsign:string; teamName?:string|null; primaryRole?:PrimaryRole|null; medic:boolean; radio:boolean }
+// ---- Patentes (XP) ----
+export type RankView = { username:string; rankCode:string; rankName:string; position:number; totalXp:number; currentMinXp:number; nextRankCode?:string|null; nextRankName?:string|null; nextMinXp?:number|null; progress:number; promotedAt?:string|null }
+export type MyRank = { rank:RankView; promotionPending:boolean; recent:{ action:string; description:string; xp:number; at:string }[] }
+export type XpRule = { actionCode:string; xp:number; dailyCap?:number|null; samePairFactor:number; active:boolean; description:string }
+export type RankTier = { code:string; name:string; position:number; minXp:number }
+export const getMyRank = () => apiRequest<MyRank>('/api/me/rank')
+export const markPromotionSeen = () => apiRequest<{message:string}>('/api/me/rank/promotion-seen', json('POST', {}))
+export const getOperatorRank = (username:string) => apiRequest<RankView>(`/api/operators/${encodeURIComponent(username)}/rank`)
+export const getGamificationSettings = () => apiRequest<{ rules:XpRule[]; tiers:RankTier[] }>('/api/admin/gamification')
+export const saveXpRule = (rule:XpRule) => apiRequest<{message:string}>(`/api/admin/gamification/rules/${encodeURIComponent(rule.actionCode)}`, json('PUT', { xp: rule.xp, dailyCap: rule.dailyCap ?? null, samePairFactor: rule.samePairFactor, active: rule.active }))
+export const saveRankTiers = (minXp:Record<string, number>) => apiRequest<{message:string}>('/api/admin/gamification/tiers', json('PUT', { minXp }))
 export const getOperationHistory = (username:string) => apiRequest<OperationHistoryItem[]>(`/api/operators/${encodeURIComponent(username)}/operations`)
 export const getOperation = (id:string) => apiRequest<Operation>(`/api/operations/${encodeURIComponent(id)}`)
 export const getOperationRoster = (id:string) => apiRequest<OperationRoster>(`/api/operations/${encodeURIComponent(id)}/roster`)
